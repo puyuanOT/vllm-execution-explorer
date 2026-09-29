@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opentable.local/vllm-execution-explorer/recording-v1.schema.json",
+  "title": "vLLM execution recording v1",
+  "$defs": {
+    "manifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "run_id",
+        "execution_kind",
+        "engine",
+        "adapter",
+        "model",
+        "tokenizer",
+        "hardware",
+        "engine_settings",
+        "sampling",
+        "cache_geometry",
+        "initial_cache_state",
+        "workload_limits",
+        "arrivals",
+        "completion_status",
+        "event_completeness",
+        "clock_domain",
+        "content_retained",
+        "execution_target",
+        "run_configuration",
+        "capture",
+        "provenance"
+      ],
+      "properties": {
+        "schema_version": { "const": "1.0.0" },
+        "run_configuration": { "$ref": "#/$defs/runConfiguration" },
+        "capture": { "$ref": "#/$defs/capture" },
+        "provenance": { "$ref": "#/$defs/provenance" },
+        "arrivals": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/dispatchObservation" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "runConfiguration": {
+      "type": "object",
+      "required": ["version", "snapshot_sha256"],
+      "properties": {
+        "version": { "const": 1 },
+        "snapshot_sha256": { "type": ["string", "null"] },
+        "model": { "type": "object" },
+        "vllm": { "type": "object" },
+        "sampling": { "type": "object" },
+        "workload": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "capture": {
+      "type": "object",
+      "required": ["contract_version", "transport", "http_boundary_observed", "status"],
+      "properties": {
+        "contract_version": { "const": 1 },
+        "transport": {
+          "enum": ["fixture_direct", "in_process_direct_engine", "instrumented_http"]
+        },
+        "http_boundary_observed": { "type": "boolean" },
+        "status": { "type": "string" },
+        "phase_history": { "type": "array", "items": { "type": "object" } }
+      },
+      "additionalProperties": true
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["evidence_kind", "real_gpu", "http_serving", "gpu_acceptance", "claim"],
+      "properties": {
+        "evidence_kind": { "enum": ["fixture", "instrumented_gpu_run"] },
+        "real_gpu": { "type": "boolean" },
+        "http_serving": { "type": "boolean" },
+        "gpu_acceptance": { "enum": ["not_applicable", "required", "passed"] },
+        "claim": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "dispatchObservation": {
+      "type": "object",
+      "required": [
+        "request_id",
+        "planned_dispatch_offset_ns",
+        "dispatch_started_monotonic_ns",
+        "dispatch_completed_monotonic_ns",
+        "dispatch_clock_domain",
+        "http_receipt_observed",
+        "engine_admission_observed"
+      ],
+      "properties": {
+        "request_id": { "type": "string" },
+        "planned_dispatch_offset_ns": { "type": "integer", "minimum": 0 },
+        "dispatch_started_monotonic_ns": { "type": "integer" },
+        "dispatch_completed_monotonic_ns": { "type": "integer" },
+        "dispatch_clock_domain": { "type": "string" },
+        "http_receipt_observed": { "type": "boolean" },
+        "http_received_monotonic_ns": { "type": ["integer", "null"] },
+        "http_receipt_clock_domain": { "type": ["string", "null"] },
+        "engine_admission_observed": { "type": "boolean" },
+        "engine_admitted_monotonic_ns": { "type": ["integer", "null"] },
+        "engine_admission_clock_domain": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "run_id",
+        "producer_id",
+        "sequence",
+        "monotonic_ns",
+        "event_type"
+      ],
+      "additionalProperties": true
+    }
+  }
+}

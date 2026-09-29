@@ -1,0 +1,468 @@
+{
+  "adapter": {
+    "name": "vllm_030",
+    "revision": "0.2.0"
+  },
+  "arrivals": [
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3771550873031,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3771550873031,
+      "dispatch_started_monotonic_ns": 3771550103203,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3771554947834,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3771550757370,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 0,
+      "request_id": "sample-2",
+      "requested_offset_ns": 0,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 57
+    },
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3771551218673,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3771551218673,
+      "dispatch_started_monotonic_ns": 3771549967513,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3771555453365,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3771551181016,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 0,
+      "request_id": "sample-1",
+      "requested_offset_ns": 0,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 64
+    },
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3771651103952,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3771651103952,
+      "dispatch_started_monotonic_ns": 3771650239536,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3771655112625,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3771651758786,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 100000000,
+      "request_id": "sample-3",
+      "requested_offset_ns": 100000000,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 5
+    },
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3771650824337,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3771650824337,
+      "dispatch_started_monotonic_ns": 3771650125337,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3771654449685,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3771650782241,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 100000000,
+      "request_id": "sample-4",
+      "requested_offset_ns": 100000000,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 6
+    },
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3771651173243,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3771651173243,
+      "dispatch_started_monotonic_ns": 3771650013589,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3771654748988,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3771651391830,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 100000000,
+      "request_id": "sample-5",
+      "requested_offset_ns": 100000000,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 5
+    },
+    {
+      "adapter_id": "base",
+      "controller_add_returned_monotonic_ns": 3773050426661,
+      "dispatch_clock_domain": "workload_driver:time.monotonic_ns",
+      "dispatch_completed_monotonic_ns": 3773050426661,
+      "dispatch_started_monotonic_ns": 3773050029027,
+      "dispatch_transport": "instrumented_loopback_http",
+      "engine_admission_clock_domain": "engine_owner:time.monotonic_ns",
+      "engine_admission_observed": true,
+      "engine_admitted_monotonic_ns": 3773056032636,
+      "http_receipt_clock_domain": "http_server:time.monotonic_ns",
+      "http_receipt_observed": true,
+      "http_received_monotonic_ns": 3773050906079,
+      "lora_int_id": null,
+      "planned_dispatch_offset_ns": 1500000000,
+      "request_id": "sample-6",
+      "requested_offset_ns": 1500000000,
+      "requested_offset_policy": "controller_offset",
+      "resolved_input_tokens": 57
+    }
+  ],
+  "cache_geometry": {
+    "block_size": 16,
+    "initial_free_blocks": 35202,
+    "num_gpu_blocks": 35203
+  },
+  "capture": {
+    "contract_version": 1,
+    "engine_admission_boundary": "scheduler.add_request",
+    "http_boundary_observed": true,
+    "implementation": "instrumented_loopback_http",
+    "phase_history": [
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3744145175057,
+        "phase": "configuration_accepted"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3744145363276,
+        "phase": "initializing_recording"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3744146233028,
+        "phase": "preparing_execution_runtime"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3771549500031,
+        "phase": "capture_ready"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3771549502831,
+        "phase": "dispatching_workload"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3773082147115,
+        "phase": "finalizing_recording"
+      },
+      {
+        "clock_domain": "controller:time.monotonic_ns",
+        "observed_monotonic_ns": 3774312259814,
+        "phase": "completed"
+      }
+    ],
+    "preparation_observations": {
+      "cache_reset_completed_monotonic_ns": 3771548474942,
+      "cache_reset_started_monotonic_ns": 3771547099531,
+      "capture_ready_monotonic_ns": 3771548936600,
+      "clock_domain": "engine_process:time.monotonic_ns",
+      "engine_ready_monotonic_ns": 3771528993785,
+      "preparation_started_monotonic_ns": 3744150347771,
+      "warmup_completed_monotonic_ns": 3771547099255
+    },
+    "status": "completed",
+    "transport": "instrumented_http"
+  },
+  "clock_domain": "time.monotonic_ns",
+  "completion_status": "completed",
+  "content_retained": false,
+  "controller_origin": {
+    "clock_domain": "time.monotonic_ns",
+    "controller_started_monotonic_ns": 3771549516663,
+    "provenance": "time.monotonic_ns"
+  },
+  "engine": {
+    "name": "vllm",
+    "upstream_revision": null,
+    "version": "0.30.0"
+  },
+  "engine_settings": {
+    "async_scheduling": false,
+    "enable_chunked_prefill": true,
+    "enable_lora": true,
+    "enable_prefix_caching": true,
+    "gpu_memory_utilization": 0.9,
+    "max_model_len": 1024,
+    "max_num_scheduled_tokens": 32,
+    "max_num_seqs": 4
+  },
+  "event_completeness": {
+    "dropped_content_count": 0,
+    "dropped_event_count": 0,
+    "dropped_record_count": 0,
+    "gap": null,
+    "status": "complete"
+  },
+  "execution_kind": "gpu",
+  "execution_target": {
+    "client_platform": "linux",
+    "engine_location": "this-machine",
+    "kind": "local",
+    "remote_bind": "127.0.0.1",
+    "runner_endpoint": "http://127.0.0.1:8765"
+  },
+  "hardware": {
+    "gpu": "NVIDIA A10"
+  },
+  "initial_cache_state": {
+    "cache_reset_completed_monotonic_ns": 3771548474942,
+    "cache_reset_started_monotonic_ns": 3771547099531,
+    "capture_ready_after_reset": true,
+    "capture_ready_monotonic_ns": 3771548936600,
+    "clock_domain": "engine_process:time.monotonic_ns",
+    "engine_ready_monotonic_ns": 3771528993785,
+    "evidence": "vllm.reset_prefix_cache returned true after warmup",
+    "kind": "fresh",
+    "preparation_started_monotonic_ns": 3744150347771,
+    "reset_required": true,
+    "reset_verified": true,
+    "warmup_completed_before_reset": true,
+    "warmup_completed_monotonic_ns": 3771547099255
+  },
+  "model": {
+    "dtype": "auto",
+    "id": "execution-host://operator-models/opt-125m-ui",
+    "lora_adapters": [
+      {
+        "id": "adapter-2bdf2dedd64273a3",
+        "lora_int_id": 1,
+        "resolved_path": "huggingface-cache://peft-internal-testing/opt-125m-dummy-lora@616563596bb77a806f37664b65a05f1c277494b9",
+        "source": {
+          "authenticated": false,
+          "kind": "huggingface",
+          "locator": "peft-internal-testing/opt-125m-dummy-lora",
+          "revision": "616563596bb77a806f37664b65a05f1c277494b9"
+        }
+      }
+    ],
+    "note": "Loaded by the in-process vLLM 0.30 engine on this CUDA host.",
+    "quantization": "none",
+    "revision": null
+  },
+  "provenance": {
+    "claim": "Instrumented vLLM execution observed on GPU through the explorer loopback HTTP boundary.",
+    "evidence_kind": "instrumented_gpu_run",
+    "gpu_acceptance": "passed",
+    "http_serving": true,
+    "real_gpu": true
+  },
+  "run_configuration": {
+    "model": {
+      "dtype": "auto",
+      "lora_adapters": [
+        {
+          "id": "adapter-2bdf2dedd64273a3",
+          "source": {
+            "authenticated": false,
+            "kind": "huggingface",
+            "locator": "peft-internal-testing/opt-125m-dummy-lora",
+            "revision": "616563596bb77a806f37664b65a05f1c277494b9"
+          }
+        }
+      ],
+      "quantization": {
+        "kind": "none"
+      },
+      "source": {
+        "kind": "execution_host",
+        "locator": "execution-host://operator-models/opt-125m-ui",
+        "revision": null
+      },
+      "tokenizer": {
+        "locator": "execution-host://operator-models/opt-125m-ui",
+        "revision": null
+      }
+    },
+    "sampling": {
+      "seed": 0,
+      "stop": [],
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "snapshot_sha256": "ece3ccb09fba082f9990693162e9a0809aec48da1748faadd2cf7fc3409ce741",
+    "version": 1,
+    "vllm": {
+      "enable_chunked_prefill": true,
+      "enable_prefix_caching": true,
+      "fresh_prefix_cache": true,
+      "gpu_memory_utilization": 0.9,
+      "max_model_len": 1024,
+      "max_num_scheduled_tokens": 32,
+      "max_num_seqs": 4
+    },
+    "workload": {
+      "adapter_ids": [
+        "base"
+      ],
+      "batch_count": 3,
+      "input_modes": [
+        "prompt",
+        "synthetic"
+      ],
+      "request_count": 6,
+      "token_validation": {
+        "client_reported_request_count": 0,
+        "engine_verified_request_count": 0,
+        "pending_engine_verification_count": 6
+      }
+    }
+  },
+  "run_id": "run-42f3805f07c3",
+  "sampling": {
+    "seed": 0,
+    "stop": [],
+    "temperature": 0.0,
+    "top_p": 1.0
+  },
+  "sanitization": {
+    "aliased_execution_host_paths": true,
+    "content_attachment_included": false,
+    "removed_manifest_fields": [
+      "engine_output_token_ids"
+    ],
+    "source_manifest_sha256": "0e7f49c9f13d276cf8d67ded31f55b403f5434b509b0522560e26e17af6a28f3",
+    "version": 1
+  },
+  "schema_version": "1.0.0",
+  "structural_export": true,
+  "tokenizer": {
+    "id": "execution-host://operator-models/opt-125m-ui",
+    "revision": null
+  },
+  "workload_limits": {
+    "gpu_validated": false,
+    "limit_basis": "contract_safety_ceiling",
+    "max_output_tokens": 8192,
+    "max_prompt_bytes": 2000000,
+    "max_prompt_characters": 2000000,
+    "max_prompt_tokens": 131072,
+    "max_requests": 64,
+    "max_run_seconds": 600,
+    "max_stop_string_characters": 256,
+    "max_stop_strings": 8,
+    "note": "Supports tens of authored requests. Tokenizer, context, memory, and recording limits must still be validated on the selected GPU before capture."
+  },
+  "workload_plan": {
+    "batches": [
+      {
+        "adapter_id": "base",
+        "arrival_offset_ms": 0,
+        "id": "batch-a",
+        "label": "A",
+        "samples": [
+          {
+            "adapter_id": "base",
+            "id": "sample-2",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_2",
+            "max_output_tokens": 8,
+            "order": 0,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          },
+          {
+            "adapter_id": "base",
+            "id": "sample-1",
+            "input_mode": "synthetic",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_1",
+            "max_output_tokens": 8,
+            "order": 1,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": 64
+          }
+        ]
+      },
+      {
+        "adapter_id": "base",
+        "arrival_offset_ms": 100,
+        "id": "batch-b",
+        "label": "B",
+        "samples": [
+          {
+            "adapter_id": "base",
+            "id": "sample-3",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_3",
+            "max_output_tokens": 8,
+            "order": 2,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          },
+          {
+            "adapter_id": "base",
+            "id": "sample-4",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_4",
+            "max_output_tokens": 8,
+            "order": 3,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          },
+          {
+            "adapter_id": "base",
+            "id": "sample-5",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_5",
+            "max_output_tokens": 8,
+            "order": 4,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          }
+        ]
+      },
+      {
+        "adapter_id": "base",
+        "arrival_offset_ms": 1500,
+        "id": "batch-c",
+        "label": "C",
+        "samples": [
+          {
+            "adapter_id": "base",
+            "id": "sample-6",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "input_6",
+            "max_output_tokens": 8,
+            "order": 5,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          }
+        ]
+      }
+    ],
+    "synthesized": false,
+    "version": 1
+  }
+}

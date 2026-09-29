@@ -1,0 +1,52 @@
+{
+  "recordings": [
+    {
+      "id": "continuous-batching",
+      "title": "Continuous batching",
+      "summary": "Request B is admitted after A has accepted an output token. A later step lists both request ids. This file was produced by the fixture engine.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "single-request",
+      "title": "Single request",
+      "summary": "One request keeps a single scheduled cursor, accepted token ids, emitted text, and a terminal status.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "chunked-prefill",
+      "title": "Chunked prefill",
+      "summary": "The long prompt is scheduled as two ranges. The second step also gives the short request a generation token.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "prefix-reuse",
+      "title": "Prefix reuse",
+      "summary": "The second request matches four prefix tokens, so this step starts at token 4. Matching a prefix skips that prompt work. It does not skip ordinary decoding.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "prefix-miss",
+      "title": "Prefix miss",
+      "summary": "A changed prefix matches zero tokens, so the full prompt range is scheduled.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "preemption",
+      "title": "Preemption and recomputation",
+      "summary": "The scheduled cursor returns to 0 and the same block id comes back as a new allocation generation. The trace records the transition. It does not record a decision reason.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "cancellation",
+      "title": "Cancellation",
+      "summary": "One request completes. The other is cancelled. Those are different terminal events.",
+      "evidence": "fixture"
+    },
+    {
+      "id": "incomplete-capture",
+      "title": "Incomplete capture",
+      "summary": "The collector filled its buffer, wrote one trace gap, and kept the events already queued. State after the gap is unknown.",
+      "evidence": "fixture"
+    }
+  ]
+}
