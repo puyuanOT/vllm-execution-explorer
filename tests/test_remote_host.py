@@ -1,12 +1,17 @@
 """Fresh-host connect stores the key locally and keeps it out of the response."""
 
+import shlex
+import shutil
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
 from runner.remote_host import (
     ConnectResult,
+    _rsync_argv,
     bootstrap_shell,
     connect_gpu_host,
     redact,
@@ -51,6 +56,22 @@ def test_private_key_is_stored_outside_the_recording(tmp_path: Path):
     with pytest.raises(TargetError, match="private key"):
         write_private_key(tmp_path / "keys", b"not a key")
     assert path.exists()
+
+
+def test_setup_sync_preserves_spaced_path_and_excludes_local_secrets(tmp_path: Path):
+    if not shutil.which("rsync"):
+        pytest.skip("rsync is not installed")
+    project = tmp_path / "source"
+    project.mkdir()
+    for name in ("app.py", ".env", ".env.local", "example.pem", "identity.key"):
+        (project / name).write_text("temporary test fixture")
+    target = SshTarget(user="ubuntu", host="gpu.example", remote_workdir="/srv/explorer folder")
+    argv = _rsync_argv(target, project)
+    assert shlex.split(argv[-1].partition(":")[2]) == ["/srv/explorer folder/"]
+    destination = tmp_path / "copied"
+    filters = argv[2:argv.index("-e")]
+    subprocess.run(["rsync", "-a", *filters, f"{project}/", str(destination)], check=True)
+    assert sorted(path.name for path in destination.iterdir()) == ["app.py"]
 
 
 def test_connect_syncs_the_host_and_redacts_the_key(tmp_path: Path):
@@ -250,3 +271,54 @@ def test_connect_api_forwards_automatic_setup_choice(tmp_path: Path):
 
     assert response.status_code == 200
     assert seen["automatic_setup"] is False
+
+
+def test_failed_reconnect_clears_the_previous_artifact_target(tmp_path: Path):
+    connected_tunnel = _Tunnel()
+
+    def connect_host(target: SshTarget, **_kwargs: object) -> ConnectResult:
+        if target.host == "failed.example":
+            raise TargetError("Host is unreachable")
+        return ConnectResult(True, "ready", "http://127.0.0.1:8766", "GPU", "0.30.0", {"ssh": {"host": target.host}}, connected_tunnel)
+
+    client = TestClient(create_app(tmp_path / "runs", connect_host=connect_host, keys_dir=tmp_path / "keys"))
+    def connect(host: str, user: str = "ubuntu"):
+        return client.post("/api/targets/connect", data={"user": user, "host": host}, files={"identity": ("fixture.pem", PEM)})
+
+    assert connect("first.example").status_code == 200
+    original_key = next((tmp_path / "keys").glob("identity-*.pem"))
+    assert connect("next.example", user="-invalid").status_code == 400
+    assert original_key.exists(), "Invalid target input must not remove the working credential"
+    assert not connected_tunnel.terminated
+    assert connect("failed.example").status_code == 400
+    assert connected_tunnel.terminated
+    assert client.get("/api/targets/status").json()["execution_target"] is None
+    model = tmp_path / "model.bin"
+    model.write_bytes(b"fixture weights")
+    prepared = client.post("/api/artifacts/operator-local/prepare", json={"source_path": str(model), "destination": "/srv/model"}).json()
+    assert client.post(f"/api/artifacts/transfers/{prepared['transfer_id']}/start").status_code == 409
+
+
+def test_concurrent_connections_do_not_replace_each_others_credentials(tmp_path: Path):
+    connecting = threading.Event()
+    release = threading.Event()
+
+    def connect_host(target: SshTarget, **_kwargs: object) -> ConnectResult:
+        connecting.set()
+        assert release.wait(5)
+        assert Path(target.identity_file).is_file()
+        return ConnectResult(True, "ready", "http://127.0.0.1:8766", "GPU", "0.30.0", {"ssh": {"host": target.host}}, _Tunnel())
+
+    client = TestClient(create_app(tmp_path / "runs", connect_host=connect_host, keys_dir=tmp_path / "keys"))
+    def connect():
+        return client.post("/api/targets/connect", data={"user": "ubuntu", "host": "gpu.example"}, files={"identity": ("fixture.pem", PEM)})
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        first = executor.submit(connect)
+        assert connecting.wait(5)
+        try:
+            assert connect().status_code == 409
+            assert client.post("/api/targets/ssh", json={"user": "ubuntu", "host": "other.example"}).status_code == 409
+        finally:
+            release.set()
+        assert first.result().status_code == 200

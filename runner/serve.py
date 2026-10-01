@@ -12,6 +12,7 @@ import sys
 import threading
 import time
 import uuid
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -62,6 +63,7 @@ from runner.workload import (
 )
 
 ACTIVE_STATUSES = {"preparing", "capturing", "finalizing"}
+_UNCHANGED = object()
 from vllm_030.collector import Recording
 
 
@@ -195,6 +197,7 @@ def create_app(
     trace_indexes: dict[str, RunTraceIndex] = {}
     tunnel: dict[str, Any] = {"process": None, "target": None}
     target_lock = threading.Lock()
+    connection_lock = threading.Lock()
     target_status: dict[str, Any] = {
         "status": "idle",
         "phase": "idle",
@@ -257,6 +260,14 @@ def create_app(
 
     @app.post("/api/targets/ssh")
     def ssh_target(body: SshRequest) -> dict[str, Any]:
+        if not connection_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail="An SSH host connection is already in progress.")
+        try:
+            return configure_ssh_target(body)
+        finally:
+            connection_lock.release()
+
+    def configure_ssh_target(body: SshRequest) -> dict[str, Any]:
         try:
             target = SshTarget(
                 user=body.user,
@@ -310,24 +321,39 @@ def create_app(
         automatic_setup: bool = Form(True),
         identity: UploadFile = File(...),
     ) -> dict[str, Any]:
+        if not connection_lock.acquire(blocking=False):
+            raise HTTPException(status_code=409, detail="An SSH host connection is already in progress.")
+        try:
+            return await connect_target_once(user, host, port, automatic_setup, identity)
+        finally:
+            connection_lock.release()
+
+    async def connect_target_once(
+        user: str,
+        host: str,
+        port: int,
+        automatic_setup: bool,
+        identity: UploadFile,
+    ) -> dict[str, Any]:
         payload = await identity.read(32_769)
         try:
-            key_path = write_private_key(key_store, payload)
             target = SshTarget(
                 user=user.strip(),
                 host=host.strip(),
                 port=port,
-                identity_file=str(key_path),
                 remote_port=8765,
                 local_port=8766,
                 remote_workdir=default_remote_workdir(user.strip()),
                 remote_python=".venv/bin/python",
             )
+            key_path = write_private_key(key_store, payload)
+            target = replace(target, identity_file=str(key_path))
         except TargetError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if tunnel["process"] is not None:
             tunnel["process"].terminate()
             tunnel["process"] = None
+        tunnel["target"] = None
         _set_target_status(
             target_lock,
             target_status,
@@ -338,6 +364,7 @@ def create_app(
                 if automatic_setup
                 else "Checking the SSH host and validating its existing runtime."
             ),
+            execution_target=None,
         )
         launcher = popen
         try:
@@ -354,7 +381,7 @@ def create_app(
         except Exception as exc:
             _set_target_status(target_lock, target_status, status="failed", phase="connection_failed", message=redact(str(exc), str(key_path)))
             raise HTTPException(status_code=400, detail=redact(str(exc), str(key_path))) from exc
-        if not isinstance(result, ConnectResult):
+        if not isinstance(result, ConnectResult) or not result.ok:
             _set_target_status(
                 target_lock,
                 target_status,
@@ -363,11 +390,13 @@ def create_app(
                 message="The GPU host did not connect.",
             )
             raise HTTPException(status_code=400, detail="The GPU host did not connect.")
-        tunnel["process"] = result.tunnel
-        tunnel["target"] = target
         body = result.public()
         if str(key_path) in json.dumps(body):
+            if result.tunnel is not None:
+                result.tunnel.terminate()
             raise HTTPException(status_code=400, detail="The connection response was discarded.")
+        tunnel["process"] = result.tunnel
+        tunnel["target"] = target
         _set_target_status(
             target_lock,
             target_status,
@@ -777,6 +806,7 @@ def _execute(
             intake_open=lambda: _flag(state, "intake_open"),
             cancelled=lambda: _flag(state, "cancelled"),
             pull_extra=lambda: _take_extra(state),
+            finish_intake=lambda: _finish_intake(state),
             on_status=lambda text: _set_text(state, text),
             on_arrival=publish_arrival,
             origin_out=origin,
@@ -1013,6 +1043,14 @@ def _take_extra(state: RunState) -> list[WorkRequest]:
         return extra
 
 
+def _finish_intake(state: RunState) -> bool:
+    with state.lock:
+        if state.extra:
+            return False
+        state.intake_open = False
+        return True
+
+
 def _set_text(state: RunState, text: dict[str, str]) -> None:
     with state.lock:
         state.text.update(text)
@@ -1041,7 +1079,7 @@ def _set_target_status(
     status: str,
     phase: str,
     message: str,
-    execution_target: Any = None,
+    execution_target: Any = _UNCHANGED,
 ) -> None:
     observation = {
         "phase": phase,
@@ -1053,7 +1091,7 @@ def _set_target_status(
         target_status["status"] = status
         target_status["phase"] = phase
         target_status["message"] = message
-        if execution_target is not None:
+        if execution_target is not _UNCHANGED:
             target_status["execution_target"] = execution_target
         target_status["history"].append(observation)
 

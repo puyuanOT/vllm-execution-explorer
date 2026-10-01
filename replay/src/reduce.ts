@@ -215,7 +215,10 @@ export function parseJsonl<T>(text: string): T[] {
 }
 
 function quoteWideIntegers(text: string): string {
-  return text.replace(/([:[\],]\s*)(-?\d{16,})(?=\s*[,}\]])/g, '$1"$2"')
+  // Match strings as whole tokens so numeric text inside a prompt stays text.
+  return text.replace(/"(?:[^"\\]|\\[\s\S])*"|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/g, (token) => {
+    return /^-?\d{16,}$/.test(token) ? `"${token}"` : token
+  })
 }
 
 export function replay(events: TraceEvent[], manifest?: RecordingManifest): ReplayState {
@@ -553,12 +556,21 @@ function applyBlock(state: ReplayState, event: TraceEvent): void {
   const pool = stringField(event, "pool", "pool")
   const blockId = numberValue(event.block_id) ?? 0
   const key = `${pool}:${blockId}`
+  const generation = numberValue(event.allocation_generation) ?? 0
+  const refCount = numberValue(event.ref_count_after) ?? 0
+  const previous = state.blocks[key]
+  const ambiguousPool = Object.values(state.blocks).some((block) => block.blockId === blockId && block.pool !== pool)
+  if (!ambiguousPool && (refCount === 0 || (previous && previous.generation !== generation))) {
+    for (const request of Object.values(state.requests)) {
+      request.blockIds = request.blockIds.filter((id) => id !== blockId)
+    }
+  }
   state.blocks[key] = {
     key,
     pool,
     blockId,
-    generation: numberValue(event.allocation_generation) ?? 0,
-    refCount: numberValue(event.ref_count_after) ?? 0,
+    generation,
+    refCount,
     hasHash: Boolean(event.has_hash_after),
     cachedAtZeroRefs: Boolean(event.cached_at_zero_refs),
     lastOperation: stringField(event, "operation", "change"),
@@ -593,6 +605,7 @@ function applyText(state: ReplayState, event: TraceEvent): void {
 function applyPreemption(state: ReplayState, event: TraceEvent): void {
   const request = ensureRequest(state, requestId(event))
   request.status = "preempted"
+  request.blockIds = []
   request.preemptionCount = numberValue(event.preemption_count) ?? request.preemptionCount + 1
   request.computedTokensBefore = numberValue(event.computed_tokens_before)
   request.computedTokensAfter = numberValue(event.computed_tokens_after)
@@ -604,6 +617,7 @@ function applyPreemption(state: ReplayState, event: TraceEvent): void {
 function applyTerminal(state: ReplayState, event: TraceEvent, status: "completed" | "cancelled"): void {
   const request = ensureRequest(state, requestId(event))
   request.status = status
+  request.blockIds = []
   request.recomputing = false
   request.finishReason = typeof event.reason === "string" ? event.reason : stringField(event, "status", status)
 }
@@ -622,6 +636,7 @@ function applyHttpResponse(state: ReplayState, event: TraceEvent): void {
   // A bare response boundary or an error response is not completion evidence.
   if (finishReason == null || statusCode == null || statusCode < 200 || statusCode >= 300) return
   request.status = finishReason === "cancelled" || finishReason === "abort" ? "cancelled" : "completed"
+  request.blockIds = []
   request.recomputing = false
   request.finishReason = finishReason
 }

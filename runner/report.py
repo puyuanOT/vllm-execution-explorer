@@ -73,7 +73,7 @@ def _integrity(data: RecordingData) -> list[Finding]:
         _cursors(events),
         _blocks(events),
         _arrivals(manifest),
-        _completeness_agreement(manifest),
+        _completeness_agreement(manifest, events),
     ]
     return findings
 
@@ -298,7 +298,7 @@ def _arrivals(manifest: dict) -> Finding:
     )
 
 
-def _completeness_agreement(manifest: dict) -> Finding:
+def _completeness_agreement(manifest: dict, events: tuple[dict, ...]) -> Finding:
     completeness = manifest.get("event_completeness") or {}
     status = completeness.get("status")
     completion = manifest.get("completion_status")
@@ -306,6 +306,54 @@ def _completeness_agreement(manifest: dict) -> Finding:
         return Finding("completeness", False, "a completed run still has an incomplete event stream")
     if status not in {"complete", "incomplete"}:
         return Finding("completeness", False, "event completeness is missing")
+    if status == "complete" and any(event.get("event_type") == "trace_gap" for event in events):
+        return Finding("completeness", False, "a complete event stream contains a trace gap")
+    if status == "complete" and completion == "completed":
+        # Contiguous sequence numbers only prove that the retained prefix is
+        # ordered. A truncated file can still be contiguous, so a completed
+        # run must also retain the terminal evidence for its declared work.
+        requests = {
+            str(event["request_id"])
+            for event in events
+            if event.get("request_id") is not None
+        }
+        requests.update(
+            str(arrival["request_id"])
+            for arrival in manifest.get("arrivals") or []
+            if arrival.get("request_id") is not None
+        )
+        plan = manifest.get("workload_plan") or {}
+        for batch in plan.get("batches") or []:
+            requests.update(str(sample["id"]) for sample in batch.get("samples") or [] if sample.get("id"))
+        scheduled = set()
+        results = set()
+        terminal = set()
+        for event in events:
+            kind = event.get("event_type")
+            if kind == "step_scheduled":
+                participants = event.get("requests") or []
+                requests.update(str(request["request_id"]) for request in participants)
+                # An empty scheduler iteration need not invoke the executor.
+                if participants or event.get("total_scheduled_tokens", 0) > 0:
+                    scheduled.add(event.get("step_id"))
+            elif kind == "step_result_received":
+                results.add(event.get("step_id"))
+            elif kind in {"completion", "cancellation"}:
+                terminal.add(str(event.get("request_id")))
+            elif kind == "http_response_completed":
+                code = event.get("status_code")
+                reason = event.get("finish_reason")
+                if isinstance(code, int) and 200 <= code < 300 and isinstance(reason, str) and reason:
+                    terminal.add(str(event.get("request_id")))
+        missing_results = sorted(str(step) for step in scheduled - results)
+        missing_terminals = sorted(requests - terminal)
+        if missing_results or missing_terminals:
+            missing = []
+            if missing_results:
+                missing.append("results for " + ", ".join(missing_results))
+            if missing_terminals:
+                missing.append("terminal events for " + ", ".join(missing_terminals))
+            return Finding("completeness", False, "a completed run is missing " + "; ".join(missing))
     return Finding("completeness", True, f"event stream is {status}")
 
 

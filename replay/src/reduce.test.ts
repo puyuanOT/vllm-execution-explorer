@@ -5,6 +5,7 @@ import { explainBlock, explainRequest } from "./explain.ts"
 import {
   attachContent,
   createPlayer,
+  parseRecordingJson,
   replay,
   type ContentRecord,
   type TraceEvent,
@@ -86,6 +87,17 @@ function sample(): TraceEvent[] {
     }),
   ]
 }
+
+test("wide integer parsing preserves prompts, escaped quotes, arrays, and numeric syntax", () => {
+  const text = 'Prompt containing [1234567890123456] and JSON snippet: 1234567890123456, with "quotes" and \\slashes'
+  const parsed = parseRecordingJson<{ text: string; values: unknown[] }>(
+    `{"text":${JSON.stringify(text)},"values":[1234567890123456789,-1234567890123456789,1.2345678901234567,1e20,7]}`,
+  )
+  assert.equal(parsed.text, text)
+  assert.deepEqual(parsed.values, ["1234567890123456789", "-1234567890123456789", 1.2345678901234567, 1e20, 7])
+  assert.equal(parseRecordingJson("1234567890123456789"), "1234567890123456789")
+  assert.throws(() => parseRecordingJson('{"value":01234567890123456789}'))
+})
 
 test("replay is deterministic and seeks match the event prefix", () => {
   const events = sample()

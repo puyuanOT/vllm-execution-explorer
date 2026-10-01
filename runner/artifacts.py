@@ -39,12 +39,15 @@ class ArtifactTransferManager:
         artifact = inspect_local_artifact(source_path)
         clean_destination = validate_remote_destination(destination)
         transfer_id = f"transfer-{uuid.uuid4().hex[:12]}"
+        transfer_root = PurePosixPath(clean_destination) / transfer_id
+        resolved_destination = transfer_root / artifact.name if artifact.kind == "file" else transfer_root
         record = {
             "transfer_id": transfer_id,
             "status": "prepared",
             "source_name": artifact.name,
             "artifact_kind": artifact.kind,
-            "destination": clean_destination,
+            "destination": str(resolved_destination),
+            "destination_root": clean_destination,
             "total_bytes": artifact.total_bytes,
             "bytes_transferred": 0,
             "file_count": artifact.file_count,

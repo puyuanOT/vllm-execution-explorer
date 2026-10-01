@@ -166,7 +166,7 @@ export function ModelSection({
             </label>
             {settings.hostKind === "ssh" ? (
               <label className="text-xs font-medium text-slate-400" htmlFor="model-destination">
-                Remote destination
+                Remote staging directory
                 <input
                   id="model-destination"
                   className={inputClass}
@@ -177,7 +177,7 @@ export function ModelSection({
                   aria-describedby={`${issueFor("model-destination") ? "model-destination-error " : ""}model-destination-hint`.trim()}
                   onChange={(event) => onSettings({ ...settings, modelDestination: event.target.value })}
                 />
-                <FieldHint id="model-destination-hint">Transfer size and progress appear during preparation.</FieldHint>
+                <FieldHint id="model-destination-hint">Each transfer gets its own directory here. Size and progress appear during preparation.</FieldHint>
                 <FieldError id="model-destination-error" message={issueFor("model-destination")} />
               </label>
             ) : (

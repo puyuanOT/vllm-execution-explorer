@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shlex
+import shutil
 import subprocess
 import threading
 import time
@@ -497,7 +499,7 @@ def test_operator_local_artifact_transfer_has_bounded_retryable_status(tmp_path:
     assert any(call[0] == "rsync" and "--copy-links" in call for call in calls)
     rsync_call = next(call for call in calls if call[0] == "rsync")
     assert "--protect-args" not in rsync_call
-    assert rsync_call[-1] == "ubuntu@192.0.2.10:'/srv/models/example folder'"
+    assert rsync_call[-1] == f"ubuntu@192.0.2.10:'{prepared['destination']}'"
 
 
 def test_operator_local_artifact_transfer_failure_redacts_local_paths(tmp_path: Path):
@@ -531,6 +533,38 @@ def test_operator_local_artifact_transfer_failure_redacts_local_paths(tmp_path: 
     assert str(identity) not in status["message"]
     assert "[local artifact]" in status["message"]
     assert "[identity file]" in status["message"]
+
+
+def test_repeated_artifact_transfers_do_not_merge_old_model_weights(tmp_path: Path):
+    if not shutil.which("rsync"):
+        pytest.skip("rsync is not installed")
+    old_model = tmp_path / "old-model"
+    new_model = tmp_path / "new-model"
+    old_model.mkdir()
+    new_model.mkdir()
+    (old_model / "model.safetensors").write_bytes(b"old weights")
+    (new_model / "pytorch_model.bin").write_bytes(b"new weights")
+
+    def local_transport(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if argv[0] == "ssh":
+            return subprocess.run(shlex.split(argv[-1]), **kwargs)
+        destination = shlex.split(argv[-1].partition(":")[2])[0]
+        return subprocess.run(["rsync", "-az", "--partial", "--copy-links", argv[-2], destination], **kwargs)
+
+    manager = ArtifactTransferManager(run=local_transport)
+    target = SshTarget(user="ubuntu", host="gpu.example", identity_file="unused-test-identity")
+    root = str(tmp_path / "remote-model")
+    first = manager.prepare(str(old_model), root)
+    second = manager.prepare(str(new_model), root)
+    for plan, source in ((first, old_model), (second, new_model)):
+        manager._copy(plan["transfer_id"], source, target)
+        assert manager.snapshot(plan["transfer_id"])["status"] == "completed"
+    assert first["destination"] != second["destination"]
+    assert sorted(path.name for path in Path(second["destination"]).iterdir()) == ["pytorch_model.bin"]
+    assert (Path(first["destination"]) / "model.safetensors").read_bytes() == b"old weights"
+    # A retry stays in its original staging directory and cannot mix the models.
+    manager._copy(second["transfer_id"], new_model, target)
+    assert manager.snapshot(second["transfer_id"])["destination"] == second["destination"]
 
 
 def test_operator_local_artifact_rejects_symlinked_directories(tmp_path: Path):
@@ -570,7 +604,8 @@ def test_operator_local_http_upload_is_streamed_to_retryable_staging(tmp_path: P
         "total_bytes": 9,
         "retained_for_retry": True,
     }
-    assert body["destination"] == "/srv/models/example"
+    assert body["destination"] == f"/srv/models/example/{body['transfer_id']}"
+    assert body["destination_root"] == "/srv/models/example"
     assert "config.json" not in json.dumps(body)
     assert len(list((tmp_path / "artifacts").glob("upload-*"))) == 1
 

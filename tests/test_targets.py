@@ -146,3 +146,14 @@ def test_ssh_target_rejects_shell_metacharacters():
         SshTarget(user="ubuntu", host="gpu.example;rm")
     with pytest.raises(TargetError):
         SshTarget(user="ubuntu;id", host="gpu.example")
+
+
+@pytest.mark.parametrize("user", ["-oProxyCommand=true", "name:host", "name\x00"])
+def test_ssh_user_cannot_become_an_option_or_rsync_destination(user):
+    with pytest.raises(TargetError):
+        SshTarget(user=user, host="gpu.example")
+
+
+def test_remote_workdir_rejects_control_characters():
+    with pytest.raises(TargetError):
+        SshTarget(user="ubuntu", host="gpu.example", remote_workdir="/srv/explorer\nnext")

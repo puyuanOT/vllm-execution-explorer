@@ -4,6 +4,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import * as THREE from "three"
 
 import type { BlockState, ReplayState, StepState } from "../../replay/src/reduce.ts"
+import { blockRequestIds } from "../../replay/src/timeline.ts"
 import { componentSnapshot, WORKFLOW_COMPONENTS } from "./explore/model.ts"
 import type { WorkflowComponentId } from "./explore/model.ts"
 import type { Selection } from "./execution/types.ts"
@@ -528,10 +529,8 @@ function componentLabel(id: WorkflowComponentId): string {
 function blockColor(block: BlockState, state: ReplayState, order: string[], selected: boolean): string {
   if (selected) return "#e8edf5"
   if (block.refCount > 0) {
-    const holder = Object.values(state.requests).find(
-      (request) => request.blockIds.includes(block.blockId) && request.status !== "cancelled",
-    )
-    return holder ? requestColor(order, holder.id) : "#77b7ff"
+    const holders = blockRequestIds(state, block)
+    return block.refCount === 1 && holders.length === 1 ? requestColor(order, holders[0]) : "#77b7ff"
   }
   if (block.cachedAtZeroRefs) return "#e0b15a"
   return "#3e4a5d"
