@@ -109,10 +109,10 @@ export function ConfigurePage({
     <main className="min-h-[calc(100dvh-4rem)] bg-slate-950 text-slate-100">
       <form
         className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8"
-        aria-busy={running}
+        aria-busy={running || checkingHost}
         onSubmit={(event) => {
           event.preventDefault()
-          onRun(scenario, runtime)
+          if (!running && !checkingHost) onRun(scenario, runtime)
         }}
       >
         <header className="mb-2 flex flex-col gap-5 border-b border-slate-800 pb-7 lg:flex-row lg:items-end lg:justify-between">
@@ -154,20 +154,22 @@ export function ConfigurePage({
           onAction={onAction}
           onInvalid={onInvalid}
         />
-        <ServerSection
-          settings={settings}
-          issues={issues}
-          readiness={hostReadiness}
-          stages={setupStages}
-          checking={checkingHost}
-          sshIdentity={sshIdentity}
-          onSshIdentity={(file) => {
-            setSshIdentity(file)
-            onSshIdentityChange?.()
-          }}
-          onSettings={onSettings}
-          onCheck={() => onCheckHost?.(runtime)}
-        />
+        <fieldset disabled={running || checkingHost} className="min-w-0">
+          <ServerSection
+            settings={settings}
+            issues={issues}
+            readiness={hostReadiness}
+            stages={setupStages}
+            checking={checkingHost}
+            sshIdentity={sshIdentity}
+            onSshIdentity={(file) => {
+              setSshIdentity(file)
+              onSshIdentityChange?.()
+            }}
+            onSettings={onSettings}
+            onCheck={() => onCheckHost?.(runtime)}
+          />
+        </fieldset>
         <ModelSection
           settings={settings}
           issues={issues}
@@ -203,7 +205,7 @@ export function ConfigurePage({
                   Cancel capture
                 </button>
               ) : null}
-              <button className={primaryButtonClass} type="submit" disabled={running || Boolean(runBlockedReason)} aria-describedby={runBlockedReason ? "capture-blocked-reason" : undefined}>
+              <button className={primaryButtonClass} type="submit" disabled={running || checkingHost || Boolean(runBlockedReason)} aria-describedby={runBlockedReason ? "capture-blocked-reason" : undefined}>
                 {running ? "Capture in progress…" : "Prepare and capture"}
               </button>
             </div>

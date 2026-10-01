@@ -387,6 +387,47 @@ test("shared blocks are not assigned to one request", () => {
   assert.deepEqual(block?.referencedBy.sort(), ["sample-1", "sample-4"])
 })
 
+test("terminal and preempted requests stop owning reused block numbers", () => {
+  for (const terminal of ["completion", "cancellation", "preemption", "http_response_completed"]) {
+    const events = [
+      event(1, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 1, ref_count_after: 1 }),
+      event(2, "step_scheduled", { step_id: "first", requests: [], block_table_changes: [{ request_id: "a", change: "replace", block_ids: [[3]] }] }),
+      event(3, terminal, { request_id: "a", status_code: 200, finish_reason: "stop" }),
+      event(4, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 2, ref_count_after: 1 }),
+      event(5, "step_scheduled", { step_id: "second", requests: [], block_table_changes: [{ request_id: "b", change: "replace", block_ids: [[3]] }] }),
+    ]
+    const state = createPlayer(events).at(5)
+    assert.deepEqual(state.requests.a.blockIds, [], terminal)
+    const [block] = describeBlocks(state)
+    assert.deepEqual(block.referencedBy, ["b"], terminal)
+    assert.equal(block.shared, false, terminal)
+  }
+})
+
+test("block tables do not claim ownership of a free block or an ambiguous pool", () => {
+  const events = [
+    event(1, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 1, ref_count_after: 0 }),
+    event(2, "step_scheduled", { step_id: "first", requests: [], block_table_changes: [{ request_id: "a", change: "replace", block_ids: [[3]] }] }),
+    event(3, "block_change", { pool: "pool-1", block_id: 3, allocation_generation: 1, ref_count_after: 1 }),
+  ]
+  const state = createPlayer(events).at(3)
+  assert.deepEqual(describeBlocks(state).map((block) => block.referencedBy), [[], []])
+})
+
+test("active requests shedding a block do not retain ownership of its next allocation", () => {
+  const events = [
+    event(1, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 1, ref_count_after: 1 }),
+    event(2, "step_scheduled", { step_id: "first", requests: [], block_table_changes: [{ request_id: "a", change: "replace", block_ids: [[3]] }] }),
+    event(3, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 1, ref_count_after: 0 }),
+    event(4, "block_change", { pool: "pool-0", block_id: 3, allocation_generation: 2, ref_count_after: 1 }),
+    event(5, "step_scheduled", { step_id: "second", requests: [], block_table_changes: [{ request_id: "b", change: "replace", block_ids: [[3]] }] }),
+  ]
+  const state = createPlayer(events).at(5)
+  assert.deepEqual(state.requests.a.blockIds, [])
+  assert.deepEqual(describeBlocks(state)[0].referencedBy, ["b"])
+  assert.equal(describeBlocks(state)[0].shared, false)
+})
+
 function blank(id: string) {
   return {
     id,

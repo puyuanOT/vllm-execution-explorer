@@ -33,6 +33,7 @@ def drive_run(
     intake_open: Callable[[], bool] = lambda: True,
     cancelled: Callable[[], bool] = lambda: False,
     pull_extra: Callable[[], list[WorkRequest]] = lambda: [],
+    finish_intake: Callable[[], bool] = lambda: True,
     on_status: Callable[[dict[str, str]], None] | None = None,
     on_arrival: Callable[[dict[str, object]], None] | None = None,
     origin_out: dict[str, object] | None = None,
@@ -229,7 +230,10 @@ def drive_run(
             if delay_ms > 0:
                 sleeper(min(idle_slice_s, delay_ms / 1000))
             continue
-        return "completed", tokens, arrivals
+        # Close intake atomically with the controller's last queue check. A
+        # request accepted after pull_extra must be drained before completion.
+        if finish_intake():
+            return "completed", tokens, arrivals
 
 
 def _sort_pending(pending: list[WorkRequest]) -> None:

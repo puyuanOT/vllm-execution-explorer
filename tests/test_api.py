@@ -1,5 +1,6 @@
 """Controller clock and the loopback API."""
 
+import threading
 import time
 
 from fastapi.testclient import TestClient
@@ -182,6 +183,51 @@ def test_runner_rejects_a_public_bind():
         raise AssertionError("expected loopback rejection")
     except TargetError as exc:
         assert "loopback" in str(exc)
+
+
+def test_request_accepted_during_final_queue_check_is_drained(tmp_path):
+    checking_empty = threading.Event()
+    allow_completion = threading.Event()
+
+    class FinishingSession(Scripted):
+        def has_unfinished(self) -> bool:
+            if self.added == ["a"] and not self.queue:
+                checking_empty.set()
+                assert allow_completion.wait(5)
+            return super().has_unfinished()
+
+        def close(self) -> None:
+            pass
+
+    session = FinishingSession()
+    client = TestClient(create_app(tmp_path / "runs", session_factory=lambda *_args: session))
+    started = client.post("/api/runs", json={
+        "engine": "fixture",
+        "requests": [{"request_id": "a", "prompt": "first", "arrival_offset_ms": 0, "max_output_tokens": 1}],
+    })
+    assert started.status_code == 200
+    assert checking_empty.wait(5)
+    try:
+        added = client.post("/api/runs/current/requests", json={
+            "request_id": "b", "prompt": "accepted while finishing", "max_output_tokens": 1,
+        })
+        assert added.status_code == 200
+    finally:
+        allow_completion.set()
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        snapshot = client.get("/api/runs/current").json()
+        if not snapshot["active"]:
+            break
+        time.sleep(0.01)
+    assert snapshot["status"] == "completed"
+    assert session.added == ["a", "b"]
+    assert snapshot["text"] == {"a": "x", "b": "x"}
+    manifest = client.get(f"/api/recordings/{started.json()['run_id']}/manifest").json()
+    assert [item["request_id"] for item in manifest["arrivals"]] == ["a", "b"]
+    assert client.post("/api/runs/current/requests", json={
+        "request_id": "c", "prompt": "too late", "max_output_tokens": 1,
+    }).status_code == 409
 
 
 def json_dump(value: object) -> str:

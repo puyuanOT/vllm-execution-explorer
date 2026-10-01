@@ -245,8 +245,10 @@ def _require_port(label: str, port: int) -> None:
 def _require_token(label: str, value: str) -> None:
     if (
         not value
+        or value.startswith("-")
         or any(char.isspace() for char in value)
-        or any(char in value for char in "@/\"'`;&|$()<>")
+        or any(ord(char) < 32 for char in value)
+        or any(char in value for char in ":@/\"'`;&|$()<>=")
     ):
         raise TargetError(f"{label} must be a single SSH user name")
 
@@ -259,5 +261,5 @@ def _require_hostname(label: str, value: str) -> None:
 
 
 def _require_remote_path(value: str) -> None:
-    if not value.startswith("/") or any(char in value for char in "\"'`;&|$()<>"):
+    if not value.startswith("/") or any(ord(char) < 32 for char in value) or any(char in value for char in "\"'`;&|$()<>"):
         raise TargetError("remote_workdir must be an absolute path without shell metacharacters")

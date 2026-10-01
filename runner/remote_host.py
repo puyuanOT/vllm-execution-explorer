@@ -25,6 +25,10 @@ from vllm_030.constants import PINNED_VLLM_PREFIX
 KEY_LIMIT = 32_768
 _EXCLUDES = (
     ".git",
+    ".env",
+    ".env.*",
+    "*.pem",
+    "*.key",
     ".venv",
     "node_modules",
     "dist",
@@ -314,7 +318,7 @@ def _rsync_argv(target: SshTarget, project_root: Path) -> list[str]:
             "-e",
             remote_shell,
             f"{project_root.resolve()}/",
-            f"{target.user}@{target.host}:{target.remote_workdir}/",
+            f"{target.user}@{target.host}:{shlex.quote(target.remote_workdir + '/')}",
         ]
     )
     return argv

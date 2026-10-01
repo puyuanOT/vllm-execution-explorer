@@ -292,13 +292,11 @@ export function describeBlocks(state: ReplayState): BlockFact[] {
   return Object.values(state.blocks)
     .sort((left, right) => left.pool.localeCompare(right.pool) || left.blockId - right.blockId)
     .map((block) => {
-      const referencedBy = Object.values(state.requests)
-        .filter((request) => request.blockIds.includes(block.blockId))
-        .map((request) => request.id)
+      const referencedBy = blockRequestIds(state, block)
       const shared = block.refCount > 1 || referencedBy.length > 1
       const note = shared
         ? "This block is shared or listed by more than one request. Pool, block id, and allocation generation identify it. The block number alone is not exclusive ownership."
-        : "Identity is the pool, block id, and allocation generation."
+        : "Identity is the pool, block id, and allocation generation. Request links use active scheduler block tables and are omitted when the pool is ambiguous."
       return {
         key: `${block.pool}:${block.blockId}:${block.generation}`,
         pool: block.pool,
@@ -310,6 +308,17 @@ export function describeBlocks(state: ReplayState): BlockFact[] {
         note,
       }
     })
+}
+
+export function blockRequestIds(state: ReplayState, block: ReplayState["blocks"][string]): string[] {
+  if (block.refCount === 0) return []
+  // Scheduler tables carry bare block ids, not a pool/generation identity.
+  // Do not attach those ids to multiple physical blocks with the same number.
+  if (Object.values(state.blocks).filter((item) => item.blockId === block.blockId).length > 1) return []
+  return Object.values(state.requests)
+    .filter((request) => request.status !== "completed" && request.status !== "cancelled"
+      && request.status !== "preempted" && request.blockIds.includes(block.blockId))
+    .map((request) => request.id)
 }
 
 export function promptsFromContent(content: Array<{ kind?: string; request_id?: string; text?: string }>): Record<string, string> {

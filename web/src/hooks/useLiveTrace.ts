@@ -48,7 +48,7 @@ export function useLiveTrace(
     cursors.current = { event: 0, content: 0 }
     handed.current = ""
     setTrace(EMPTY)
-  }, [runId])
+  }, [runId, runnerUrl])
 
   useEffect(() => {
     if (!runId) return

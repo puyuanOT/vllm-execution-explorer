@@ -388,6 +388,7 @@ export function App() {
   }
 
   async function checkHost(runtime: ConfigureRuntimeInputs) {
+    if (checkingHost || preparingRun || runIsActive(runner.live?.status)) return
     setCheckingHost(true)
     setRunError("")
     setValidationMessage("")
@@ -448,7 +449,7 @@ export function App() {
   }
 
   async function runSequence(next: ScenarioDraft, runtime: ConfigureRuntimeInputs) {
-    if (preparingRun) return
+    if (checkingHost || preparingRun || runIsActive(runner.live?.status)) return
     draft.replace(next)
     const quantizationCapabilities = settings.hostKind === "ssh" && !settings.runnerUrl
       ? undefined
@@ -512,14 +513,12 @@ export function App() {
     if (current.hostKind !== "ssh") return current
     let next = current
     if (current.modelSource === "operator") {
-      const destination = normalizeRemoteDestination(current.modelDestination, current.sshUser, "model")
-      await completeTransfer(current.model, destination)
+      const destination = await completeTransfer(current.model, normalizeRemoteDestination(current.modelDestination, current.sshUser, "model"))
       next = { ...next, modelSource: "host", model: destination, modelDestination: destination }
     }
     for (const adapter of next.loraAdapters) {
       if (adapter.source !== "operator") continue
-      const destination = normalizeRemoteDestination("", current.sshUser, `adapters/${adapter.id}`)
-      await completeTransfer(adapter.location, destination)
+      const destination = await completeTransfer(adapter.location, normalizeRemoteDestination("", current.sshUser, `adapters/${adapter.id}`))
       next = {
         ...next,
         loraAdapters: next.loraAdapters.map((item) => item.id === adapter.id ? { ...item, source: "host", location: destination } : item),
@@ -542,6 +541,7 @@ export function App() {
     }
     if (transfer.status !== "completed") throw new Error(transfer.message || "Artifact transfer failed.")
     setPreparationStatus(`${transfer.source_name}: transfer complete (${size}).`)
+    return transfer.destination
   }
 
   async function cancelRun() {

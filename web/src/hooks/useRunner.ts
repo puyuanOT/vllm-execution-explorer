@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
   runnerPath,
@@ -16,22 +16,34 @@ export function useRunner(runnerUrl: string) {
   const [limits, setLimits] = useState<Limits | null>(null)
   const [live, setLive] = useState<RunSnapshot | null>(null)
   const [capabilities, setCapabilities] = useState<CapabilityReport | null>(null)
+  const endpoint = useRef(runnerUrl)
+  endpoint.current = runnerUrl
+  const refreshVersion = useRef(0)
+  const pollVersion = useRef(0)
+  const refreshing = useRef(false)
 
   const refresh = useCallback(async (base = runnerUrl) => {
+    const version = ++refreshVersion.current
+    const startedAtEndpoint = endpoint.current
+    refreshing.current = true
+    ++pollVersion.current
+    const isCurrent = () => version === refreshVersion.current && endpoint.current === startedAtEndpoint
     try {
       const healthResponse = await fetch(runnerPath(base, "/api/health"))
       if (!healthResponse.ok) throw new Error("Runner did not answer.")
       const [preflightBody, limitsBody, currentBody, capabilitiesBody] = await Promise.all([
-        fetch(runnerPath(base, "/api/preflight")).then((response) => response.json() as Promise<Preflight>),
-        fetch(runnerPath(base, "/api/limits")).then((response) => response.json() as Promise<Limits>),
-        fetch(runnerPath(base, "/api/runs/current")).then((response) => response.json() as Promise<RunSnapshot>),
+        readJson<Preflight>(runnerPath(base, "/api/preflight")),
+        readJson<Limits>(runnerPath(base, "/api/limits")),
+        readJson<RunSnapshot>(runnerPath(base, "/api/runs/current")),
         fetchCapabilities(base),
       ])
-      setHealth("Runner is reachable.")
-      setPreflight(preflightBody)
-      setLimits(limitsBody)
-      setLive(currentBody)
-      setCapabilities(capabilitiesBody)
+      if (isCurrent()) {
+        setHealth("Runner is reachable.")
+        setPreflight(preflightBody)
+        setLimits(limitsBody)
+        setLive(currentBody)
+        setCapabilities(capabilitiesBody)
+      }
       return {
         health: "Runner is reachable.",
         preflight: preflightBody,
@@ -41,29 +53,59 @@ export function useRunner(runnerUrl: string) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Runner is unreachable. Bundled recordings still open."
-      setHealth(message)
-      setPreflight(null)
-      setLimits(null)
-      setLive(null)
-      setCapabilities(null)
+      if (isCurrent()) {
+        setHealth(message)
+        setPreflight(null)
+        setLimits(null)
+        setLive(null)
+        setCapabilities(null)
+      }
       return { health: message, preflight: null, limits: null, live: null, capabilities: null }
+    } finally {
+      if (version === refreshVersion.current) refreshing.current = false
     }
   }, [runnerUrl])
 
   useEffect(() => {
+    setHealth("")
+    setPreflight(null)
+    setLimits(null)
+    setLive(null)
+    setCapabilities(null)
     void refresh()
+    return () => {
+      ++refreshVersion.current
+      ++pollVersion.current
+      refreshing.current = false
+    }
   }, [refresh])
 
   useEffect(() => {
+    let stopped = false
+    let inFlight = false
     const delay = runIsActive(live?.status) ? 1000 : 2500
     const id = window.setInterval(() => {
-      void fetch(runnerPath(runnerUrl, "/api/runs/current"))
-        .then((response) => response.json() as Promise<RunSnapshot>)
-        .then((body) => setLive(body))
+      if (inFlight || refreshing.current) return
+      inFlight = true
+      const version = ++pollVersion.current
+      void readJson<RunSnapshot>(runnerPath(runnerUrl, "/api/runs/current"))
+        .then((body) => {
+          if (!stopped && version === pollVersion.current && runnerUrl === endpoint.current) setLive(body)
+        })
         .catch(() => undefined)
+        .finally(() => { inFlight = false })
     }, delay)
-    return () => window.clearInterval(id)
+    return () => {
+      stopped = true
+      window.clearInterval(id)
+    }
   }, [runnerUrl, live?.status])
 
   return { health, preflight, limits, live, capabilities, refresh, setHealth }
+}
+
+async function readJson<T>(url: string): Promise<T> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error(`Runner request failed (${response.status}).`)
+  return response.json() as Promise<T>
 }

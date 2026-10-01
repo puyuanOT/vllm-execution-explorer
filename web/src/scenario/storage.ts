@@ -73,15 +73,52 @@ function storageMessage(error: unknown): string {
 }
 
 function isScenario(value: unknown): value is ScenarioDraft {
-  if (!value || typeof value !== "object") return false
-  const scenario = value as ScenarioDraft
-  return scenario.version === 1 && typeof scenario.id === "string" && Array.isArray(scenario.batches)
+  if (!isRecord(value)) return false
+  return value.version === 1
+    && typeof value.id === "string"
+    && typeof value.name === "string"
+    && Number.isSafeInteger(value.nextOrder)
+    && Array.isArray(value.batches)
+    && value.batches.every((batch: unknown) => isRecord(batch)
+      && typeof batch.id === "string"
+      && typeof batch.label === "string"
+      && Number.isFinite(batch.arrivalOffsetMs)
+      && Number.isSafeInteger(batch.createdOrder)
+      && Array.isArray(batch.samples)
+      && batch.samples.every((sample: unknown) => isRecord(sample)
+        && typeof sample.id === "string"
+        && typeof sample.label === "string"
+        && typeof sample.prompt === "string"
+        && Number.isFinite(sample.maxOutputTokens)))
 }
 
 function isSettings(value: unknown): value is EngineSettings {
-  if (!value || typeof value !== "object") return false
-  const settings = value as EngineSettings
-  return settings.engine === "fixture" || settings.engine === "vllm"
+  if (!isRecord(value) || (value.engine !== "fixture" && value.engine !== "vllm")) return false
+  // Missing fields in older drafts inherit defaults; malformed present fields
+  // must not reach components that call string or array methods on them.
+  for (const [key, fallback] of Object.entries(defaultSettings())) {
+    if (key in value && !Array.isArray(fallback) && typeof value[key] !== typeof fallback) return false
+  }
+  const choices: Record<string, readonly string[]> = {
+    hostKind: ["local", "ssh"],
+    modelSource: ["huggingface", "host", "operator"],
+    dtype: ["auto", "float16", "bfloat16", "float32"],
+    quantization: ["none", "awq", "gptq", "bitsandbytes", "fp8"],
+  }
+  for (const [key, options] of Object.entries(choices)) {
+    if (key in value && !options.includes(value[key] as string)) return false
+  }
+  if ("stopStrings" in value && (!Array.isArray(value.stopStrings)
+    || !value.stopStrings.every((item: unknown) => typeof item === "string"))) return false
+  if ("loraAdapters" in value && (!Array.isArray(value.loraAdapters)
+    || !value.loraAdapters.every((item: unknown) => isRecord(item)
+      && ["id", "name", "location", "revision"].every((key) => typeof item[key] === "string")
+      && choices.modelSource.includes(item.source as string)))) return false
+  return true
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
 export function normalizeScenario(scenario: ScenarioDraft): ScenarioDraft {

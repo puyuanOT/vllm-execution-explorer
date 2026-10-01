@@ -52,7 +52,8 @@ def test_result_stays_with_the_step_that_was_scheduled(tmp_path):
     second = engine.scheduler.schedule()
     engine.scheduler.update_from_output(first, SimpleNamespace())
     adapter.uninstall()
-    recording.close(_manifest("steps"))
+    # This fixture deliberately stops with its second scheduled step pending.
+    recording.close({**_manifest("steps"), "completion_status": "cancelled"})
     data = load_recording(tmp_path / "steps")
     results = [event for event in data.events if event["event_type"] == "step_result_received"]
     assert results[0]["step_id"] == first.explorer_step_id
