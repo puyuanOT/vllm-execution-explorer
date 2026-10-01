@@ -39,6 +39,7 @@ import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
 import { eventAt, nextSequence, previousSequence, SPEEDS } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
+import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
 import type { ScenarioAction } from "./scenario/reducer.ts"
 import { expectedRunFailure, shouldLoadExpectedRecording } from "./scenario/runCompletion.ts"
 import { cloneScenario, scenarioFromRecordedPlan, toRunBody, workloadPlan } from "./scenario/serialize.ts"
@@ -428,14 +429,13 @@ export function App() {
       } else {
         if (settings.runnerUrl) setSettings((current) => ({ ...current, runnerUrl: "" }))
         const checked = await runner.refresh()
-        setSetupStages([
-          { id: "connect", label: "Reach execution host", status: "complete", detail: "Local controller" },
-          { id: "runtime", label: "Inspect CUDA and vLLM runtime", status: checked.preflight?.ok || settings.engine === "fixture" ? "complete" : "error", detail: checked.preflight?.message },
-          { id: "ready", label: "Confirm loopback controller", status: checked.preflight ? "complete" : "error", detail: checked.health },
-        ])
-        setHostCheck(checked.preflight
-          ? { label: settings.engine === "fixture" || checked.preflight.ok ? "Ready" : "Needs GPU host", message: checked.preflight.message ?? checked.health, tone: settings.engine === "fixture" || checked.preflight.ok ? "ready" : "warning" }
-          : { label: "Unavailable", message: "Start the local controller and retry.", tone: "error" })
+        const presentation = localHostCheckPresentation(
+          settings.engine,
+          checked.health,
+          checked.preflight ? { ok: checked.preflight.ok, message: checked.preflight.message } : null,
+        )
+        setSetupStages(presentation.stages)
+        setHostCheck(presentation.readiness)
         setAnnounce("The local execution host check finished.")
       }
     } catch (error) {
