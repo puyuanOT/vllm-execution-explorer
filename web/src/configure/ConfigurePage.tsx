@@ -115,7 +115,7 @@ export function ConfigurePage({
         noValidate
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.nativeEvent.isComposing && event.target instanceof HTMLInputElement
-            && ["text", "search", "tel", "url", "email", "password", "date", "month", "week", "time", "datetime-local", "number"].includes(event.target.type)) {
+            && !["file", "submit", "button", "reset"].includes(event.target.type)) {
             event.preventDefault()
           }
         }}
