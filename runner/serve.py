@@ -374,6 +374,9 @@ def create_app(
                 project_root=source_root,
                 automatic_setup=automatic_setup,
                 popen=launcher,
+                progress=lambda phase, message: _set_target_status(
+                    target_lock, target_status, status="connecting", phase=phase, message=message,
+                ),
             )
         except TargetError as exc:
             _set_target_status(target_lock, target_status, status="failed", phase="connection_failed", message=redact(str(exc), str(key_path)))

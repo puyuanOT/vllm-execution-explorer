@@ -41,6 +41,7 @@ import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
 import { eventAt, nextSequence, previousSequence, SPEEDS } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
 import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
+import { monitorTargetConnection } from "./scenario/targetConnection.ts"
 import type { ScenarioAction } from "./scenario/reducer.ts"
 import { expectedRunFailure, shouldLoadExpectedRecording } from "./scenario/runCompletion.ts"
 import { cloneScenario, scenarioFromRecordedPlan, toRunBody, workloadPlan } from "./scenario/serialize.ts"
@@ -396,6 +397,7 @@ export function App() {
     setValidationMessage("")
     setAnnounce("Checking the execution host.")
     setSshVerification(null)
+    setHostCheck({ label: "Checking", message: "Checking the selected execution host.", tone: "neutral" })
     setSetupStages(EMPTY_STAGES.map((stage, index) => ({ ...stage, status: index === 0 ? "active" : "pending" })))
     try {
       if (settings.hostKind === "ssh") {
@@ -407,12 +409,23 @@ export function App() {
         form.set("port", settings.sshPort.trim())
         form.set("automatic_setup", String(settings.automaticSetup))
         form.set("identity", identity)
-        const response = await fetch("/api/targets/connect", { method: "POST", body: form })
+        const stopProgress = monitorTargetConnection(setSetupStages)
+        let response: Response
+        try {
+          response = await fetch("/api/targets/connect", { method: "POST", body: form })
+        } finally {
+          stopProgress()
+        }
         if (!response.ok) throw new Error(await responseDetail(response, "Could not connect to the GPU host."))
         const body = await response.json() as { runner_endpoint?: string; message?: string; gpu?: string | null; vllm_version?: string | null }
         if (!body.runner_endpoint) throw new Error("The GPU host connected without a runner endpoint.")
         const runtimeProblem = remoteRuntimeError(body.gpu, body.vllm_version)
         if (runtimeProblem) throw new Error(runtimeProblem)
+        setSetupStages([
+          { id: "connect", label: "Reach execution host", status: "complete" },
+          { id: "runtime", label: "Prepare CUDA and vLLM runtime", status: "complete", detail: [body.gpu, body.vllm_version && `vLLM ${body.vllm_version}`].filter(Boolean).join(" · ") },
+          { id: "ready", label: "Confirm loopback controller", status: "active", detail: "Verifying the remote controller and CUDA preflight." },
+        ])
         const checked = await runner.refresh(body.runner_endpoint)
         if (!checked.preflight || !checked.capabilities) {
           throw new Error(`The SSH tunnel opened, but the remote runner could not be verified. ${checked.health}`)
@@ -629,7 +642,9 @@ export function App() {
     ? `${statusLabel(runner.live?.status ?? "running")}${runner.live?.message ? ` · ${runner.live.message}` : ""}`
     : preparingRun ? preparationStatus || "Preparing capture"
     : recording ? `Recording · ${recording.source}` : runner.health || "Runner unchecked"
-  const hostReadiness = hostCheck ?? deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message)
+  const hostReadiness = hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
+    ? { label: "Unchecked", message: "Choose the SSH key and check the selected remote host before capture.", tone: "neutral" as const }
+    : deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message))
   const runBlockedReason = settings.engine === "vllm" && settings.hostKind === "local" && runner.preflight?.ok !== true
     ? hostReadiness.message
     : undefined

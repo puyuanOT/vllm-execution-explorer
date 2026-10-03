@@ -98,6 +98,7 @@ def connect_gpu_host(
     run: Callable[..., subprocess.CompletedProcess[str]] | None = None,
     popen: Callable[..., Any] | None = None,
     ready: Callable[[str], None] | None = None,
+    progress: Callable[[str, str], None] | None = None,
     tunnel_grace_seconds: float = 0.5,
 ) -> ConnectResult:
     if target.remote_workdir is None:
@@ -107,18 +108,26 @@ def connect_gpu_host(
     runner = run or subprocess.run
     launcher = popen or subprocess.Popen
     identity = target.identity_file
+    operation = "reaching the execution host over SSH"
+    def report(phase: str, message: str) -> None:
+        if progress:
+            progress(phase, message)
+
     try:
+        report("checking_ssh", "Connecting to the execution host over SSH (up to 30 seconds).")
+        _check(
+            runner(
+                ssh_argv(target, f"mkdir -p {shlex.quote(target.remote_workdir)}" if automatic_setup else "true"),
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            ),
+            identity,
+        )
         if automatic_setup:
-            _check(
-                runner(
-                    ssh_argv(target, f"mkdir -p {shlex.quote(target.remote_workdir)}"),
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                ),
-                identity,
-            )
+            operation = "copying the explorer to the execution host"
+            report("copying_project", "SSH connected. Copying the explorer to the execution host.")
             _check(
                 runner(
                     _rsync_argv(target, project_root),
@@ -129,6 +138,11 @@ def connect_gpu_host(
                 ),
                 identity,
             )
+        operation = "preparing the vLLM runtime" if automatic_setup else "validating the prepared vLLM runtime"
+        report("preparing_runtime", (
+            "Preparing the isolated vLLM 0.30.0 runtime. A first installation can take several minutes (up to 30 minutes)."
+            if automatic_setup else "Validating the existing vLLM runtime and starting the remote controller (up to 2 minutes)."
+        ))
         probe = _check(
             runner(
                 ssh_argv(target, bootstrap_shell(target, automatic_setup=automatic_setup)),
@@ -140,7 +154,7 @@ def connect_gpu_host(
             identity,
         )
     except subprocess.TimeoutExpired as exc:
-        raise TargetError("The GPU host did not finish connecting in time.") from exc
+        raise TargetError(f"Timed out while {operation}.") from exc
     except FileNotFoundError as exc:
         raise TargetError("This computer needs ssh and rsync to reach a GPU host.") from exc
     gpu, vllm_version = _parse_probe(probe)
@@ -149,6 +163,7 @@ def connect_gpu_host(
     if not vllm_version or not vllm_version.startswith(PINNED_VLLM_PREFIX):
         found = vllm_version or "no vLLM install"
         raise TargetError(f"The execution host needs vLLM {PINNED_VLLM_PREFIX}x; found {found}.")
+    report("opening_tunnel", "CUDA and vLLM are ready. Opening the SSH tunnel to the loopback controller.")
     decision = decide_target(
         target,
         client_platform=sys.platform,
@@ -180,6 +195,7 @@ def connect_gpu_host(
         threading.Thread(target=_drain, args=(stream,), daemon=True).start()
     endpoint = decision.launch.runner_endpoint
     try:
+        report("checking_controller", "SSH tunnel opened. Waiting for the loopback controller to respond.")
         (ready or _wait_for_local)(endpoint)
     except Exception:
         tunnel.terminate()

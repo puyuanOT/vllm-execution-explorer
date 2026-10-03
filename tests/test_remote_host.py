@@ -79,6 +79,7 @@ def test_connect_syncs_the_host_and_redacts_the_key(tmp_path: Path):
     project = tmp_path / "project"
     project.mkdir()
     calls: list[list[str]] = []
+    phases: list[str] = []
 
     def run(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
         calls.append(argv)
@@ -99,6 +100,7 @@ def test_connect_syncs_the_host_and_redacts_the_key(tmp_path: Path):
         run=run,
         popen=lambda argv, **kwargs: calls.append(argv) or _Tunnel(),
         ready=lambda _endpoint: None,
+        progress=lambda phase, _message: phases.append(phase),
         tunnel_grace_seconds=0,
     )
 
@@ -110,6 +112,7 @@ def test_connect_syncs_the_host_and_redacts_the_key(tmp_path: Path):
     assert result.gpu == "NVIDIA A10, 23028 MiB"
     assert result.vllm_version == "0.30.0"
     assert result.execution_target["ssh"]["host"] == "203.0.113.10"
+    assert phases == ["checking_ssh", "copying_project", "preparing_runtime", "opening_tunnel", "checking_controller"]
     assert any(call[0] == "rsync" and "--exclude" in call and ".venv" in call for call in calls)
     assert any(call[0] == "ssh" and "8766:127.0.0.1:8765" in " ".join(call) for call in calls)
     shell = bootstrap_shell(_target(key))
@@ -209,9 +212,10 @@ def test_prepared_host_mode_skips_copy_and_install(tmp_path: Path):
     )
 
     assert result.vllm_version == "0.30.2"
-    assert len(calls) == 1
+    assert len(calls) == 2
     assert calls[0][0] == "ssh"
-    shell = calls[0][-1]
+    assert calls[0][-1] == "true"
+    shell = calls[1][-1]
     assert "pip install" not in shell
     assert "python3 -m venv" not in shell
     assert "enable automatic setup" in shell
@@ -297,6 +301,57 @@ def test_failed_reconnect_clears_the_previous_artifact_target(tmp_path: Path):
     model.write_bytes(b"fixture weights")
     prepared = client.post("/api/artifacts/operator-local/prepare", json={"source_path": str(model), "destination": "/srv/model"}).json()
     assert client.post(f"/api/artifacts/transfers/{prepared['transfer_id']}/start").status_code == 409
+
+
+@pytest.mark.parametrize(("call_index", "operation"), [
+    (1, "reaching the execution host over SSH"),
+    (2, "copying the explorer to the execution host"),
+    (3, "preparing the vLLM runtime"),
+])
+def test_connection_timeout_names_the_operation(tmp_path: Path, call_index: int, operation: str):
+    key = write_private_key(tmp_path / "keys", PEM)
+    calls = 0
+    def run(argv: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        if calls == call_index:
+            raise subprocess.TimeoutExpired(argv, 30)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    with pytest.raises(TargetError, match=f"Timed out while {operation}") as caught:
+        connect_gpu_host(_target(key), project_root=tmp_path, run=run, tunnel_grace_seconds=0)
+    assert str(key) not in str(caught.value)
+
+
+def test_connection_progress_is_readable_before_connect_returns(tmp_path: Path):
+    preparing = threading.Event()
+    release = threading.Event()
+    def connect_host(target: SshTarget, **kwargs: object) -> ConnectResult:
+        progress = kwargs["progress"]
+        progress("checking_ssh", "Connecting over SSH")
+        progress("preparing_runtime", "SSH connected. Preparing vLLM.")
+        preparing.set()
+        assert release.wait(5)
+        return ConnectResult(True, "ready", "http://127.0.0.1:8766", "GPU", "0.30.0", {"ssh": {"host": target.host}}, _Tunnel())
+
+    client = TestClient(create_app(tmp_path / "runs", connect_host=connect_host, keys_dir=tmp_path / "keys"))
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        connection = executor.submit(lambda: client.post(
+            "/api/targets/connect", data={"user": "ubuntu", "host": "gpu.example"},
+            files={"identity": ("fixture.pem", PEM)},
+        ))
+        assert preparing.wait(5)
+        try:
+            status = client.get("/api/targets/status").json()
+            assert status["status"] == "connecting"
+            assert status["phase"] == "preparing_runtime"
+            assert status["message"] == "SSH connected. Preparing vLLM."
+            assert "secret-material" not in str(status)
+            assert "identity-" not in str(status)
+        finally:
+            release.set()
+        assert connection.result().status_code == 200
+    assert client.get("/api/targets/status").json()["status"] == "ready"
 
 
 def test_concurrent_connections_do_not_replace_each_others_credentials(tmp_path: Path):

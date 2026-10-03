@@ -140,8 +140,8 @@ export function WorkloadSection({
                       </div>
                     </summary>
                     <div className="space-y-5 border-t border-slate-800 p-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`batch-label-${batch.id}`}>
+                      <div className="grid items-start gap-4 md:grid-cols-2">
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`batch-label-${batch.id}`}>
                           Batch label
                           <input
                             id={`batch-label-${batch.id}`}
@@ -154,7 +154,7 @@ export function WorkloadSection({
                           />
                           <FieldError id={`batch-label-${batch.id}-error`} message={labelError} />
                         </label>
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`batch-time-${batch.id}`}>
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`batch-time-${batch.id}`}>
                           Planned send offset ({unit})
                           <input
                             key={`${batch.id}-${batch.arrivalOffsetMs}-${unit}`}
@@ -297,8 +297,8 @@ function RequestEditor({
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-label-${sample.id}`}>
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-label-${sample.id}`}>
           Request label
           <input
             id={`sample-label-${sample.id}`}
@@ -311,7 +311,7 @@ function RequestEditor({
           />
           <FieldError id={`sample-label-${sample.id}-error`} message={labelError} />
         </label>
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-mode-${sample.id}`}>
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-mode-${sample.id}`}>
           Input mode
           <select
             id={`sample-mode-${sample.id}`}
@@ -376,8 +376,8 @@ function RequestEditor({
         </label>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-output-${sample.id}`}>
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-output-${sample.id}`}>
           Maximum output tokens
           <input
             key={`${sample.id}-output-${sample.maxOutputTokens}`}
@@ -399,7 +399,7 @@ function RequestEditor({
           />
           <FieldError id={`sample-output-${sample.id}-error`} message={outputError} />
         </label>
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-move-${sample.id}`}>
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-move-${sample.id}`}>
           Arrival batch
           <select
             id={`sample-move-${sample.id}`}

@@ -21,7 +21,7 @@ export function AppHeader({
           <Boxes aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-balance text-base font-semibold text-slate-100">vLLM Execution Explorer</p>
+          <p className="truncate text-balance text-base font-semibold text-slate-100">vLLM 0.30.0 Execution Explorer</p>
           <p className="truncate text-xs text-slate-400">Observed serving mechanics</p>
         </div>
       </div>

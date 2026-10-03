@@ -75,8 +75,8 @@ export function ServerSection({
         </fieldset>
 
         {settings.hostKind === "ssh" ? (
-          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
-            <label className="text-xs font-medium text-slate-400" htmlFor="ssh-user">
+          <div className="grid items-start gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="ssh-user">
               SSH user
               <input
                 id="ssh-user"
@@ -87,7 +87,7 @@ export function ServerSection({
                 onChange={(event) => onSettings({ ...settings, sshUser: event.target.value })}
               />
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="ssh-host">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="ssh-host">
               Host address
               <input
                 id="ssh-host"
@@ -102,7 +102,7 @@ export function ServerSection({
               />
               <FieldError id="ssh-host-error" message={issueFor("ssh-host")} />
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="ssh-port">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="ssh-port">
               SSH port
               <input
                 id="ssh-port"
@@ -116,7 +116,7 @@ export function ServerSection({
               />
               <FieldError id="ssh-port-error" message={issueFor("ssh-port")} />
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="ssh-key">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="ssh-key">
               Private key
               <input
                 id="ssh-key"
@@ -188,8 +188,8 @@ export function ServerSection({
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Connection details
           </summary>
-          <div className="grid gap-4 border-t border-slate-800 p-4 md:grid-cols-2">
-            <label className="text-xs font-medium text-slate-400" htmlFor="runner-url">
+          <div className="grid items-start gap-4 border-t border-slate-800 p-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="runner-url">
               Controller endpoint
               <input
                 id="runner-url"
@@ -201,7 +201,7 @@ export function ServerSection({
               />
               <FieldHint id="runner-url-hint">Leave empty when the UI and controller share an origin.</FieldHint>
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="engine-kind">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="engine-kind">
               Execution source
               <select
                 id="engine-kind"
