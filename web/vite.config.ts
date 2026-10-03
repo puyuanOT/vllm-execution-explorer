@@ -1,6 +1,8 @@
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
+const runnerTarget = process.env.VLLM_EXPLORER_RUNNER_URL || "http://127.0.0.1:8765"
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -9,7 +11,7 @@ export default defineConfig({
     fs: { allow: [".."] },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8765",
+        target: runnerTarget,
         timeout: 2_100_000,
         proxyTimeout: 2_100_000,
       },
@@ -20,7 +22,7 @@ export default defineConfig({
     port: 4173,
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:8765",
+        target: runnerTarget,
         timeout: 2_100_000,
         proxyTimeout: 2_100_000,
       },

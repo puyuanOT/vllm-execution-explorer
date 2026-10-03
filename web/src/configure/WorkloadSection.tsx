@@ -1,4 +1,5 @@
-import type { KeyboardEvent } from "react"
+import { useState, type KeyboardEvent } from "react"
+import { learningExample, LEARNING_EXAMPLES, type LearningExampleId } from "../scenario/learningExamples.ts"
 
 import type { Limits } from "../api.ts"
 import { cn } from "../lib/cn.ts"
@@ -6,7 +7,7 @@ import { sampleCount, type ScenarioAction } from "../scenario/reducer.ts"
 import { formatTime } from "../scenario/time.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import type { FieldIssue } from "../scenario/validate.ts"
-import { resolveBatchTime, resolvePositiveInteger } from "../scenario/workloadFields.ts"
+import { resolveBatchTime, resolvePositiveInteger, resolvePriority } from "../scenario/workloadFields.ts"
 import {
   buttonClass,
   ConfigureSection,
@@ -28,6 +29,7 @@ export function WorkloadSection({
   onUnit,
   onAction,
   onInvalid,
+  onSettings,
 }: {
   scenario: ScenarioDraft
   settings: EngineSettings
@@ -37,7 +39,9 @@ export function WorkloadSection({
   onUnit: (unit: TimeUnit) => void
   onAction: (action: ScenarioAction) => void
   onInvalid: (issue: FieldIssue) => void
+  onSettings: (settings: EngineSettings) => void
 }) {
+  const [exampleId, setExampleId] = useState<LearningExampleId>("staggered")
   const count = sampleCount(scenario)
   const latest = scenario.batches.reduce((value, batch) => Math.max(value, batch.arrivalOffsetMs), 0)
   const summary = `${scenario.batches.length} ${plural(scenario.batches.length, "batch", "batches")} · ${count} ${plural(count, "request", "requests")} · ${formatTime(latest, unit)} ${unit}`
@@ -101,6 +105,22 @@ export function WorkloadSection({
             </div>
           </fieldset>
         </div>
+
+        <Details className="rounded-lg border border-slate-800 p-3">
+          <summary className="cursor-pointer text-sm font-medium text-slate-200">Editable learning examples</summary>
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <label className="min-w-48 flex-1 text-xs font-medium text-slate-400" htmlFor="learning-example">Example
+              <select id="learning-example" className={inputClass} value={exampleId} onChange={(event) => setExampleId(event.target.value as LearningExampleId)} aria-describedby="learning-example-description">
+                {LEARNING_EXAMPLES.map((example) => <option key={example.id} value={example.id}>{example.label}</option>)}
+              </select>
+            </label>
+            <button type="button" className={buttonClass} onClick={() => {
+              const example = learningExample(exampleId, settings)
+              onAction({ type: "replace", scenario: example.scenario }); onSettings(example.settings)
+            }}>Use example</button>
+          </div>
+          <p id="learning-example-description" className="mt-2 text-pretty text-xs text-slate-400">{LEARNING_EXAMPLES.find((example) => example.id === exampleId)?.description} Replaces the draft and applies the example’s scheduling/cache settings. All fields remain editable. Prefix reuse, synthetic lengths and memory pressure require live vLLM; the demo fixture uses scripted behavior.</p>
+        </Details>
 
         {issueFor("sample-count") ? <FieldError id="sample-count-error" message={issueFor("sample-count")} /> : null}
 
@@ -232,6 +252,8 @@ export function WorkloadSection({
                                     issues={issues}
                                     onAction={onAction}
                                     commitPositiveInteger={commitPositiveInteger}
+                                    priorityPolicy={settings.schedulingPolicy === "priority"}
+                                    onInvalid={onInvalid}
                                   />
                                 </div>
                               </Details>
@@ -280,6 +302,8 @@ function RequestEditor({
   issues,
   onAction,
   commitPositiveInteger,
+  priorityPolicy,
+  onInvalid,
 }: {
   scenario: ScenarioDraft
   batchId: string
@@ -288,6 +312,8 @@ function RequestEditor({
   issues: FieldIssue[]
   onAction: (action: ScenarioAction) => void
   commitPositiveInteger: (fieldId: string, raw: string, onCommit: (value: number) => void) => void
+  priorityPolicy: boolean
+  onInvalid: (issue: FieldIssue) => void
 }) {
   const issueFor = (id: string) => issues.find((issue) => issue.fieldId === id)?.message ?? ""
   const labelError = issueFor(`sample-label-${sample.id}`)
@@ -433,6 +459,17 @@ function RequestEditor({
           </select>
         </label>
       ) : null}
+
+      <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-priority-${sample.id}`}>
+        Request priority
+        <input id={`sample-priority-${sample.id}`} key={`${sample.id}-priority-${sample.priority ?? 0}`} className={`${inputClass} tabular-nums`} inputMode="numeric" defaultValue={sample.priority ?? 0} aria-invalid={Boolean(issueFor(`sample-priority-${sample.id}`))} aria-describedby={`sample-priority-${sample.id}-hint sample-priority-${sample.id}-error`} onKeyDown={blurOnEnter} onBlur={(event) => {
+          const result = resolvePriority(`sample-priority-${sample.id}`, event.target.value)
+          if ("issue" in result) onInvalid(result.issue)
+          else onAction({ type: "set-sample-priority", sampleId: sample.id, priority: result.value })
+        }} />
+        <FieldHint id={`sample-priority-${sample.id}-hint`}>{priorityPolicy ? "Lower numbers are favored. Equal priorities use arrival order." : "Choose request priority scheduling in vLLM configuration to use nonzero priorities."}</FieldHint>
+        <FieldError id={`sample-priority-${sample.id}-error`} message={issueFor(`sample-priority-${sample.id}`)} />
+      </label>
 
       <div className="flex flex-wrap gap-2 border-t border-slate-800 pt-4">
         <button className={buttonClass} type="button" onClick={() => onAction({ type: "duplicate-sample", batchId, sampleId: sample.id })}>

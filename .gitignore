@@ -4,8 +4,8 @@ __pycache__/
 .ruff_cache/
 .tox/
 *.py[cod]
-.venv/
-node_modules/
+.venv
+node_modules
 dist/
 build/
 .vite/

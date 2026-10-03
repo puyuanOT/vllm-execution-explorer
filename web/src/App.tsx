@@ -1,3 +1,5 @@
+import { profileBoundaryTimes } from "./profilePlayback.ts"
+import { createProfileIntervalIndex, projectMeasuredProfile } from "../../replay/src/profiling.ts"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { attachContent, createPlayer, type RecordingManifest } from "../../replay/src/reduce.ts"
@@ -31,6 +33,7 @@ import {
 } from "./configure/index.ts"
 import { focusValidationField } from "./configure/focusValidation.ts"
 import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
+import { projectArchitecture } from "../../replay/src/learning.ts"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
 import { SelectionInspector } from "./execution/SelectionInspector.tsx"
 import type { PlaybackMode, Selection, WorkspaceView } from "./execution/types.ts"
@@ -38,7 +41,7 @@ import { useAppRoute } from "./hooks/useAppRoute.ts"
 import { useLiveTrace } from "./hooks/useLiveTrace.ts"
 import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
-import { eventAt, nextSequence, previousSequence, SPEEDS } from "./playback.ts"
+import { eventAt, nextSequence, previousSequence, playbackSpeeds } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
 import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
 import { monitorTargetConnection } from "./scenario/targetConnection.ts"
@@ -82,10 +85,14 @@ export function App() {
   const [submitted, setSubmitted] = useState<ScenarioDraft | null>(null)
   const [sequence, setSequence] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1)
+  const [speed, setSpeed] = useState(1)
+  const [teachingProgress, setTeachingProgress] = useState(0)
+  const [profileTimeUs, setProfileTimeUs] = useState(0)
   const [mode, setMode] = useState<PlaybackMode>("events")
   const [followLive, setFollowLive] = useState(true)
   const [selection, setSelection] = useState<Selection | null>(null)
+  const [trackedRequestId, setTrackedRequestId] = useState<string | null>(null)
+  const [trackedTokenPosition, setTrackedTokenPosition] = useState<number | null>(null)
   const [view, setView] = useState<WorkspaceView>("spatial")
   const [compact, setCompact] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
@@ -242,6 +249,54 @@ export function App() {
   }), [draft.scenario])
 
   const manifest = recording?.manifest ?? liveManifest ?? previewManifest
+  const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
+  useEffect(() => {
+    if (!playbackSpeeds(mode).includes(speed)) setSpeed(mode === "measured" ? 0.001 : 1)
+  }, [mode, speed])
+  useEffect(() => {
+    if (mode === "teaching" && !architecture.supported) {
+      setMode("events")
+      setPlaying(false)
+      setTeachingProgress(0)
+    }
+  }, [architecture.supported, mode])
+  const measuredProfile = useMemo(() => projectMeasuredProfile(manifest, recording?.profile), [manifest, recording?.profile])
+  const profileExtent = measuredProfile.extent
+  const nativeProfileTime = profileExtent ? Math.min(profileExtent.endUs, Math.max(profileExtent.startUs, profileTimeUs)) : 0
+  const profileIntervalIndex = useMemo(() => createProfileIntervalIndex(measuredProfile.activities), [measuredProfile.activities])
+  const activeProfileActivities = useMemo(() => profileIntervalIndex.at(nativeProfileTime), [profileIntervalIndex, nativeProfileTime])
+  const profileStepId = activeProfileActivities.find((activity) => activity.scope.stepId)?.scope.stepId ?? null
+  const measuredScene = useMemo(() => mode === "measured" ? {
+    evidenceKind: measuredProfile.evidenceKind,
+    activeLayers: [...new Set(activeProfileActivities.flatMap((activity) => activity.scope.layerIndex == null ? [] : [activity.scope.layerIndex]))],
+    activeModules: activeProfileActivities.flatMap((activity) => activity.scope.layerIndex != null && activity.scope.component != null ? [{ layerIndex: activity.scope.layerIndex, module: activity.scope.component }] : []),
+    stepId: profileStepId,
+    packedRows: measuredProfile.steps.find((step) => step.stepId === profileStepId && step.mappingStatus === "observed")?.packedRows ?? [],
+  } : undefined, [activeProfileActivities, measuredProfile.steps, mode, profileStepId])
+  useEffect(() => {
+    setProfileTimeUs(profileExtent?.startUs ?? 0)
+    if (!profileExtent && mode === "measured") { setMode("events"); setPlaying(false) }
+  }, [recording, profileExtent?.startUs, mode])
+  const profileTimeRef = useRef(nativeProfileTime)
+  profileTimeRef.current = nativeProfileTime
+  useEffect(() => {
+    if (!playing || mode !== "measured" || !profileExtent) return
+    let current = profileTimeRef.current
+    let last = performance.now()
+    const timer = window.setInterval(() => {
+      const now = performance.now()
+      current = Math.min(profileExtent.endUs, current + (now - last) * 1000 * speed)
+      last = now
+      setProfileTimeUs(current)
+      if (current >= profileExtent.endUs) setPlaying(false)
+    }, 50)
+    return () => window.clearInterval(timer)
+  }, [mode, playing, profileExtent, speed])
+  function jumpProfile(boundary: "activity" | "batch", direction: number) {
+    const values = profileBoundaryTimes(measuredProfile.activities, boundary)
+    const next = direction > 0 ? values.find((value) => value > nativeProfileTime) : [...values].reverse().find((value) => value < nativeProfileTime)
+    if (next != null) { setPlaying(false); setProfileTimeUs(next) }
+  }
   const events = recording?.events ?? (showingLive ? trace.events : [])
   const content = recording?.content ?? (showingLive ? trace.content : [])
   const showingDraft = !recording && !showingLive
@@ -268,9 +323,11 @@ export function App() {
     const order = samples.map((item) => item.sample.id)
     return Object.fromEntries(order.map((id) => [id, requestColor(order, id)]))
   }, [samples])
-  const highlighted = useMemo(() => highlight(selection, viewState), [selection, viewState])
+  const highlighted = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
   const maxSequence = built.player?.maxSequence ?? 0
-  const atEnd = sequence >= maxSequence && maxSequence > 0
+  const atEnd = mode === "measured" ? Boolean(profileExtent && nativeProfileTime >= profileExtent.endUs)
+    : mode === "teaching" ? teachingProgress >= 1 && index.steps.length > 0 && nextStepSequence(index.steps, sequence) == null
+    : sequence >= maxSequence && maxSequence > 0
   const currentEvent = eventAt(events, sequence)
   const elapsed = elapsedMsAt(index, sequence)
   const valueText = currentEvent
@@ -295,6 +352,32 @@ export function App() {
 
   const sequenceRef = useRef(sequence)
   sequenceRef.current = sequence
+  const teachingProgressRef = useRef(teachingProgress)
+  teachingProgressRef.current = teachingProgress
+  const teachingStepId = viewState?.steps.at(-1)?.id ?? null
+  useEffect(() => {
+    if (!playing || mode !== "teaching" || followLive || !architecture.supported || !architecture.layerCount) return
+    if (!teachingStepId) {
+      const first = index.steps[0]
+      if (first) setSequence(first.sequence)
+      else setPlaying(false)
+      return
+    }
+    let progress = teachingProgressRef.current
+    let last = performance.now()
+    const timer = window.setInterval(() => {
+      const now = performance.now()
+      progress = Math.min(1, progress + (now - last) * speed / (architecture.layerCount! * 700))
+      last = now
+      setTeachingProgress(progress)
+      if (progress < 1) return
+      window.clearInterval(timer)
+      const next = nextStepSequence(index.steps, sequenceRef.current)
+      if (next == null) setPlaying(false)
+      else { setTeachingProgress(0); setSequence(next) }
+    }, 100)
+    return () => window.clearInterval(timer)
+  }, [architecture.layerCount, architecture.supported, followLive, index.steps, mode, playing, speed, teachingStepId])
   useEffect(() => {
     if (!playing || mode !== "recorded") return
     const clock = { value: elapsedMsAt(index, sequenceRef.current) ?? 0, last: performance.now() }
@@ -325,11 +408,32 @@ export function App() {
       }
       const onControl = event.target instanceof HTMLElement && Boolean(event.target.closest("button, a, summary"))
       if (event.code === "Space" && onControl) return
+      if (mode === "measured") {
+        if (!profileExtent || measuredProfile.status !== "observed") return
+        if (event.code === "Space") {
+          event.preventDefault()
+          setFollowLive(false)
+          if (!playing && atEnd) restartPlayback()
+          else setPlaying((current) => !current)
+        } else if (event.code === "ArrowRight" || event.code === "ArrowLeft") {
+          event.preventDefault()
+          jumpProfile("activity", event.code === "ArrowRight" ? 1 : -1)
+        } else if (event.code === "BracketRight" || event.code === "BracketLeft") {
+          event.preventDefault()
+          jumpProfile("batch", event.code === "BracketRight" ? 1 : -1)
+        } else if (event.code === "Home" || event.code === "End") {
+          event.preventDefault()
+          setPlaying(false)
+          setProfileTimeUs(event.code === "Home" ? profileExtent.startUs : profileExtent.endUs)
+        }
+        return
+      }
       if (events.length === 0) return
       if (event.code === "Space") {
         event.preventDefault()
         setFollowLive(false)
-        setPlaying((current) => !current)
+        if (!playing && atEnd) restartPlayback()
+        else setPlaying((current) => !current)
       } else if (event.code === "ArrowRight") {
         event.preventDefault()
         seek(nextSequence(events, sequence))
@@ -354,11 +458,20 @@ export function App() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [events, index.steps, inspectorOpen, maxSequence, route, sequence])
+  }, [events, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
+
+  function restartPlayback() {
+    setFollowLive(false)
+    setTeachingProgress(0)
+    if (mode === "measured") setProfileTimeUs(profileExtent?.startUs ?? 0)
+    else setSequence(0)
+    setPlaying(true)
+  }
 
   function seek(next: number, nextSelection?: Selection) {
     setFollowLive(false)
     setPlaying(false)
+    setTeachingProgress(0)
     setSequence(Math.max(0, next))
     if (nextSelection) {
       setSelection(nextSelection)
@@ -367,6 +480,10 @@ export function App() {
   }
 
   function choose(next: Selection) {
+    if (next.kind === "request" || next.kind === "token") {
+      setTrackedRequestId(next.kind === "request" ? next.id : next.requestId)
+      setTrackedTokenPosition(next.kind === "token" ? next.position : null)
+    }
     setSelection(next)
     if (compact && next.kind !== "component") setInspectorOpen(true)
     if (next.kind === "step") {
@@ -376,6 +493,10 @@ export function App() {
   }
 
   function openLoaded(loaded: LoadedRecording) {
+    setProfileTimeUs(0)
+    setTrackedRequestId(null)
+    setTrackedTokenPosition(null)
+    setTeachingProgress(0)
     userOpened.current = true
     setRecording(loaded)
     setSequence(0)
@@ -659,6 +780,10 @@ export function App() {
     "Concurrent sequences": Number(settings.maxNumSeqs),
     "Scheduled-token budget": Number(settings.tokenBudget),
     "Chunked prefill": settings.chunkedPrefill,
+    "Scheduling policy": settings.schedulingPolicy,
+    "Long-prefill threshold": Number(settings.longPrefillTokenThreshold),
+    "KV byte budget": settings.kvCacheMemoryBytes ? Number(settings.kvCacheMemoryBytes) : "Automatic",
+    "Profiling": settings.profilingMode,
     "Prefix cache": settings.prefixCaching,
     "Fresh cache contract": "Required; verified during preparation",
   }
@@ -721,6 +846,12 @@ export function App() {
             <ExecutionWorkspace
               samples={samples}
               state={viewState}
+              manifest={manifest}
+              measuredProfile={measuredScene}
+              teachingProgress={mode === "teaching" ? teachingProgress : undefined}
+              onTeachingProgress={(value) => { setPlaying(false); setTeachingProgress(value) }}
+              trackedRequestId={trackedRequestId}
+              trackedTokenPosition={trackedTokenPosition}
               requestOrder={built.player?.requestOrder ?? []}
               colors={colors}
               selection={selection}
@@ -729,7 +860,7 @@ export function App() {
               view={view}
               onView={setView}
               animate={playing && !reduced && view === "spatial"}
-              timeBasisLabel={showingDraft
+              timeBasisLabel={mode === "measured" ? `Native profiler clock · ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start · host replay at event ${sequence}` : showingDraft
                 ? "Draft plan. No execution evidence has been recorded."
                 : `${index.roster.timeBasisLabel}${index.roster.groupingKnown ? "" : " Arrival groups were not recorded."}`}
               evidence={evidence}
@@ -745,6 +876,11 @@ export function App() {
                 index={index}
                 manifest={manifest}
                 sequence={sequence}
+                measuredProfile={measuredProfile}
+                activeProfileActivities={activeProfileActivities}
+                profileError={recording?.profileError ?? ""}
+                measuredMode={mode === "measured"}
+                onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
                 showClose={false}
                 onSeek={seek}
                 onSelect={choose}
@@ -753,29 +889,31 @@ export function App() {
             ) : null}
           </main>
           <PlaybackTransport
-            disabled={events.length === 0 && samples.length === 0}
+            disabled={mode === "measured" ? measuredProfile.status !== "observed" : events.length === 0 && samples.length === 0}
             playing={playing}
             atEnd={atEnd}
             speed={speed}
             mode={mode}
             recordedAvailable={index.timePoints.some((point) => point.elapsedMs != null)}
-            sequence={sequence}
-            maxSequence={maxSequence}
-            valueText={valueText}
+            teachingAvailable={architecture.supported}
+            measuredAvailable={measuredProfile.status === "observed" && Boolean(profileExtent)}
+            sequence={mode === "measured" && profileExtent ? nativeProfileTime - profileExtent.startUs : sequence}
+            maxSequence={mode === "measured" && profileExtent ? profileExtent.endUs - profileExtent.startUs : maxSequence}
+            valueText={mode === "measured" ? `Profiler clock: ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start. Host replay remains at event ${sequence}.` : valueText}
             followLive={followLive}
             followAvailable={runIsActive(runner.live?.status)}
             connected={trace.connected}
             reduced={forceReduced}
             onReduced={setForceReduced}
             onTogglePlay={() => { setFollowLive(false); setPlaying((current) => !current) }}
-            onReplay={() => { setFollowLive(false); setSequence(0); setPlaying(true) }}
-            onPreviousEvent={() => seek(previousSequence(events, sequence))}
-            onNextEvent={() => seek(nextSequence(events, sequence))}
-            onPreviousStep={() => { const previous = previousStepSequence(index.steps, sequence); if (previous != null) seek(previous) }}
-            onNextStep={() => { const next = nextStepSequence(index.steps, sequence); if (next != null) seek(next) }}
-            onScrub={seek}
+            onReplay={restartPlayback}
+            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(events, sequence))}
+            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(events, sequence))}
+            onPreviousStep={() => { if (mode === "measured") { jumpProfile("batch", -1); return }; const previous = previousStepSequence(index.steps, sequence); if (previous != null) seek(previous) }}
+            onNextStep={() => { if (mode === "measured") { jumpProfile("batch", 1); return }; const next = nextStepSequence(index.steps, sequence); if (next != null) seek(next) }}
+            onScrub={(value) => { if (mode === "measured") { setPlaying(false); setProfileTimeUs(value + (profileExtent?.startUs ?? 0)) } else seek(value) }}
             onSpeed={setSpeed}
-            onMode={(next) => { setFollowLive(false); setPlaying(false); setMode(next) }}
+            onMode={(next) => { setFollowLive(false); setPlaying(false); setTeachingProgress(0); setMode(next); if (next === "measured") setSpeed(0.001); else if (!playbackSpeeds(next).includes(speed)) setSpeed(1) }}
             onFollow={() => { setFollowLive(true); setPlaying(false); setSequence(maxSequence) }}
           />
         </>
@@ -819,6 +957,11 @@ export function App() {
           index={index}
           manifest={manifest}
           sequence={sequence}
+          measuredProfile={measuredProfile}
+          activeProfileActivities={activeProfileActivities}
+          profileError={recording?.profileError ?? ""}
+          measuredMode={mode === "measured"}
+          onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
           showClose={false}
           onSeek={seek}
           onSelect={choose}
@@ -838,10 +981,12 @@ export function App() {
   )
 }
 
-function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null): { ids: Set<string>; steps: Set<string> } {
+function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null, trackedRequestId: string | null): { ids: Set<string>; steps: Set<string> } {
   const ids = new Set<string>()
   const steps = new Set<string>()
-  if (!selection || !state) return { ids, steps }
+  if (!state) return { ids, steps }
+  if (trackedRequestId) ids.add(trackedRequestId)
+  if (!selection) return { ids, steps }
   if (selection.kind === "request") {
     ids.add(selection.id)
     for (const step of state.steps) if (step.requests.some((request) => request.requestId === selection.id)) steps.add(step.id)

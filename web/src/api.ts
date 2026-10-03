@@ -1,3 +1,4 @@
+import { parseProfileAttachment, readProfileArtifact, type ProfileAttachment } from "../../replay/src/profiling.ts"
 import {
   parseJsonl,
   parseRecordingJson,
@@ -18,6 +19,8 @@ export interface LoadedRecording {
   manifest: RecordingManifest
   events: TraceEvent[]
   content: ContentRecord[]
+  profile?: ProfileAttachment | null
+  profileError?: string
 }
 
 export interface RunSnapshot {
@@ -159,7 +162,8 @@ export async function loadRunnerRecording(base: string, runId: string): Promise<
   const manifest = await fetchJson<RecordingManifest>(`${root}/manifest`)
   const events = parseJsonl<TraceEvent>(await fetchText(`${root}/events`))
   const content = parseJsonl<ContentRecord>(await fetchText(`${root}/content`))
-  return { source: runId, manifest, events, content }
+  const profile = await loadProfile(manifest, () => fetchText(`${root}/profile`))
+  return { source: runId, manifest, events, content, ...profile }
 }
 
 export async function fetchTrace(
@@ -190,14 +194,38 @@ export async function loadFiles(files: FileList): Promise<LoadedRecording> {
   const events = parseJsonl<TraceEvent>(await eventsFile.text())
   const contentFile = named.get("content.jsonl")
   const content = contentFile ? parseJsonl<ContentRecord>(await contentFile.text()) : []
-  return { source: manifestFile.name, manifest, events, content }
+  const profile = await loadProfile(manifest, async () => {
+    const path = readProfileArtifact(manifest)!.path
+    const file = named.get(path) ?? named.get(path.split("/").at(-1)!)
+    if (!file) throw new Error("Select the declared normalized profile JSON together with this recording.")
+    return file.text()
+  })
+  return { source: manifestFile.name, manifest, events, content, ...profile }
 }
 
 async function loadFromBase(base: string, source: string): Promise<LoadedRecording> {
   const manifest = await fetchJson<RecordingManifest>(`${base}/manifest.json`)
   const events = parseJsonl<TraceEvent>(await fetchText(`${base}/events.jsonl`))
   const contentText = await fetchText(`${base}/content.jsonl`)
-  return { source, manifest, events, content: parseJsonl<ContentRecord>(contentText) }
+  const profile = await loadProfile(manifest, () => fetchText(`${base}/${readProfileArtifact(manifest)!.path}`))
+  return { source, manifest, events, content: parseJsonl<ContentRecord>(contentText), ...profile }
+}
+
+async function loadProfile(manifest: RecordingManifest, readText: () => Promise<string>): Promise<{ profile: ProfileAttachment | null; profileError: string }> {
+  try {
+    const artifact = readProfileArtifact(manifest)
+    if (!artifact) return { profile: null, profileError: "" }
+    if (artifact.sizeBytes > 64 * 1024 * 1024) throw new Error("Normalized profile exceeds the browser’s 64 MiB attachment limit. Inspect the retained raw trace with a profiler.")
+    const text = await readText()
+    const bytes = new TextEncoder().encode(text)
+    if (bytes.length !== artifact.sizeBytes) throw new Error("Measured profile attachment size does not match its manifest.")
+    const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))
+    const hex = Array.from(digest, (value) => value.toString(16).padStart(2, "0")).join("")
+    if (hex !== artifact.sha256) throw new Error("Measured profile attachment digest does not match its manifest.")
+    return { profile: parseProfileAttachment(text, manifest), profileError: "" }
+  } catch (error) {
+    return { profile: null, profileError: error instanceof Error ? error.message : "Measured profile could not be loaded." }
+  }
 }
 
 async function fetchText(url: string): Promise<string> {

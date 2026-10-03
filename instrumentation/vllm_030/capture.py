@@ -82,6 +82,7 @@ def snapshot_scheduled_step(
                 "prompt_tokens": prompt_tokens,
                 "generation_tokens": generation_tokens,
                 "num_prompt_tokens": prompt_length,
+                "priority": int(getattr(live_requests.get(request_id), "priority", 0)),
             }
         )
 

@@ -29,7 +29,7 @@ export function RecordingDialog({
         ))}
       </ul>
       <label className="file">
-        Open manifest.json, events.jsonl, and optional content.jsonl
+        Open manifest.json, events.jsonl, optional content.jsonl, and any declared normalized profile JSON
         <input
           type="file"
           multiple

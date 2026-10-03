@@ -3,535 +3,246 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import * as THREE from "three"
 
-import type { BlockState, ReplayState, StepState } from "../../replay/src/reduce.ts"
-import { blockRequestIds } from "../../replay/src/timeline.ts"
-import { componentSnapshot, WORKFLOW_COMPONENTS } from "./explore/model.ts"
-import type { WorkflowComponentId } from "./explore/model.ts"
+import { projectArchitecture, projectKvCache, projectScheduler, type KvCacheProjection } from "../../replay/src/learning.ts"
+import type { QueueEntry, RecordingManifest, ReplayState } from "../../replay/src/reduce.ts"
+import { CacheStage } from "./architecture/CacheStage.tsx"
+import { activeTeachingStep, architectureLabel, type ArchitectureFocus, type MeasuredSceneProfile } from "./architecture/model.ts"
+import { LayerStack, ModelStage } from "./architecture/ModelStage.tsx"
+import { Connector, SceneEmpty, SceneTile, SCENE_COLORS, TextSprite } from "./architecture/primitives.tsx"
+import { componentSnapshot, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
 import type { Selection } from "./execution/types.ts"
 import { requestColor } from "./theme.ts"
 
-export type CameraAction = "orbit-left" | "orbit-right" | "zoom-in" | "zoom-out" | "reset"
+export type CameraAction = "orbit-left" | "orbit-right" | "zoom-in" | "zoom-out" | "pan-left" | "pan-right" | "pan-up" | "pan-down" | "reset"
+export interface CameraCommand { id: number; action: CameraAction }
 
-export interface CameraCommand {
-  id: number
-  action: CameraAction
-}
-
-interface SceneProps {
+export interface SceneProps {
   state: ReplayState
+  manifest?: RecordingManifest | null
+  kvCache?: KvCacheProjection
   requestOrder: string[]
   selection: Selection | null
   animate: boolean
   focus?: WorkflowComponentId | null
+  architectureFocus?: ArchitectureFocus | null
+  activeStepId?: string | null
+  teachingProgress?: number
+  trackedRequestId?: string | null
+  trackedTokenPosition?: number | null
+  measuredProfile?: MeasuredSceneProfile
   cameraCommand?: CameraCommand | null
   onSelect: (selection: Selection) => void
   onExplore?: (component: WorkflowComponentId) => void
+  onArchitectureExplore?: (focus: ArchitectureFocus) => void
 }
 
 const OVERVIEW_POSITIONS: Record<WorkflowComponentId, [number, number, number]> = {
-  "request-intake": [-5.2, 0.85, 0],
-  scheduler: [-2.55, 0.85, 0],
-  "kv-cache": [0, -1.65, 0],
-  "model-execution": [0.2, 0.85, 0],
-  output: [3.2, 0.85, 0],
+  "request-intake": [-5.8, 0.35, 0], scheduler: [-2.8, 0.35, 0],
+  "kv-cache": [-2.7, -2.55, -0.7], "model-execution": [0.5, 0.55, 0], output: [4.05, 0.35, 0],
 }
 
 export function ExecutionScene(props: SceneProps) {
-  return (
-    <Canvas
-      camera={{ position: [0, 0.25, 9.5], fov: 38 }}
-      frameloop="demand"
-      aria-label={props.focus ? `${componentLabel(props.focus)} focused 3D view` : "vLLM execution workflow 3D overview"}
-    >
-      <color attach="background" args={["#06080c"]} />
-      <ambientLight intensity={0.95} />
-      <directionalLight position={[2, 5, 7]} intensity={1.25} />
-      <CameraRig focus={props.focus ?? null} command={props.cameraCommand ?? null} />
-      <Invalidate
-        state={props.state}
-        selection={props.selection}
-        focus={props.focus ?? null}
-        animate={props.animate}
-      />
-      {props.focus ? <FocusedStage {...props} focus={props.focus} /> : <WorkflowOverview {...props} />}
-    </Canvas>
-  )
+  const focusKey = `${props.focus ?? "overview"}/${JSON.stringify(props.architectureFocus ?? { kind: "model" })}`
+  return <Canvas camera={{ position: [0, 2.5, 17], fov: 38 }} frameloop="demand" dpr={[1, 1.5]}
+    aria-label={props.focus ? `${componentLabel(props.focus)} focused 3D view` : "vLLM serving workflow and model architecture 3D overview"}>
+    <color attach="background" args={[SCENE_COLORS.background]} />
+    <ambientLight intensity={0.85} /><directionalLight position={[3, 7, 8]} intensity={1.45} />
+    <CameraRig focusKey={focusKey} focus={props.focus ?? null} architectureFocus={props.architectureFocus ?? null}
+      selectedBlockKey={props.selection?.kind === "block" ? props.selection.key : null} poolCount={props.kvCache?.pools.length ?? 1} command={props.cameraCommand ?? null} />
+    <Invalidate {...props} />
+    {props.focus ? <FocusedStage {...props} focus={props.focus} /> : <WorkflowOverview {...props} />}
+  </Canvas>
 }
 
-function CameraRig({ focus, command }: { focus: WorkflowComponentId | null; command: CameraCommand | null }) {
+function CameraRig({ focusKey, focus, architectureFocus, selectedBlockKey, poolCount, command }: {
+  focusKey: string; focus: WorkflowComponentId | null; architectureFocus: ArchitectureFocus | null;
+  selectedBlockKey: string | null; poolCount: number; command: CameraCommand | null
+}) {
   const camera = useThree((item) => item.camera)
   const gl = useThree((item) => item.gl)
+  const size = useThree((item) => item.size)
   const invalidate = useThree((item) => item.invalidate)
   const controls = useRef<OrbitControls | null>(null)
-
-  useEffect(() => {
+  const lastCommand = useRef<number | null>(null)
+  const lastBlock = useRef<string | null>(null)
+  useLayoutEffect(() => {
     const next = new OrbitControls(camera, gl.domElement)
     const onChange = () => invalidate()
     next.enableDamping = false
-    next.enablePan = false
-    next.minDistance = 5
-    next.maxDistance = 22
-    next.minPolarAngle = Math.PI * 0.18
-    next.maxPolarAngle = Math.PI * 0.82
-    next.target.set(0, focus ? 0 : -0.1, 0)
+    next.enablePan = true
+    next.screenSpacePanning = true
+    next.minDistance = 0.5
+    next.maxDistance = 80
+    next.minPolarAngle = Math.PI * 0.08
+    next.maxPolarAngle = Math.PI * 0.92
     next.addEventListener("change", onChange)
     controls.current = next
-    next.update()
-    return () => {
-      next.removeEventListener("change", onChange)
-      next.dispose()
-      controls.current = null
-    }
-  }, [camera, gl, invalidate, focus])
-
+    return () => { next.removeEventListener("change", onChange); next.dispose(); controls.current = null }
+  }, [camera, gl, invalidate])
   useLayoutEffect(() => {
-    resetCamera(camera, controls.current, focus)
+    resetCamera(camera, controls.current, focus, architectureFocus, size.width / Math.max(1, size.height), poolCount)
     invalidate()
-  }, [camera, focus, invalidate])
-
+  }, [camera, focusKey, poolCount, size.width, size.height, invalidate])
+  useLayoutEffect(() => {
+    if (focus !== "kv-cache" || selectedBlockKey == null || selectedBlockKey === lastBlock.current) return
+    lastBlock.current = selectedBlockKey
+    resetCamera(camera, controls.current, focus, architectureFocus, size.width / Math.max(1, size.height), poolCount)
+    invalidate()
+  }, [camera, focus, selectedBlockKey, architectureFocus, poolCount, size.width, size.height, invalidate])
   useEffect(() => {
     const active = controls.current
-    if (!active || !command) return
+    if (!active || !command || command.id === lastCommand.current) return
+    lastCommand.current = command.id
     if (command.action === "reset") {
-      resetCamera(camera, active, focus)
+      resetCamera(camera, active, focus, architectureFocus, size.width / Math.max(1, size.height), poolCount)
+    } else if (command.action.startsWith("pan-")) {
+      camera.updateMatrixWorld()
+      const horizontal = command.action === "pan-left" || command.action === "pan-right"
+      const direction = command.action === "pan-left" || command.action === "pan-down" ? -1 : 1
+      const shift = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, horizontal ? 0 : 1)
+        .multiplyScalar(direction * camera.position.distanceTo(active.target) * 0.06)
+      camera.position.add(shift); active.target.add(shift); active.update()
     } else if (command.action === "orbit-left" || command.action === "orbit-right") {
-      const direction = command.action === "orbit-left" ? 1 : -1
       const offset = camera.position.clone().sub(active.target)
-      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), direction * Math.PI / 12)
-      camera.position.copy(active.target).add(offset)
-      camera.lookAt(active.target)
-      active.update()
+      offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), (command.action === "orbit-left" ? 1 : -1) * Math.PI / 12)
+      camera.position.copy(active.target).add(offset); active.update()
     } else {
       const offset = camera.position.clone().sub(active.target)
-      const multiplier = command.action === "zoom-in" ? 0.84 : 1.18
-      const nextDistance = THREE.MathUtils.clamp(offset.length() * multiplier, active.minDistance, active.maxDistance)
-      offset.setLength(nextDistance)
-      camera.position.copy(active.target).add(offset)
-      camera.lookAt(active.target)
-      active.update()
+      const distance = THREE.MathUtils.clamp(offset.length() * (command.action === "zoom-in" ? 0.78 : 1.25), active.minDistance, active.maxDistance)
+      camera.position.copy(active.target).add(offset.setLength(distance)); active.update()
     }
     invalidate()
-  }, [camera, command, focus, invalidate])
+  }, [camera, command, focus, architectureFocus, poolCount, size.width, size.height, invalidate])
   return null
 }
 
-function resetCamera(camera: THREE.Camera, controls: OrbitControls | null, focus: WorkflowComponentId | null) {
-  camera.position.set(0, focus ? 0.25 : 0.35, focus ? 10.5 : 9.5)
-  camera.lookAt(0, focus ? 0 : -0.1, 0)
-  if (!controls) return
-  controls.target.set(0, focus ? 0 : -0.1, 0)
-  controls.update()
+function resetCamera(camera: THREE.Camera, controls: OrbitControls | null, focus: WorkflowComponentId | null,
+  architectureFocus: ArchitectureFocus | null, aspect: number, poolCount: number) {
+  const poolView = focus === "kv-cache"
+  const detailedModel = focus === "model-execution" && architectureFocus != null && architectureFocus.kind !== "model"
+  const height = detailedModel ? 8.7 : focus === "model-execution" ? 10.5 : poolView ? 10.4 : focus === "scheduler" ? 10.2 : 8.5
+  const width = poolView ? Math.max(14.5, poolCount * 8.5 + 1.6) : focus === "scheduler" ? 13.5 : detailedModel ? 11.6 : focus === "model-execution" ? 11.8 : 15.1
+  const centerY = poolView ? 0.15 : -0.45
+  const verticalFov = camera instanceof THREE.PerspectiveCamera ? camera.fov : 38
+  const distance = Math.max(height, width / Math.max(0.45, aspect)) / (2 * Math.tan(THREE.MathUtils.degToRad(verticalFov) / 2))
+  camera.position.set(poolView ? distance * 0.18 : distance * 0.035, centerY + (poolView ? distance * 0.13 : distance * 0.025), distance)
+  camera.lookAt(0, centerY, 0)
+  controls?.target.set(0, centerY, 0); controls?.update()
 }
 
-function Invalidate({
-  state,
-  selection,
-  focus,
-  animate,
-}: {
-  state: ReplayState
-  selection: Selection | null
-  focus: WorkflowComponentId | null
-  animate: boolean
-}) {
+function Invalidate(props: SceneProps) {
   const invalidate = useThree((item) => item.invalidate)
-  useEffect(() => {
-    invalidate()
-  }, [state, selection, focus, animate, invalidate])
+  useEffect(() => { invalidate() }, [props.state, props.selection, props.focus, props.architectureFocus,
+    props.teachingProgress, props.manifest, props.kvCache, props.trackedRequestId, props.trackedTokenPosition, props.measuredProfile, invalidate])
   return null
 }
 
-function WorkflowOverview({ state, selection, onSelect, onExplore }: SceneProps) {
-  return (
-    <group position={[0.7, 0.15, 0]}>
-      <Connector from={OVERVIEW_POSITIONS["request-intake"]} to={OVERVIEW_POSITIONS.scheduler} />
-      <Connector from={OVERVIEW_POSITIONS.scheduler} to={OVERVIEW_POSITIONS["model-execution"]} />
-      <Connector from={OVERVIEW_POSITIONS["model-execution"]} to={OVERVIEW_POSITIONS.output} />
-      <Connector from={OVERVIEW_POSITIONS.scheduler} to={OVERVIEW_POSITIONS["kv-cache"]} />
-      <Connector from={OVERVIEW_POSITIONS["kv-cache"]} to={OVERVIEW_POSITIONS["model-execution"]} />
-      <Connector from={[-0.05, 2.45, -0.15]} to={[-2.4, 2.45, -0.15]} muted />
-      <Connector from={[0.2, 1.62, -0.15]} to={[-0.05, 2.45, -0.15]} muted />
-      <Connector from={[-2.4, 2.45, -0.15]} to={[-2.55, 1.62, -0.15]} muted />
-      <TextSprite text="next scheduler cycle" position={[-1.2, 2.72, 0]} scale={[2.5, 0.5, 1]} muted />
-      {WORKFLOW_COMPONENTS.map((component) => {
-        const snapshot = componentSnapshot(state, component.id)
-        return (
-          <WorkflowNode
-            key={component.id}
-            id={component.id}
-            label={component.shortLabel}
-            metric={`${snapshot.metric} ${snapshot.metricLabel}`}
-            position={OVERVIEW_POSITIONS[component.id]}
-            selected={selection?.kind === "component" && selection.id === component.id}
-            unavailable={snapshot.unavailable}
-            onSelect={() => onSelect({ kind: "component", id: component.id })}
-            onExplore={() => onExplore?.(component.id)}
-          />
-        )
-      })}
-    </group>
-  )
+function WorkflowOverview(props: SceneProps) {
+  const architecture = projectArchitecture(props.manifest)
+  const cache = props.kvCache ?? projectKvCache(props.state, props.manifest)
+  const cacheSummary = useMemo(() => ({
+    capacity: cache.pools.reduce((count, pool) => count + pool.capacity, 0),
+    referenced: cache.pools.reduce((count, pool) => count + pool.blocks.filter((block) => !block.isNull && block.refCount > 0).length, 0),
+  }), [cache])
+  const snapshot = componentSnapshot(props.state, "model-execution")
+  return <group>
+    <Connector from={[-4.7, 0.35, 0]} to={[-4, 0.35, 0]} />
+    <Connector from={[-1.65, 0.35, 0]} to={[-0.5, 0.35, 0]} />
+    <Connector from={[1.55, 0.35, 0]} to={[2.9, 0.35, 0]} />
+    <Connector from={[-2.8, -0.2, 0]} to={[-2.7, -2.02, -0.7]} />
+    <Connector from={[-1.6, -2.55, -0.7]} to={[0.15, -0.7, -0.45]} />
+    <Connector from={[0.5, 2.3, -1]} to={[-2.8, 2.3, -1]} muted />
+    <Connector from={[-2.8, 2.3, -1]} to={[-2.8, 0.95, -0.45]} muted />
+    <TextSprite text="Next scheduler cycle" position={[-1.1, 2.67, -0.8]} scale={[3.5, 0.3, 1]} muted />
+    {WORKFLOW_COMPONENTS.filter((component) => component.id !== "model-execution").map((component) => {
+      const current = componentSnapshot(props.state, component.id)
+      const detail = component.id === "kv-cache" ? !cache.pools.length ? "Pool inventory unavailable" : cache.status === "unknown" ? `${cacheSummary.capacity.toLocaleString()} blocks / current state unknown`
+        : `${cacheSummary.capacity.toLocaleString()} blocks / ${cacheSummary.referenced.toLocaleString()} referenced`
+        : `${current.metric} ${current.metricLabel}`
+      return <SceneTile key={component.id} position={OVERVIEW_POSITIONS[component.id]} label={component.shortLabel}
+        detail={detail} width={2.25}
+        selected={props.selection?.kind === "component" && props.selection.id === component.id}
+        color={current.unavailable ? SCENE_COLORS.line : SCENE_COLORS.accent}
+        onSelect={() => props.onSelect({ kind: "component", id: component.id })}
+        onExplore={() => props.onExplore?.(component.id)} />
+    })}
+    {architecture.supported ? <group position={OVERVIEW_POSITIONS["model-execution"]}>
+      <LayerStack {...props} architecture={architecture} compact />
+      <TextSprite text={architectureLabel(props.manifest)} position={[0, 1.65, 0.35]} scale={[3.2, 0.35, 1]} />
+      <TextSprite text={`${architecture.queryHeads} Q / ${architecture.kvHeads} KV heads`} position={[0, -1.9, 0.6]} scale={[3.2, 0.28, 1]} muted />
+    </group> : <SceneTile position={OVERVIEW_POSITIONS["model-execution"]} label="Model execution"
+      detail={`${snapshot.metric} ${snapshot.metricLabel}`} width={2.3}
+      selected={props.selection?.kind === "component" && props.selection.id === "model-execution"}
+      onSelect={() => props.onSelect({ kind: "component", id: "model-execution" })}
+      onExplore={() => props.onExplore?.("model-execution")} />}
+    <TextSprite text={props.measuredProfile ? "Profiler clock · serving and KV nodes follow host replay" : architecture.supported ? "Serving observations connected to captured model structure" : "Model architecture is unknown until a supported recording is captured"}
+      position={[0, -4.05, 0]} scale={[10, 0.36, 1]} muted />
+  </group>
 }
 
-function WorkflowNode({
-  id,
-  label,
-  metric,
-  position,
-  selected,
-  unavailable,
-  onSelect,
-  onExplore,
-}: {
-  id: WorkflowComponentId
-  label: string
-  metric: string
-  position: [number, number, number]
-  selected: boolean
-  unavailable: boolean
-  onSelect: () => void
-  onExplore: () => void
+function FocusedStage(props: SceneProps & { focus: WorkflowComponentId }) {
+  if (props.focus === "model-execution") return <ModelStage {...props} />
+  if (props.focus === "kv-cache") return <CacheStage cache={props.kvCache ?? projectKvCache(props.state, props.manifest)}
+    requestOrder={props.requestOrder} selection={props.selection} trackedRequestId={props.trackedRequestId} trackedTokenPosition={props.trackedTokenPosition} onSelect={props.onSelect} />
+  if (props.focus === "scheduler") return <SchedulerStage {...props} />
+  const requests = orderedRequests(props.state, props.requestOrder)
+  if (!requests.length) return <SceneEmpty label="No request observation at this playhead" />
+  return <group>
+    <TextSprite text={componentLabel(props.focus)} position={[0, 4, 0]} scale={[6, 0.5, 1]} />
+    {requests.map((request, index) => <SceneTile key={request.id} position={gridPosition(index, 4)}
+      label={request.id} width={2.3} color={requestColor(props.requestOrder, request.id)}
+      selected={props.selection?.kind === "request" && props.selection.id === request.id || props.trackedRequestId === request.id}
+      detail={props.focus === "output" ? `${request.acceptedTokenCount} accepted / ${request.finishReason ?? request.status}` : request.status}
+      onSelect={() => props.onSelect({ kind: "request", id: request.id })} />)}
+    <TextSprite text={props.focus === "output" ? "Only accepted outputs reached by this playhead are shown" : "Planned arrivals do not imply simultaneous scheduler admission"}
+      position={[0, -4, 0]} scale={[8.5, 0.34, 1]} muted />
+  </group>
+}
+
+function SchedulerStage(props: SceneProps) {
+  const step = activeTeachingStep(props.state, props.activeStepId)
+  const queues = projectScheduler(props.state, step?.id)
+  if (!step) return <SceneEmpty label="No scheduler step at this playhead" />
+  return <group>
+    <TextSprite text={`${step.id} / ${step.totalScheduledTokens} of ${step.tokenBudget} tokens scheduled`} position={[0, 4.35, 0]} scale={[8, 0.46, 1]} />
+    <TextSprite text={queues.policy ? `Recorded scheduling policy: ${queues.policy}` : "Scheduling policy was not captured"}
+      position={[0, 3.8, 0]} scale={[7, 0.33, 1]} muted />
+    <TextSprite text="Before schedule" position={[-3.7, 2.75, 0]} scale={[3.2, 0.34, 1]} />
+    <TextSprite text="After schedule" position={[3.7, 2.75, 0]} scale={[3.2, 0.34, 1]} />
+    {queues.status === "observed" ? <>
+      <QueueColumns waiting={queues.before?.waiting ?? []} running={queues.before?.running ?? []} x={-3.7} {...props} />
+      <QueueColumns waiting={queues.after?.waiting ?? []} running={queues.after?.running ?? []} x={3.7} {...props} />
+    </> : <TextSprite text={queues.reason ?? "Queues unavailable"} position={[0, 2.2, 0]} scale={[8.5, 0.34, 1]} muted />}
+    <Connector from={[-2.6, 0, 0]} to={[-1.3, 0, 0]} /><Connector from={[1.3, 0, 0]} to={[2.6, 0, 0]} />
+    <SceneTile position={[0, 0, 0]} label="Scheduled batch" detail={`${step.requests.length} actual participants`} width={2.55}
+      selected={props.selection?.kind === "step" && props.selection.id === step.id}
+      onSelect={() => props.onSelect({ kind: "step", id: step.id })} />
+    {step.requests.map((request, index) => <SceneTile key={request.requestId}
+      position={[(index - (step.requests.length - 1) / 2) * 2.8, -2.4, 0.7]} width={2.55}
+      label={request.requestId} color={requestColor(props.requestOrder, request.requestId)}
+      detail={`${request.promptTokens} prefill + ${request.generationTokens} decode`}
+      selected={props.trackedRequestId === request.requestId || props.selection?.kind === "request" && props.selection.id === request.requestId}
+      onSelect={() => props.onSelect({ kind: "request", id: request.requestId })} />)}
+    <TextSprite text="These are captured choices; unrecorded decision reasons remain unknown" position={[0, -3.65, 0]} scale={[9, 0.34, 1]} muted />
+  </group>
+}
+
+function QueueColumns({ waiting, running, x, onSelect, requestOrder }: {
+  waiting: QueueEntry[]; running: QueueEntry[]; x: number; onSelect: (selection: Selection) => void; requestOrder: string[]
 }) {
-  const select = (event: { stopPropagation: () => void }) => {
-    event.stopPropagation()
-    onSelect()
-  }
-  const explore = (event: { stopPropagation: () => void }) => {
-    event.stopPropagation()
-    onSelect()
-    onExplore()
-  }
-  return (
-    <group position={position} name={id}>
-      {selected ? (
-        <mesh position={[0, 0, -0.12]}>
-          <boxGeometry args={[2.28, 1.58, 0.16]} />
-          <meshStandardMaterial color="#77b7ff" />
-        </mesh>
-      ) : null}
-      <mesh onClick={select} onDoubleClick={explore}>
-        <boxGeometry args={[2.12, 1.42, 0.52]} />
-        <meshStandardMaterial color={unavailable ? "#171d27" : "#222b39"} />
-      </mesh>
-      <mesh position={[-0.86, 0, 0.31]} onClick={select} onDoubleClick={explore}>
-        <boxGeometry args={[0.08, 1.08, 0.08]} />
-        <meshStandardMaterial color={unavailable ? "#58677d" : "#77b7ff"} />
-      </mesh>
-      <TextSprite text={label} position={[0.1, 0.22, 0.34]} scale={[1.7, 0.46, 1]} />
-      <TextSprite text={metric} position={[0.1, -0.28, 0.34]} scale={[1.72, 0.35, 1]} muted />
-    </group>
-  )
+  return <group>
+    <TextSprite text={`Waiting ${waiting.length} / running ${running.length}`} position={[x, 2.2, 0]} scale={[3.2, 0.3, 1]} muted />
+    {[...waiting.map((entry) => ({ entry, label: "waiting" })), ...running.map((entry) => ({ entry, label: "running" }))].map(({ entry, label }, index) => <SceneTile key={`${label}-${entry.requestId}`}
+      position={[x, 1.45 - index * 1.12, -0.55]} label={entry.requestId} detail={`${label}; cursor ${entry.computedTokens ?? "?"}`} width={2.8}
+      color={requestColor(requestOrder, entry.requestId)} onSelect={() => onSelect({ kind: "request", id: entry.requestId })} />)}
+  </group>
 }
 
-function Connector({
-  from,
-  to,
-  muted = false,
-}: {
-  from: [number, number, number]
-  to: [number, number, number]
-  muted?: boolean
-}) {
-  const start = new THREE.Vector3(...from)
-  const end = new THREE.Vector3(...to)
-  const midpoint = start.clone().add(end).multiplyScalar(0.5)
-  const difference = end.clone().sub(start)
-  const length = difference.length()
-  const angle = Math.atan2(difference.y, difference.x)
-  return (
-    <mesh position={midpoint} rotation={[0, 0, angle]}>
-      <boxGeometry args={[length, 0.035, 0.035]} />
-      <meshStandardMaterial color={muted ? "#3e4a5d" : "#58677d"} />
-    </mesh>
-  )
-}
-
-function FocusedStage({
-  state,
-  requestOrder,
-  selection,
-  focus,
-  onSelect,
-}: SceneProps & { focus: WorkflowComponentId }) {
-  const requests = orderedRequests(state, requestOrder)
-  const title = componentLabel(focus)
-  return (
-    <group position={[0, 0.2, 0]}>
-      <TextSprite text={title} position={[0, 3.55, 0]} scale={[4.8, 0.7, 1]} />
-      {focus === "request-intake" ? (
-        <RequestGrid requests={requests} requestOrder={requestOrder} selection={selection} onSelect={onSelect} />
-      ) : null}
-      {focus === "scheduler" ? (
-        <StepGrid steps={state.steps} selection={selection} onSelect={onSelect} title="recorded scheduler steps" />
-      ) : null}
-      {focus === "kv-cache" ? (
-        <CacheGrid blocks={Object.values(state.blocks)} state={state} requestOrder={requestOrder} selection={selection} onSelect={onSelect} />
-      ) : null}
-      {focus === "model-execution" ? (
-        <StepGrid steps={state.steps.filter((step) => step.submittedSequence != null)} selection={selection} onSelect={onSelect} title="host-observed submissions" />
-      ) : null}
-      {focus === "output" ? (
-        <OutputGrid requests={requests} requestOrder={requestOrder} selection={selection} onSelect={onSelect} />
-      ) : null}
-    </group>
-  )
-}
-
-function RequestGrid({
-  requests,
-  requestOrder,
-  selection,
-  onSelect,
-}: {
-  requests: ReplayState["requests"][string][]
-  requestOrder: string[]
-  selection: Selection | null
-  onSelect: (selection: Selection) => void
-}) {
-  if (requests.length === 0) return <SceneEmpty label="No observed requests at this playhead" />
-  return (
-    <group>
-      {requests.slice(0, 30).map((request, index) => (
-        <DataTile
-          key={request.id}
-          position={gridPosition(index, 5)}
-          label={request.id}
-          detail={request.status}
-          color={requestColor(requestOrder, request.id)}
-          selected={selection?.kind === "request" && selection.id === request.id}
-          onSelect={() => onSelect({ kind: "request", id: request.id })}
-        />
-      ))}
-      {requests.length > 30 ? <TextSprite text={`+ ${requests.length - 30} more requests`} position={[0, -3.25, 0]} scale={[3, 0.5, 1]} muted /> : null}
-    </group>
-  )
-}
-
-function StepGrid({
-  steps,
-  selection,
-  onSelect,
-  title,
-}: {
-  steps: StepState[]
-  selection: Selection | null
-  onSelect: (selection: Selection) => void
-  title: string
-}) {
-  if (steps.length === 0) return <SceneEmpty label={`No ${title} at this playhead`} />
-  const visible = steps.slice(-24)
-  return (
-    <group>
-      {visible.map((step, index) => (
-        <DataTile
-          key={`${step.id}-${step.sequence}`}
-          position={gridPosition(index, 4)}
-          label={step.id}
-          detail={`${step.totalScheduledTokens} tokens · ${step.status.replaceAll("_", " ")}`}
-          color="#77b7ff"
-          selected={selection?.kind === "step" && selection.id === step.id}
-          onSelect={() => onSelect({ kind: "step", id: step.id })}
-        />
-      ))}
-      {steps.length > visible.length ? <TextSprite text={`Showing latest ${visible.length} of ${steps.length} steps`} position={[0, -3.3, 0]} scale={[3.8, 0.5, 1]} muted /> : null}
-    </group>
-  )
-}
-
-function CacheGrid({
-  blocks,
-  state,
-  requestOrder,
-  selection,
-  onSelect,
-}: {
-  blocks: BlockState[]
-  state: ReplayState
-  requestOrder: string[]
-  selection: Selection | null
-  onSelect: (selection: Selection) => void
-}) {
-  if (blocks.length === 0) return <SceneEmpty label="No cache block transition at this playhead" />
-  const sorted = [...blocks].sort((left, right) => left.pool.localeCompare(right.pool) || left.blockId - right.blockId)
-  const visible = sorted.slice(0, 80)
-  return (
-    <group position={[-4.8, 2.35, 0]}>
-      {visible.map((block, index) => {
-        const column = index % 12
-        const row = Math.floor(index / 12)
-        const selected = selection?.kind === "block" && (
-          selection.key === block.key || selection.key === `${block.pool}:${block.blockId}`
-        )
-        return (
-          <mesh
-            key={block.key}
-            position={[column * 0.84, -row * 0.72, 0]}
-            onClick={(event) => {
-              event.stopPropagation()
-              onSelect({ kind: "block", key: block.key })
-            }}
-          >
-            <boxGeometry args={[selected ? 0.72 : 0.64, selected ? 0.6 : 0.52, 0.5]} />
-            <meshStandardMaterial color={blockColor(block, state, requestOrder, Boolean(selected))} />
-          </mesh>
-        )
-      })}
-      <TextSprite
-        text={`${blocks.length} recorded allocation generations${blocks.length > visible.length ? ` · showing ${visible.length}` : ""}`}
-        position={[4.55, -Math.ceil(visible.length / 12) * 0.72 - 0.25, 0]}
-        scale={[5, 0.5, 1]}
-        muted
-      />
-    </group>
-  )
-}
-
-function OutputGrid({
-  requests,
-  requestOrder,
-  selection,
-  onSelect,
-}: {
-  requests: ReplayState["requests"][string][]
-  requestOrder: string[]
-  selection: Selection | null
-  onSelect: (selection: Selection) => void
-}) {
-  if (requests.length === 0) return <SceneEmpty label="No request output at this playhead" />
-  return (
-    <group>
-      {requests.slice(0, 30).map((request, index) => (
-        <DataTile
-          key={request.id}
-          position={gridPosition(index, 5)}
-          label={request.id}
-          detail={`${request.acceptedTokenCount} accepted · ${request.finishReason ?? request.status}`}
-          color={requestColor(requestOrder, request.id)}
-          selected={selection?.kind === "request" && selection.id === request.id}
-          onSelect={() => onSelect({ kind: "request", id: request.id })}
-        />
-      ))}
-    </group>
-  )
-}
-
-function DataTile({
-  position,
-  label,
-  detail,
-  color,
-  selected,
-  onSelect,
-}: {
-  position: [number, number, number]
-  label: string
-  detail: string
-  color: string
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <group position={position}>
-      {selected ? (
-        <mesh position={[0, 0, -0.1]}>
-          <boxGeometry args={[1.9, 1.02, 0.14]} />
-          <meshStandardMaterial color="#e8edf5" />
-        </mesh>
-      ) : null}
-      <mesh
-        onClick={(event) => {
-          event.stopPropagation()
-          onSelect()
-        }}
-      >
-        <boxGeometry args={[1.76, 0.88, 0.45]} />
-        <meshStandardMaterial color="#1a202b" />
-      </mesh>
-      <mesh position={[-0.69, 0, 0.26]}>
-        <boxGeometry args={[0.08, 0.62, 0.06]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      <TextSprite text={label} position={[0.1, 0.16, 0.29]} scale={[1.34, 0.34, 1]} />
-      <TextSprite text={detail} position={[0.1, -0.2, 0.29]} scale={[1.36, 0.27, 1]} muted />
-    </group>
-  )
-}
-
-function SceneEmpty({ label }: { label: string }) {
-  return (
-    <group>
-      <mesh>
-        <boxGeometry args={[6.2, 1.5, 0.3]} />
-        <meshStandardMaterial color="#171d27" />
-      </mesh>
-      <TextSprite text={label} position={[0, 0.05, 0.22]} scale={[5.4, 0.62, 1]} muted />
-    </group>
-  )
-}
-
-function TextSprite({
-  text,
-  position,
-  scale,
-  muted = false,
-}: {
-  text: string
-  position: [number, number, number]
-  scale: [number, number, number]
-  muted?: boolean
-}) {
-  const texture = useMemo(() => {
-    const canvas = document.createElement("canvas")
-    canvas.width = 1024
-    canvas.height = 256
-    const context = canvas.getContext("2d")
-    if (context) {
-      context.clearRect(0, 0, canvas.width, canvas.height)
-      context.fillStyle = muted ? "#a2afc2" : "#e8edf5"
-      context.font = '600 104px "Segoe UI", system-ui, sans-serif'
-      context.textAlign = "center"
-      context.textBaseline = "middle"
-      const fitted = text.length > 44 ? `${text.slice(0, 41)}…` : text
-      context.fillText(fitted, canvas.width / 2, canvas.height / 2, canvas.width - 32)
-    }
-    const next = new THREE.CanvasTexture(canvas)
-    next.colorSpace = THREE.SRGBColorSpace
-    next.minFilter = THREE.LinearFilter
-    return next
-  }, [muted, text])
-  useEffect(() => () => texture.dispose(), [texture])
-  return (
-    <sprite position={position} scale={scale}>
-      <spriteMaterial map={texture} transparent depthWrite={false} />
-    </sprite>
-  )
-}
-
-function orderedRequests(state: ReplayState, requestOrder: string[]): ReplayState["requests"][string][] {
-  const order = [...requestOrder]
-  for (const id of Object.keys(state.requests)) {
-    if (!order.includes(id)) order.push(id)
-  }
+function orderedRequests(state: ReplayState, requestOrder: string[]) {
+  const order = [...new Set([...requestOrder, ...Object.keys(state.requests)])]
   return order.map((id) => state.requests[id]).filter((request) => request != null)
 }
-
 function gridPosition(index: number, columns: number): [number, number, number] {
-  const column = index % columns
-  const row = Math.floor(index / columns)
-  const width = (columns - 1) * 2.08
-  return [column * 2.08 - width / 2, 2.35 - row * 1.22, 0]
+  return [(index % columns - (columns - 1) / 2) * 2.75, 2.4 - Math.floor(index / columns) * 1.4, 0]
 }
-
-function componentLabel(id: WorkflowComponentId): string {
-  return WORKFLOW_COMPONENTS.find((item) => item.id === id)?.label ?? id
-}
-
-function blockColor(block: BlockState, state: ReplayState, order: string[], selected: boolean): string {
-  if (selected) return "#e8edf5"
-  if (block.refCount > 0) {
-    const holders = blockRequestIds(state, block)
-    return block.refCount === 1 && holders.length === 1 ? requestColor(order, holders[0]) : "#77b7ff"
-  }
-  if (block.cachedAtZeroRefs) return "#e0b15a"
-  return "#3e4a5d"
-}
+function componentLabel(id: WorkflowComponentId): string { return WORKFLOW_COMPONENTS.find((item) => item.id === id)?.label ?? id }

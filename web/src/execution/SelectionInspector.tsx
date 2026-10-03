@@ -1,3 +1,5 @@
+import type { MeasuredProfileProjection, ProfileActivity } from "../../../replay/src/profiling.ts"
+import { MeasuredProfileDetails } from "./MeasuredProfileDetails.tsx"
 import { explainBlock, explainRequest, explainStep } from "../../../replay/src/explain.ts"
 import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
 import {
@@ -9,6 +11,7 @@ import {
 import { componentSnapshot, workflowComponent } from "../explore/model.ts"
 import type { EvidenceKind, WorkflowComponentId } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
+import { LearningDetails } from "./LearningDetails.tsx"
 
 export function SelectionInspector({
   selection,
@@ -21,6 +24,11 @@ export function SelectionInspector({
   onSelect,
   onClose,
   showClose,
+  measuredProfile,
+  activeProfileActivities = [],
+  profileError = "",
+  measuredMode = false,
+  onProfileTime,
 }: {
   selection: Selection | null
   samples: SampleProjection[]
@@ -31,6 +39,11 @@ export function SelectionInspector({
   onSeek: (sequence: number, selection?: Selection) => void
   onSelect: (selection: Selection) => void
   onClose: () => void
+  measuredProfile?: MeasuredProfileProjection
+  activeProfileActivities?: ProfileActivity[]
+  profileError?: string
+  measuredMode?: boolean
+  onProfileTime?: (value: number) => void
   showClose: boolean
 }) {
   const sample = selection?.kind === "request" ? samples.find((item) => item.sample.id === selection.id) ?? null : null
@@ -51,10 +64,16 @@ export function SelectionInspector({
                 ? `Block ${block.blockId}`
                 : component
                   ? workflowComponent(component).label
+                  : selection?.kind === "token" ? "Request token"
+                  : selection?.kind === "layer" ? `Layer ${selection.layerIndex + 1}`
+                  : selection?.kind === "module" ? (selection.module === "attention" ? "Attention" : "Feed-forward")
+                  : selection?.kind === "head" ? `${selection.headKind === "query" ? "Query" : "KV"} head ${selection.headIndex + 1}`
+                  : selection?.kind === "block" ? "KV block"
                   : "Inspector"}
         </h2>
         {showClose ? <button type="button" onClick={onClose}>Close inspector</button> : null}
       </header>
+      {measuredProfile && onProfileTime ? <MeasuredProfileDetails profile={measuredProfile} activities={activeProfileActivities} error={profileError} active={measuredMode} onTime={onProfileTime} onSelect={onSelect} /> : null}
       {!selection || !state ? (
         <p className="text-pretty text-sm text-muted">Select a workflow component, request, execution step, or KV block to inspect recorded evidence.</p>
       ) : null}
@@ -91,12 +110,15 @@ export function SelectionInspector({
           </button>
         </section>
       ) : null}
+      <LearningDetails selection={selection} state={state} manifest={manifest} onSelect={onSelect} />
       {block && state ? (
-        <section className="mt-4 grid gap-3">
-          <h3 className="text-balance text-sm font-semibold text-ink">KV block</h3>
+        <details className="mt-4" open={!state.cacheInventory || undefined}>
+          <summary className="cursor-pointer text-sm font-medium text-ink">Block lifecycle evidence</summary>
+          <div className="mt-2 grid gap-3">
           <EvidenceSection kind="observed" lines={explainBlock(state, `${block.pool}:${block.blockId}`).observed} />
           <EvidenceSection kind="explanatory" lines={[block.note]} />
-        </section>
+          </div>
+        </details>
       ) : null}
       {manifest?.lesson?.summary ? <p className="meta">{manifest.lesson.summary}</p> : null}
     </aside>

@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "../lib/cn.ts"
-import { SPEEDS } from "../playback.ts"
+import { playbackSpeeds } from "../playback.ts"
 import type { PlaybackMode } from "./types.ts"
 
 export function PlaybackTransport({
@@ -20,6 +20,8 @@ export function PlaybackTransport({
   speed,
   mode,
   recordedAvailable,
+  teachingAvailable,
+  measuredAvailable,
   sequence,
   maxSequence,
   valueText,
@@ -42,9 +44,11 @@ export function PlaybackTransport({
   disabled: boolean
   playing: boolean
   atEnd: boolean
-  speed: (typeof SPEEDS)[number]
+  speed: number
   mode: PlaybackMode
   recordedAvailable: boolean
+  teachingAvailable: boolean
+  measuredAvailable: boolean
   sequence: number
   maxSequence: number
   valueText: string
@@ -60,7 +64,7 @@ export function PlaybackTransport({
   onPreviousStep: () => void
   onNextStep: () => void
   onScrub: (sequence: number) => void
-  onSpeed: (speed: (typeof SPEEDS)[number]) => void
+  onSpeed: (speed: number) => void
   onMode: (mode: PlaybackMode) => void
   onFollow: () => void
 }) {
@@ -74,14 +78,14 @@ export function PlaybackTransport({
   return (
     <div className="transport border-t border-line bg-surface px-4 py-3" role="group" aria-label="Recording playback">
       <div className="transport-buttons flex flex-wrap items-center gap-1.5">
-        <button type="button" className={iconButton} onClick={onReplay} disabled={playbackDisabled} aria-label="Restart recording">
+        <button type="button" className={iconButton} onClick={onReplay} disabled={playbackDisabled} aria-label={mode === "measured" ? "Restart profiler playback" : "Restart recording"}>
           <RotateCcw className="size-4" aria-hidden="true" />
         </button>
         <span className="mx-1 h-6 w-px bg-line" aria-hidden="true" />
-        <button type="button" className={iconButton} onClick={onPreviousStep} disabled={playbackDisabled} aria-label="Previous scheduler step">
+        <button type="button" className={iconButton} onClick={onPreviousStep} disabled={playbackDisabled} aria-label={mode === "measured" ? "Previous profiled batch" : "Previous scheduler step"}>
           <ChevronsLeft className="size-4" aria-hidden="true" />
         </button>
-        <button type="button" className={iconButton} onClick={onPreviousEvent} disabled={playbackDisabled} aria-label="Previous recorded event">
+        <button type="button" className={iconButton} onClick={onPreviousEvent} disabled={playbackDisabled} aria-label={mode === "measured" ? "Previous measured activity" : "Previous recorded event"}>
           <ChevronLeft className="size-4" aria-hidden="true" />
         </button>
         <button
@@ -95,10 +99,10 @@ export function PlaybackTransport({
           {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
           {playLabel}
         </button>
-        <button type="button" className={iconButton} onClick={onNextEvent} disabled={playbackDisabled} aria-label="Next recorded event">
+        <button type="button" className={iconButton} onClick={onNextEvent} disabled={playbackDisabled} aria-label={mode === "measured" ? "Next measured activity" : "Next recorded event"}>
           <ChevronRight className="size-4" aria-hidden="true" />
         </button>
-        <button type="button" className={iconButton} onClick={onNextStep} disabled={playbackDisabled} aria-label="Next scheduler step">
+        <button type="button" className={iconButton} onClick={onNextStep} disabled={playbackDisabled} aria-label={mode === "measured" ? "Next profiled batch" : "Next scheduler step"}>
           <ChevronsRight className="size-4" aria-hidden="true" />
         </button>
         {followAvailable ? (
@@ -119,8 +123,8 @@ export function PlaybackTransport({
 
       <label className="timeline min-w-56 flex-1 text-xs text-muted">
         <span className="flex items-center justify-between gap-3">
-          <span>Playhead</span>
-          <span className="tabular-nums">Event {Math.min(sequence, Math.max(maxSequence, 0))} / {Math.max(maxSequence, 0)}</span>
+          <span>{mode === "measured" ? "Profiler clock" : "Playhead"}</span>
+          <span className="tabular-nums">{mode === "measured" ? `${(sequence / 1000).toFixed(3)} / ${(maxSequence / 1000).toFixed(3)} ms` : `Event ${Math.min(sequence, Math.max(maxSequence, 0))} / ${Math.max(maxSequence, 0)}`}</span>
         </span>
         <input
           type="range"
@@ -143,10 +147,12 @@ export function PlaybackTransport({
         <select
           className="mt-1 rounded-md border border-line bg-raised px-2 py-1.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           value={mode}
-          disabled={playbackDisabled}
+          disabled={!measuredAvailable && maxSequence <= 0 && mode !== "measured"}
           onChange={(event) => onMode(event.target.value as PlaybackMode)}
         >
           <option value="events">Recorded events</option>
+          <option value="teaching" disabled={!teachingAvailable}>{teachingAvailable ? "Layer walkthrough · explanatory time" : "Layer walkthrough unavailable"}</option>
+          <option value="measured" disabled={!measuredAvailable}>{measuredAvailable ? "Measured profile · profiler clock" : "Measured profile unavailable"}</option>
           <option value="recorded" disabled={!recordedAvailable}>
             {recordedAvailable ? "Recorded time" : "Recorded time unavailable"}
           </option>
@@ -158,9 +164,9 @@ export function PlaybackTransport({
           className="mt-1 rounded-md border border-line bg-raised px-2 py-1.5 text-sm tabular-nums text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           value={speed}
           disabled={playbackDisabled}
-          onChange={(event) => onSpeed(Number(event.target.value) as (typeof SPEEDS)[number])}
+          onChange={(event) => onSpeed(Number(event.target.value))}
         >
-          {SPEEDS.map((value) => (
+          {playbackSpeeds(mode).map((value) => (
             <option key={value} value={value}>{value}×</option>
           ))}
         </select>
@@ -173,7 +179,7 @@ export function PlaybackTransport({
       <div className="basis-full">
         <p className="meta m-0 truncate text-pretty text-xs tabular-nums text-ink">{valueText}</p>
         <p className="meta m-0 mt-1 text-pretty text-xs text-muted">
-          {mode === "events"
+          {mode === "measured" ? "Measured intervals use the profiler clock. Host replay stays at its own playhead; no cross-clock alignment or individual token/head duration is inferred." : mode === "teaching" ? "Layer walkthrough follows the recorded batch through model structure. Its stage timing is explanatory, not measured GPU time." : mode === "events"
             ? "Event mode advances through recorded observations at a teaching pace."
             : "Recorded-time mode preserves observed host intervals at the selected speed; it does not represent GPU kernel timing."}
           {followAvailable ? (connected ? " Live capture continues while replay is paused." : " The live trace is reconnecting.") : ""}

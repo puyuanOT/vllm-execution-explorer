@@ -3,7 +3,7 @@
 SCHEMA_VERSION = "1.0.0"
 PRODUCER_ID = "vllm-030-adapter"
 ADAPTER_NAME = "vllm_030"
-ADAPTER_REVISION = "0.2.0"
+ADAPTER_REVISION = "0.3.0"
 CLOCK_DOMAIN = "time.monotonic_ns"
 PINNED_VLLM_PREFIX = "0.30."
 
@@ -50,6 +50,8 @@ STRUCTURAL_FORBIDDEN_FIELDS = frozenset(
         "text_delta",
         "logprobs",
         "prompt",
+        "token_pieces",
+        "decoded_text",
     }
 )
 
@@ -67,6 +69,10 @@ EVENT_TYPES = frozenset(
         "engine_prompt_observed",
         "engine_admitted",
         "capture_ready",
+        "cache_inventory",
+        "cache_reset",
+        "kv_block_binding",
+        "kv_block_written",
         "step_scheduled",
         "step_submitted",
         "step_result_received",

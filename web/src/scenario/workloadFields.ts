@@ -20,6 +20,13 @@ export function resolvePositiveInteger(fieldId: string, raw: string): ParsedFiel
     : { value }
 }
 
+export function resolvePriority(fieldId: string, raw: string): ParsedField {
+  const value = Number(raw)
+  return !/^-?\d+$/.test(raw.trim()) || !Number.isSafeInteger(value) || Math.abs(value) > 2_147_483_647
+    ? { issue: { fieldId, message: "Enter a whole priority number between −2147483647 and 2147483647." } }
+    : { value }
+}
+
 export function resolveWorkloadFields(
   scenario: ScenarioDraft,
   unit: TimeUnit,
@@ -32,6 +39,9 @@ export function resolveWorkloadFields(
     if ("issue" in time) return time
     const samples = []
     for (const sample of batch.samples) {
+      const priorityId = `sample-priority-${sample.id}`
+      const priority = resolvePriority(priorityId, readValue(priorityId) ?? String(sample.priority ?? 0))
+      if ("issue" in priority) return priority
       const outputId = `sample-output-${sample.id}`
       const output = resolvePositiveInteger(outputId, readValue(outputId) ?? String(sample.maxOutputTokens))
       if ("issue" in output) return output
@@ -42,7 +52,7 @@ export function resolveWorkloadFields(
         if ("issue" in input) return input
         syntheticInputTokens = input.value
       }
-      samples.push({ ...sample, maxOutputTokens: output.value, syntheticInputTokens })
+      samples.push({ ...sample, maxOutputTokens: output.value, syntheticInputTokens, priority: priority.value })
     }
     batches.push({ ...batch, arrivalOffsetMs: time.value, samples })
   }

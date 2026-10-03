@@ -84,6 +84,55 @@ export interface StepState {
   resultSequence: number | null
   resultObservation: string | null
   unscheduled: boolean
+  policy: string | null
+  queueBefore: SchedulerQueues | null
+  queueAfter: SchedulerQueues | null
+}
+
+export interface QueueEntry {
+  requestId: string
+  priority: number | null
+  computedTokens: number | null
+  promptTokens: number | null
+  status: string | null
+}
+
+export interface SchedulerQueues {
+  waiting: QueueEntry[]
+  running: QueueEntry[]
+  skippedWaiting: QueueEntry[]
+}
+
+export interface CacheInventoryPool {
+  pool: string
+  blockSize: number | null
+  capacity: number
+}
+
+export interface CacheGroupInventory {
+  cacheGroup: number
+  pool: string | null
+  blockSize: number | null
+  layerNames: string[]
+  cacheType: string | null
+  tokenSlotMapping: "qualified_full_attention" | "authored_fixture" | "unavailable" | "unknown" | "legacy_observed"
+  tokenSlotMappingReason: string | null
+}
+
+export interface KvBinding {
+  requestId: string
+  cacheGroup: number
+  tokenStart: number
+  tokenEnd: number
+  stepId: string
+  sequence: number
+}
+
+export interface KvWrittenRange extends KvBinding {
+  slotStart: number
+  slotEnd: number
+  tokenIds: number[] | null
+  tokenPieces: string[] | null
 }
 
 export interface RequestState {
@@ -98,6 +147,9 @@ export interface RequestState {
   promptTokenIds: number[] | null
   reservedCursor: number | null
   blockIds: number[]
+  blockGroups: number[][]
+  computedTokenRanges: Array<{ start: number; end: number }>
+  computedTokenRangesByGroup: Record<string, Array<{ start: number; end: number }>>
   acceptedTokenCount: number
   acceptedSpans: AcceptedSpan[]
   acceptedTokenIds: number[] | null
@@ -124,6 +176,9 @@ export interface BlockState {
   cachedAtZeroRefs: boolean
   lastOperation: string
   trust: "known" | "unknown"
+  isNull: boolean
+  bindings: KvBinding[]
+  contents: KvWrittenRange[]
 }
 
 export interface TextEmission {
@@ -142,6 +197,8 @@ export interface ReplayState {
   requests: Record<string, RequestState>
   steps: StepState[]
   blocks: Record<string, BlockState>
+  cacheInventory: CacheInventoryPool[] | null
+  cacheGroups: CacheGroupInventory[]
   emissions: TextEmission[]
   lastSequence: number
   lastEventType: string | null
@@ -175,6 +232,10 @@ const EVENT_TYPES = new Set([
   "cancellation",
   "completion",
   "trace_gap",
+  "cache_inventory",
+  "kv_block_binding",
+  "kv_block_written",
+  "cache_reset",
 ])
 
 export function initialState(): ReplayState {
@@ -185,6 +246,8 @@ export function initialState(): ReplayState {
     requests: {},
     steps: [],
     blocks: {},
+    cacheInventory: null,
+    cacheGroups: [],
     emissions: [],
     lastSequence: 0,
     lastEventType: null,
@@ -306,6 +369,24 @@ export function applyEvent(
     case "block_change":
       applyBlock(next, event)
       break
+    case "cache_inventory":
+      applyInventory(next, event)
+      break
+    case "kv_block_binding":
+      applyKvBinding(next, event)
+      break
+    case "kv_block_written":
+      applyKvWritten(next, event)
+      break
+    case "cache_reset":
+      if (event.verified !== true) throw new TraceError("cache reset was not verified")
+      for (const block of Object.values(next.blocks)) {
+        block.contents = []
+        block.bindings = []
+        block.hasHash = false
+        block.cachedAtZeroRefs = false
+      }
+      break
     case "tokens_accepted":
       applyAccepted(next, event)
       break
@@ -387,6 +468,7 @@ export function attachContent(state: ReplayState, content: ContentRecord[]): Rep
     (left, right) => Number(left.content_sequence ?? 0) - Number(right.content_sequence ?? 0),
   )
   for (const row of rows) {
+    if (row.kind === "kv_tokens") attachKvTokens(next, row)
     const requestIdValue = typeof row.request_id === "string" ? row.request_id : null
     if (requestIdValue == null || next.requests[requestIdValue] == null) continue
     const request = next.requests[requestIdValue]
@@ -452,6 +534,9 @@ function ensureRequest(state: ReplayState, id: string): RequestState {
     promptTokenIds: null,
     reservedCursor: null,
     blockIds: [],
+    blockGroups: [],
+    computedTokenRanges: [],
+    computedTokenRangesByGroup: {},
     acceptedTokenCount: 0,
     acceptedSpans: [],
     acceptedTokenIds: null,
@@ -516,6 +601,9 @@ function applyScheduled(state: ReplayState, event: TraceEvent): void {
     resultSequence: null,
     resultObservation: null,
     unscheduled: false,
+    policy: typeof event.policy === "string" ? event.policy : null,
+    queueBefore: schedulerQueues(event.queue_before),
+    queueAfter: schedulerQueues(event.queue_after),
   }
   state.steps.push(step)
   for (const item of requests) {
@@ -529,6 +617,10 @@ function applyScheduled(state: ReplayState, event: TraceEvent): void {
     const request = ensureRequest(state, change.requestId)
     const flat = change.blockIds.flat()
     request.blockIds = change.change === "append" ? unique([...request.blockIds, ...flat]) : flat
+    request.blockGroups = change.change === "append"
+      ? Array.from({ length: Math.max(request.blockGroups.length, change.blockIds.length) }, (_, index) =>
+          [...(request.blockGroups[index] ?? []), ...(change.blockIds[index] ?? [])])
+      : change.blockIds.map((group) => [...group])
   }
 }
 
@@ -563,6 +655,10 @@ function applyBlock(state: ReplayState, event: TraceEvent): void {
   if (!ambiguousPool && (refCount === 0 || (previous && previous.generation !== generation))) {
     for (const request of Object.values(state.requests)) {
       request.blockIds = request.blockIds.filter((id) => id !== blockId)
+      request.blockGroups = request.blockGroups.map((group, index) => {
+        const mapping = state.cacheGroups.find((item) => item.cacheGroup === index)
+        return mapping?.pool != null && mapping.pool !== pool ? group : group.filter((id) => id !== blockId)
+      })
     }
   }
   state.blocks[key] = {
@@ -575,7 +671,236 @@ function applyBlock(state: ReplayState, event: TraceEvent): void {
     cachedAtZeroRefs: Boolean(event.cached_at_zero_refs),
     lastOperation: stringField(event, "operation", "change"),
     trust: "known",
+    isNull: previous?.isNull ?? false,
+    bindings: previous && previous.generation === generation && refCount > 0 ? previous.bindings : [],
+    // Release and hash eviction change ownership/reusability, not the bytes.
+    contents: previous && previous.generation === generation ? previous.contents : [],
   }
+}
+
+function applyInventory(state: ReplayState, event: TraceEvent): void {
+  if (!Array.isArray(event.pools)) throw new TraceError("cache inventory has no pools")
+  const pools: CacheInventoryPool[] = []
+  const blocks: Record<string, BlockState> = {}
+  for (const value of event.pools) {
+    const row = record(value)
+    const pool = typeof row.pool === "string" ? row.pool : ""
+    const blockSize = row.block_size == null ? null : integerField(row, "block_size", 1)
+    const capacity = integerField(row, "num_gpu_blocks", 0)
+    if (!pool || pools.some((item) => item.pool === pool) || !Array.isArray(row.blocks)) {
+      throw new TraceError("cache inventory has invalid or duplicate pools")
+    }
+    pools.push({ pool, blockSize, capacity })
+    for (const item of row.blocks) {
+      const source = record(item)
+      const blockId = integerField(source, "block_id", 0)
+      const key = `${pool}:${blockId}`
+      if (blockId >= capacity || blocks[key]) throw new TraceError("cache inventory has invalid or duplicate blocks")
+      blocks[key] = {
+        key, pool, blockId,
+        generation: integerField(source, "allocation_generation", 0),
+        refCount: integerField(source, "ref_count", 0),
+        hasHash: Boolean(source.has_hash),
+        cachedAtZeroRefs: source.ref_count === 0 && Boolean(source.has_hash),
+        lastOperation: "inventory",
+        trust: "known",
+        isNull: Boolean(source.is_null),
+        bindings: [],
+        contents: [],
+      }
+    }
+    if (Object.values(blocks).filter((block) => block.pool === pool).length !== capacity) {
+      throw new TraceError("cache inventory does not enumerate the full pool")
+    }
+  }
+  state.cacheInventory = pools
+  // The validated inventory establishes the untouched free generation-zero
+  // baseline. Keep only exceptions/touched cells in checkpoint state.
+  state.blocks = Object.fromEntries(Object.entries(blocks).filter(([, block]) =>
+    block.isNull || block.refCount !== 0 || block.hasHash || block.generation !== 0))
+  state.cacheGroups = Array.isArray(event.groups) ? event.groups.map((item) => {
+    const row = record(item)
+    const pool = typeof row.pool === "string" ? row.pool : null
+    if (pool != null && !pools.some((value) => value.pool === pool)) throw new TraceError("cache group refers to an unknown pool")
+    const mapping = row.token_slot_mapping ?? "unknown"
+    if (mapping !== "qualified_full_attention" && mapping !== "authored_fixture" && mapping !== "unavailable" && mapping !== "unknown") {
+      throw new TraceError("cache group has an unsupported token-slot mapping status")
+    }
+    return {
+      cacheGroup: integerField(row, "cache_group", 0), pool,
+      blockSize: row.block_size == null ? null : integerField(row, "block_size", 1),
+      layerNames: stringList(row.layer_names),
+      cacheType: typeof row.cache_type === "string" ? row.cache_type : null,
+      tokenSlotMapping: mapping,
+      tokenSlotMappingReason: typeof row.token_slot_mapping_reason === "string" ? row.token_slot_mapping_reason
+        : mapping === "unknown" ? "This older inventory did not record cache-layout qualification."
+          : mapping === "unavailable" ? "Per-token slot mapping is unavailable for this cache layout." : null,
+    }
+  }) : []
+  if (new Set(state.cacheGroups.map((group) => group.cacheGroup)).size !== state.cacheGroups.length) throw new TraceError("cache inventory has duplicate cache-group identities")
+}
+
+function kvIdentity(state: ReplayState, event: TraceEvent): { block: BlockState; binding: KvBinding; blockSize: number } {
+  const pool = stringField(event, "pool", "")
+  const blockId = integerField(event, "block_id", 0)
+  const generation = integerField(event, "allocation_generation", 0)
+  const block = state.blocks[`${pool}:${blockId}`]
+  const geometry = state.cacheInventory?.find((item) => item.pool === pool)
+  if (!block || !geometry || block.generation !== generation || block.isNull) {
+    throw new TraceError("KV observation does not match an inventoried block generation")
+  }
+  const tokenStart = integerField(event, "token_range_start", 0)
+  const tokenEnd = integerField(event, "token_range_end", 1)
+  const cacheGroup = integerField(event, "cache_group", 0)
+  let group = state.cacheGroups.find((item) => item.cacheGroup === cacheGroup)
+  if (group && group.pool !== pool) throw new TraceError("KV observation does not match the observed cache-group pool mapping")
+  if (!group && state.cacheGroups.length) throw new TraceError("KV observation refers to an unknown inventory cache group")
+  if (group?.tokenSlotMapping === "unavailable") throw new TraceError("KV observation uses a cache group without qualified token-slot mapping")
+  if (!group) {
+    // Older adapters could record explicit token ranges without inventory group
+    // qualification. Preserve that observation without claiming a qualified layout.
+    group = { cacheGroup, pool, blockSize: geometry.blockSize, layerNames: [], cacheType: null,
+      tokenSlotMapping: "unknown", tokenSlotMappingReason: null }
+    state.cacheGroups.push(group)
+  }
+  if (group.tokenSlotMapping === "unknown") {
+    group.tokenSlotMapping = "legacy_observed"
+    group.tokenSlotMappingReason = "Explicit legacy token observations are retained; cache-layout qualification was not recorded."
+  }
+  const blockSize = group?.blockSize ?? geometry.blockSize
+  if (blockSize == null) throw new TraceError("KV observation has no observed block size")
+  if (tokenEnd <= tokenStart || Math.floor(tokenStart / blockSize) !== Math.floor((tokenEnd - 1) / blockSize)) {
+    throw new TraceError("KV observation must cover a nonempty range within one block")
+  }
+  const id = stringField(event, "request_id", "")
+  if (!id) throw new TraceError("KV observation has no request identity")
+  return {
+    block, blockSize,
+    binding: {
+      requestId: id,
+      cacheGroup,
+      tokenStart, tokenEnd,
+      stepId: stringField(event, "step_id", ""),
+      sequence: event.sequence,
+    },
+  }
+}
+
+function applyKvBinding(state: ReplayState, event: TraceEvent): void {
+  const { block, binding, blockSize } = kvIdentity(state, event)
+  ensureRequest(state, binding.requestId)
+  // A request's logical block can move to a different physical generation.
+  for (const item of Object.values(state.blocks)) {
+    item.bindings = item.bindings.filter((old) => old.requestId !== binding.requestId
+      || old.cacheGroup !== binding.cacheGroup
+      || old.tokenEnd <= binding.tokenStart || old.tokenStart >= binding.tokenEnd)
+  }
+  block.bindings.push(binding)
+  markBoundContents(state, block, binding, blockSize)
+}
+
+function applyKvWritten(state: ReplayState, event: TraceEvent): void {
+  const { block, binding, blockSize } = kvIdentity(state, event)
+  const slotStart = binding.tokenStart % blockSize
+  const slotEnd = slotStart + binding.tokenEnd - binding.tokenStart
+  const kept: KvWrittenRange[] = []
+  for (const old of block.contents) {
+    if (old.cacheGroup !== binding.cacheGroup || old.slotEnd <= slotStart || old.slotStart >= slotEnd) kept.push(old)
+    else {
+      if (old.slotStart < slotStart) kept.push(sliceWritten(old, old.slotStart, slotStart))
+      if (old.slotEnd > slotEnd) kept.push(sliceWritten(old, slotEnd, old.slotEnd))
+    }
+  }
+  kept.push({ ...binding, slotStart, slotEnd, tokenIds: null, tokenPieces: null })
+  block.contents = kept.sort((left, right) => left.slotStart - right.slotStart)
+  markComputed(ensureRequest(state, binding.requestId), binding.tokenStart, binding.tokenEnd, binding.cacheGroup)
+  for (const owner of block.bindings) {
+    if (owner.cacheGroup === binding.cacheGroup) markBoundContents(state, block, owner, blockSize)
+  }
+}
+
+function markBoundContents(state: ReplayState, block: BlockState, binding: KvBinding, blockSize: number): void {
+  const start = binding.tokenStart % blockSize
+  const end = start + binding.tokenEnd - binding.tokenStart
+  for (const span of block.contents) {
+    const overlapStart = Math.max(start, span.slotStart)
+    const overlapEnd = Math.min(end, span.slotEnd)
+    if (overlapEnd > overlapStart && span.cacheGroup === binding.cacheGroup) {
+      markComputed(ensureRequest(state, binding.requestId), binding.tokenStart + overlapStart - start, binding.tokenStart + overlapEnd - start, binding.cacheGroup)
+    }
+  }
+}
+
+function markComputed(request: RequestState, start: number, end: number, cacheGroup: number): void {
+  request.computedTokenRanges = mergeComputedRanges(request.computedTokenRanges, start, end)
+  request.computedTokenRangesByGroup[cacheGroup] = mergeComputedRanges(request.computedTokenRangesByGroup[cacheGroup] ?? [], start, end)
+}
+
+function mergeComputedRanges(previousRanges: Array<{ start: number; end: number }>, start: number, end: number): Array<{ start: number; end: number }> {
+  const ranges = [...previousRanges, { start, end }].sort((left, right) => left.start - right.start)
+  const merged: typeof ranges = []
+  for (const range of ranges) {
+    const previous = merged.at(-1)
+    if (previous && previous.end >= range.start) previous.end = Math.max(previous.end, range.end)
+    else merged.push({ ...range })
+  }
+  return merged
+}
+
+function sliceWritten(span: KvWrittenRange, start: number, end: number): KvWrittenRange {
+  const offset = start - span.slotStart
+  return {
+    ...span, slotStart: start, slotEnd: end,
+    tokenStart: span.tokenStart + offset,
+    tokenEnd: span.tokenStart + offset + end - start,
+    tokenIds: span.tokenIds?.slice(offset, offset + end - start) ?? null,
+    tokenPieces: span.tokenPieces?.slice(offset, offset + end - start) ?? null,
+  }
+}
+
+function attachKvTokens(state: ReplayState, row: ContentRecord): void {
+  const block = state.blocks[`${String(row.pool)}:${String(row.block_id)}`]
+  if (!block || block.generation !== row.allocation_generation || !Array.isArray(row.token_ids)) return
+  for (const span of block.contents) {
+    if (span.requestId !== row.request_id || span.cacheGroup !== row.cache_group || span.stepId !== row.step_id) continue
+    const start = numberValue(row.token_range_start)
+    const end = numberValue(row.token_range_end)
+    if (start == null || end == null || start > span.tokenStart || end < span.tokenEnd) continue
+    const ids = row.token_ids.slice(span.tokenStart - start, span.tokenEnd - start)
+    if (ids.length === span.tokenEnd - span.tokenStart && ids.every((id) => Number.isInteger(id) && id >= 0)) span.tokenIds = [...ids]
+    if (Array.isArray(row.token_pieces)) {
+      const pieces = row.token_pieces.slice(span.tokenStart - start, span.tokenEnd - start)
+      if (pieces.length === span.tokenEnd - span.tokenStart && pieces.every((piece) => typeof piece === "string")) span.tokenPieces = pieces as string[]
+    }
+  }
+}
+
+function clearBindings(state: ReplayState, id: string): void {
+  for (const block of Object.values(state.blocks)) block.bindings = block.bindings.filter((binding) => binding.requestId !== id)
+}
+
+function schedulerQueues(value: unknown): SchedulerQueues | null {
+  if (value == null || typeof value !== "object") return null
+  const row = record(value)
+  if (row.available === false) return null
+  if (![row.waiting, row.running, row.skipped_waiting].every(Array.isArray)) return null
+  const entries = (items: unknown): QueueEntry[] => (items as unknown[]).map((item) => {
+    const entry = record(item)
+    return {
+      requestId: String(entry.request_id ?? ""),
+      priority: numberValue(entry.priority),
+      computedTokens: numberValue(entry.num_computed_tokens),
+      promptTokens: numberValue(entry.num_prompt_tokens),
+      status: typeof entry.status === "string" ? entry.status : null,
+    }
+  })
+  return { waiting: entries(row.waiting), running: entries(row.running), skippedWaiting: entries(row.skipped_waiting) }
+}
+
+function integerField(value: Record<string, unknown>, key: string, minimum: number): number {
+  const result = numberValue(value[key])
+  if (result == null || !Number.isSafeInteger(result) || result < minimum) throw new TraceError(`invalid ${key} in cache observation`)
+  return result
 }
 
 function applyAccepted(state: ReplayState, event: TraceEvent): void {
@@ -606,6 +931,8 @@ function applyPreemption(state: ReplayState, event: TraceEvent): void {
   const request = ensureRequest(state, requestId(event))
   request.status = "preempted"
   request.blockIds = []
+  request.blockGroups = []
+  clearBindings(state, request.id)
   request.preemptionCount = numberValue(event.preemption_count) ?? request.preemptionCount + 1
   request.computedTokensBefore = numberValue(event.computed_tokens_before)
   request.computedTokensAfter = numberValue(event.computed_tokens_after)
@@ -618,6 +945,8 @@ function applyTerminal(state: ReplayState, event: TraceEvent, status: "completed
   const request = ensureRequest(state, requestId(event))
   request.status = status
   request.blockIds = []
+  request.blockGroups = []
+  clearBindings(state, request.id)
   request.recomputing = false
   request.finishReason = typeof event.reason === "string" ? event.reason : stringField(event, "status", status)
 }
@@ -637,6 +966,8 @@ function applyHttpResponse(state: ReplayState, event: TraceEvent): void {
   if (finishReason == null || statusCode == null || statusCode < 200 || statusCode >= 300) return
   request.status = finishReason === "cancelled" || finishReason === "abort" ? "cancelled" : "completed"
   request.blockIds = []
+  request.blockGroups = []
+  clearBindings(state, request.id)
   request.recomputing = false
   request.finishReason = finishReason
 }
@@ -672,6 +1003,9 @@ function findOrCreateStep(state: ReplayState, event: TraceEvent, status: StepSta
     resultSequence: null,
     resultObservation: null,
     unscheduled: true,
+    policy: null,
+    queueBefore: null,
+    queueAfter: null,
   }
   state.steps.push(created)
   return created

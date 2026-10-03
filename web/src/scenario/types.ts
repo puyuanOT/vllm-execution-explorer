@@ -9,6 +9,7 @@ export interface SampleDraft {
   resolvedInputTokens: number | null
   maxOutputTokens: number
   adapterId: string | null
+  priority: number
 }
 
 export interface ArrivalBatchDraft {
@@ -44,9 +45,15 @@ export interface EngineSettings {
   maxNumSeqs: string
   tokenBudget: string
   gpuMemoryUtilization: string
+  schedulingPolicy: "fcfs" | "priority"
+  longPrefillTokenThreshold: string
+  kvCacheMemoryBytes: string
+  profilingMode: "off" | "eager_diagnostic"
+  profilingMaxSteps: string
   model: string
   modelRevision: string
   tokenizerRevision: string
+  tokenizer: string
   dtype: "auto" | "float16" | "bfloat16" | "float32"
   quantization: "none" | "awq" | "gptq" | "bitsandbytes" | "fp8"
   loraAdapters: LoraAdapterDraft[]
@@ -81,6 +88,7 @@ export interface WorkloadPlan {
       resolved_input_tokens: number | null
       max_output_tokens: number
       adapter_id: string | null
+      priority: number
     }>
     default_adapter_id: string | null
     adapter_id: string
@@ -107,6 +115,7 @@ export interface RunRequestBody {
     arrival_offset_ms: number
     max_output_tokens: number
     adapter_id: string | null
+    priority: number
   }>
   workload_plan: WorkloadPlan
   max_num_seqs: number
@@ -147,8 +156,12 @@ export interface RunRequestBody {
     enable_chunked_prefill: boolean
     enable_prefix_caching: boolean
     gpu_memory_utilization: number
+    scheduling_policy: "fcfs" | "priority"
+    long_prefill_token_threshold: number
+    kv_cache_memory_bytes: number | null
     fresh_prefix_cache: true
   }
+  profiling_configuration: { mode: "off" | "eager_diagnostic"; max_steps: number }
   sampling: {
     temperature: number
     top_p: number

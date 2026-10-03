@@ -51,6 +51,7 @@ class WorkRequest:
     resolved_input_tokens: int | None = None
     adapter_id: str | None = None
     sampling: dict[str, Any] | None = None
+    priority: int = 0
 
 
 def parse_workload(payload: dict) -> list[WorkRequest]:
@@ -158,6 +159,7 @@ def parse_request_item(item: object, *, field_prefix: str = "request") -> WorkRe
         resolved_input_tokens=resolved,
         adapter_id=None if adapter is None else adapter.strip(),
         sampling=sampling,
+        priority=require_int(item.get("priority", 0), "request priority", field=f"{field_prefix}.priority", minimum=-(2**31), maximum=2**31-1),
     )
 
 
@@ -339,6 +341,7 @@ def canonical_plan(requests: list[WorkRequest], raw: object) -> dict[str, Any]:
                     ),
                     "adapter_id": effective_adapter,
                     "sampling_override": request.sampling if request is not None else None,
+                    "priority": request.priority if request is not None else 0,
                 }
             )
             flat.append(
@@ -409,6 +412,7 @@ def synthesize_plan(requests: list[WorkRequest]) -> dict[str, Any]:
                         ),
                         "adapter_id": request.adapter_id or "base",
                         "sampling_override": request.sampling,
+                        "priority": request.priority,
                     }
                 ],
             }
@@ -442,6 +446,7 @@ def append_request_to_plan(plan: dict[str, Any], request: WorkRequest) -> dict[s
                     ),
                     "adapter_id": request.adapter_id or "base",
                     "sampling_override": request.sampling,
+                    "priority": request.priority,
                 }
             ],
         }

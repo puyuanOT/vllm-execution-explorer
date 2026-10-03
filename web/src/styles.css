@@ -179,7 +179,7 @@ p { text-wrap: pretty; }
   display: flex;
   flex-direction: column;
   background: var(--canvas);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .workspace-head, .inspector-head, .batch-head, .sample-main {
@@ -212,7 +212,7 @@ p { text-wrap: pretty; }
   overflow: hidden;
   padding: var(--space-2) var(--space-4) var(--space-2);
 }
-.spatial-view { position: relative; flex: 1; min-height: 280px; }
+.spatial-view { position: relative; flex: 1 0 auto; min-height: 24rem; overflow: visible; }
 .spatial-view canvas { width: 100%; height: 100%; display: block; }
 
 .batch-list, .sample-list, .lesson-list, .fact-list, .overview-list, .lanes ol, .step-strip ol {
@@ -460,4 +460,9 @@ dialog.inspector-dialog .inspector {
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto; }
+}
+
+.scene-viewport { min-height: 22rem; container-type: inline-size; }
+@container (max-width: 42rem) {
+  .camera-controls { top: 3.5rem; }
 }

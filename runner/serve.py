@@ -82,11 +82,15 @@ class RunRequest(BaseModel):
     max_model_len: int | None = None
     chunked_prefill: bool = True
     gpu_memory_utilization: float = 0.9
+    scheduling_policy: str = "fcfs"
+    long_prefill_token_threshold: int = 0
+    kv_cache_memory_bytes: int | None = None
     dtype: str = "bfloat16"
     quantization: str | None = None
     sampling: dict[str, Any] | None = None
     model_configuration: dict[str, Any] | None = None
     vllm_configuration: dict[str, Any] | None = None
+    profiling_configuration: dict[str, Any] | None = None
     lora_adapters: list[dict[str, Any]] = Field(default_factory=list)
     huggingface_token: str | None = None
 
@@ -101,6 +105,7 @@ class AddedRequest(BaseModel):
     resolved_input_tokens: int | None = None
     adapter_id: str | None = None
     sampling: dict[str, Any] | None = None
+    priority: int = 0
 
 
 class ArtifactPrepareRequest(BaseModel):
@@ -513,12 +518,6 @@ def create_app(
             )["model_options"]["quantization"][quantization]
             if not quantization_capability["selectable"]:
                 raise HTTPException(status_code=409, detail=quantization_capability["message"])
-            source_kind = configuration["model"]["source"]["kind"]
-            if source_kind == "huggingface" and (not body.model_revision or not body.tokenizer_revision):
-                raise HTTPException(
-                    status_code=400,
-                    detail="A Hugging Face live run needs pinned model_revision and tokenizer_revision.",
-                )
         with state.lock:
             if state.status in ACTIVE_STATUSES:
                 raise HTTPException(status_code=409, detail="one experiment is already running")
@@ -574,6 +573,8 @@ def create_app(
             if state.status not in ACTIVE_STATUSES or not state.intake_open:
                 raise HTTPException(status_code=409, detail="intake is closed")
             configuration = state.configuration or {}
+            if request.priority and (configuration.get("vllm") or {}).get("scheduling_policy", "fcfs") != "priority":
+                raise HTTPException(status_code=400, detail="Nonzero request priorities require the priority scheduling policy.")
             model = configuration.get("model") or {}
             known_adapters = {"base", *(item.get("id") for item in model.get("lora_adapters") or [])}
             if (request.adapter_id or "base") not in known_adapters:
@@ -685,6 +686,10 @@ def create_app(
             return PlainTextResponse("")
         return PlainTextResponse(path.read_text(encoding="utf-8"))
 
+    @app.get("/api/recordings/{run_id}/profile")
+    def recording_profile(run_id: str) -> PlainTextResponse:
+        return PlainTextResponse(_recording_file(recordings_dir, run_id, "profiling/activities.json").read_text(encoding="utf-8"))
+
     return app
 
 
@@ -792,6 +797,9 @@ def _execute(
             from runner.http_session import VllmHttpSession
 
             session = VllmHttpSession.open(recording, body)
+        if getattr(session, "resolved_configuration", None) is not None:
+            with state.lock:
+                state.configuration = copy_configuration(session.resolved_configuration)
         _set_phase(state, "capturing", "capture_ready")
 
         def publish_arrival(arrival: dict[str, object]) -> None:
@@ -909,6 +917,11 @@ def _manifest_for(
         completion_status=completion,
     )
     manifest["engine_output_token_ids"] = tokens
+    from runner.profiling import profile_record
+
+    manifest["profiling"] = profile_record(getattr(body, "profiling_configuration", None))
+    if manifest["profiling"]["enabled"]:
+        manifest["profiling"].update(status="failed", reason="The requested diagnostic profiler did not return initialized capture metadata.")
     if geometry is not None:
         manifest["cache_geometry"] = geometry
     if session is not None:
@@ -919,6 +932,10 @@ def _manifest_for(
             ("hardware_record", "hardware"),
             ("sampling_record", "sampling"),
             ("initial_cache_state", "initial_cache_state"),
+            ("architecture_record", "architecture"),
+            ("revision_resolution", "revision_resolution"),
+            ("observability_record", "observability"),
+            ("profiling_record", "profiling"),
         ):
             value = getattr(session, source_name, None)
             if value is not None:

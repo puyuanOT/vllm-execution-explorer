@@ -173,6 +173,7 @@ export function ConfigurePage({
           onUnit={onUnit}
           onAction={onAction}
           onInvalid={onInvalid}
+          onSettings={onSettings}
         />
         <fieldset disabled={running || checkingHost} className="min-w-0">
           <ServerSection

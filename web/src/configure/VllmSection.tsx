@@ -43,9 +43,18 @@ export function VllmSection({
         "setting-top-p",
         "setting-seed",
         "setting-stop-strings",
+        "setting-scheduling-policy",
+        "setting-long-prefill",
+        "setting-kv-memory",
+        "setting-profiling-mode",
+        "setting-profiling-steps",
       ].includes(issue.fieldId))}
     >
       <div className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-slate-200">Continuous batching · built in</h3>
+          <p className="text-sm text-pretty text-slate-400">At each scheduler iteration, vLLM can admit new requests and combine their prefill with ongoing decode work. The recording shows the actual batch membership. Arrival groups do not force execution batches.</p>
+        </div>
         <div className="grid items-start gap-4 md:grid-cols-3">
           <label className="block text-xs font-medium text-slate-400" htmlFor="setting-max-model-len">
             Maximum context length
@@ -94,6 +103,24 @@ export function VllmSection({
           </label>
         </div>
 
+        <div className="grid items-start gap-4 md:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-scheduling-policy">
+            Scheduling policy
+            <select id="setting-scheduling-policy" className={inputClass} value={settings.schedulingPolicy} aria-invalid={Boolean(issueFor("setting-scheduling-policy"))} aria-describedby="setting-scheduling-policy-hint setting-scheduling-policy-error" onChange={(event) => onSettings({ ...settings, schedulingPolicy: event.target.value as EngineSettings["schedulingPolicy"] })}>
+              <option value="fcfs">First come, first served</option>
+              <option value="priority">Request priority</option>
+            </select>
+            <FieldHint id="setting-scheduling-policy-hint">Priority scheduling favors lower request priority numbers; arrival time breaks ties. Edit priorities in each request.</FieldHint>
+            <FieldError id="setting-scheduling-policy-error" message={issueFor("setting-scheduling-policy")} />
+          </label>
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-long-prefill">
+            Long-prefill chunk threshold (tokens)
+            <input id="setting-long-prefill" className={`${inputClass} tabular-nums`} inputMode="numeric" value={settings.longPrefillTokenThreshold} aria-invalid={Boolean(issueFor("setting-long-prefill"))} aria-describedby="setting-long-prefill-hint setting-long-prefill-error" onChange={(event) => onSettings({ ...settings, longPrefillTokenThreshold: event.target.value })} />
+            <FieldHint id="setting-long-prefill-hint">Cap tokens assigned to a long prefill in one iteration. 0 disables this cap; the total token budget still applies.</FieldHint>
+            <FieldError id="setting-long-prefill-error" message={issueFor("setting-long-prefill")} />
+          </label>
+        </div>
+
         <div className="grid items-start gap-5 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
           <CheckboxField
             id="chunked-prefill"
@@ -112,6 +139,24 @@ export function VllmSection({
           />
         </div>
 
+        <Details className="rounded-lg border border-slate-800 p-4" forceOpen={issues.some((issue) => issue.fieldId.startsWith("setting-profiling"))}>
+          <summary className="cursor-pointer text-sm font-medium text-slate-200">Measured layer profiling</summary>
+          <div className="mt-3 grid items-start gap-4 md:grid-cols-2">
+            <label htmlFor="setting-profiling-mode" className="block text-xs font-medium text-slate-400">Capture mode
+              <select id="setting-profiling-mode" className={inputClass} value={settings.profilingMode} aria-invalid={Boolean(issueFor("setting-profiling-mode"))} aria-describedby="setting-profiling-hint setting-profiling-mode-error" onChange={(event) => onSettings({ ...settings, profilingMode: event.target.value as EngineSettings["profilingMode"] })}>
+                <option value="off">Serving capture</option>
+                <option value="eager_diagnostic">Eager diagnostic profile</option>
+              </select>
+              <FieldError id="setting-profiling-mode-error" message={issueFor("setting-profiling-mode")} />
+            </label>
+            {settings.profilingMode !== "off" ? <label htmlFor="setting-profiling-steps" className="block text-xs font-medium text-slate-400">Maximum profiled scheduler steps
+              <input id="setting-profiling-steps" className={inputClass} inputMode="numeric" value={settings.profilingMaxSteps} aria-invalid={Boolean(issueFor("setting-profiling-steps"))} aria-describedby="setting-profiling-hint setting-profiling-steps-error" onChange={(event) => onSettings({ ...settings, profilingMaxSteps: event.target.value })} />
+              <FieldError id="setting-profiling-steps-error" message={issueFor("setting-profiling-steps")} />
+            </label> : null}
+          </div>
+          <FieldHint id="setting-profiling-hint">Diagnostic profiling disables CUDA graphs and adds recording overhead. It measures supported layer and batch activities on a separate profiler clock. Packed kernels do not establish individual token or attention-head durations. Initially supported for dense Qwen3.</FieldHint>
+        </Details>
+
         <div className="rounded-lg border border-blue-900 bg-blue-950/40 p-4">
           <h3 className="text-balance text-sm font-semibold text-blue-200">Fresh-cache run contract</h3>
           <p className="mt-1 text-pretty text-sm leading-6 text-blue-300/80">
@@ -127,12 +172,19 @@ export function VllmSection({
             "setting-top-p",
             "setting-seed",
             "setting-stop-strings",
+            "setting-kv-memory",
           ].includes(issue.fieldId))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Memory and sampling
           </summary>
           <div className="space-y-5 border-t border-slate-800 p-4">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-kv-memory">
+              Explicit KV-cache memory budget (bytes) <span className="font-normal">optional</span>
+              <input id="setting-kv-memory" className={`${inputClass} tabular-nums`} inputMode="numeric" value={settings.kvCacheMemoryBytes} placeholder="Use the engine GPU memory fraction" aria-invalid={Boolean(issueFor("setting-kv-memory"))} aria-describedby="setting-kv-memory-hint setting-kv-memory-error" onChange={(event) => onSettings({ ...settings, kvCacheMemoryBytes: event.target.value })} />
+              <FieldHint id="setting-kv-memory-hint">An explicit byte budget controls KV storage and overrides the GPU memory fraction. The measured pool capacity appears after model initialization.</FieldHint>
+              <FieldError id="setting-kv-memory-error" message={issueFor("setting-kv-memory")} />
+            </label>
             <label className="block text-xs font-medium text-slate-400" htmlFor="setting-gpu-memory">
               GPU memory fraction
               <input

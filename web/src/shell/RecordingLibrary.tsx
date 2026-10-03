@@ -82,7 +82,7 @@ export function RecordingLibrary({
           Import a recording
         </span>
         <span className="text-pretty text-xs text-slate-400">
-          Choose manifest.json, events.jsonl, and optional content.jsonl from the same recording.
+          Choose manifest.json, events.jsonl, optional content.jsonl, and any declared normalized profile JSON from the same recording.
         </span>
         <input
           type="file"

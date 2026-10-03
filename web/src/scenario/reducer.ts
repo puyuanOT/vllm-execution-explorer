@@ -21,6 +21,7 @@ export type ScenarioAction =
   | { type: "set-sample-resolved-length"; sampleId: string; resolvedInputTokens: number | null }
   | { type: "set-sample-output"; sampleId: string; maxOutputTokens: number }
   | { type: "set-sample-adapter"; sampleId: string; adapterId: string | null }
+  | { type: "set-sample-priority"; sampleId: string; priority: number }
 
 export function reduceScenario(scenario: ScenarioDraft, action: ScenarioAction): ScenarioDraft {
   switch (action.type) {
@@ -80,6 +81,8 @@ export function reduceScenario(scenario: ScenarioDraft, action: ScenarioAction):
       return mapSample(scenario, action.sampleId, (sample) => ({ ...sample, maxOutputTokens: action.maxOutputTokens }))
     case "set-sample-adapter":
       return mapSample(scenario, action.sampleId, (sample) => ({ ...sample, adapterId: action.adapterId }))
+    case "set-sample-priority":
+      return mapSample(scenario, action.sampleId, (sample) => ({ ...sample, priority: action.priority }))
     default:
       return scenario
   }
@@ -188,6 +191,7 @@ function newSample(index: number): SampleDraft {
     resolvedInputTokens: null,
     maxOutputTokens: 8,
     adapterId: null,
+    priority: 0,
   }
 }
 

@@ -1,7 +1,11 @@
-import { Box, ChevronRight, Maximize2, RotateCcw, Search, ZoomIn, ZoomOut } from "lucide-react"
+import type { MeasuredSceneProfile } from "../architecture/model.ts"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Box, ChevronRight, Maximize2, RotateCcw, Search, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
-import { initialState, type ReplayState } from "../../../replay/src/reduce.ts"
+import { initialState, type RecordingManifest, type ReplayState } from "../../../replay/src/reduce.ts"
+import { projectArchitecture, projectKvCache } from "../../../replay/src/learning.ts"
+import { architectureFocusLabel, type ArchitectureFocus } from "../architecture/model.ts"
+import { ArchitectureNavigation, PoolNavigation } from "./ArchitectureNavigation.tsx"
 import { describeBlocks, type SampleProjection } from "../../../replay/src/timeline.ts"
 import { componentSnapshot, workflowComponent, WORKFLOW_COMPONENTS } from "../explore/model.ts"
 import type { WorkflowComponentId } from "../explore/model.ts"
@@ -17,6 +21,12 @@ const EMPTY_REPLAY = initialState()
 export function ExecutionWorkspace({
   samples,
   state,
+  manifest,
+  measuredProfile,
+  teachingProgress,
+  onTeachingProgress,
+  trackedRequestId,
+  trackedTokenPosition,
   requestOrder,
   colors,
   selection,
@@ -33,6 +43,12 @@ export function ExecutionWorkspace({
 }: {
   samples: SampleProjection[]
   state: ReplayState | null
+  manifest: RecordingManifest | null
+  measuredProfile?: MeasuredSceneProfile
+  teachingProgress?: number
+  onTeachingProgress: (value: number) => void
+  trackedRequestId: string | null
+  trackedTokenPosition: number | null
   requestOrder: string[]
   colors: Record<string, string>
   selection: Selection | null
@@ -48,10 +64,13 @@ export function ExecutionWorkspace({
   onSelect: (selection: Selection) => void
 }) {
   const [focus, setFocus] = useState<WorkflowComponentId | null>(null)
+  const [architectureFocus, setArchitectureFocus] = useState<ArchitectureFocus | null>(null)
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null)
   const [requestQuery, setRequestQuery] = useState("")
   const selectedComponent = selection?.kind === "component" ? selection.id : null
   const replay = state ?? EMPTY_REPLAY
+  const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
+  const cache = useMemo(() => projectKvCache(replay, manifest), [manifest, replay])
   const visibleRequests = useMemo(() => {
     const query = requestQuery.trim().toLocaleLowerCase()
     if (!query) return samples
@@ -64,8 +83,14 @@ export function ExecutionWorkspace({
 
   useEffect(() => {
     setFocus(null)
+    setArchitectureFocus(null)
     setRequestQuery("")
   }, [requestOrder])
+
+  const measuredMode = Boolean(measuredProfile)
+  useEffect(() => {
+    if (measuredMode) { setFocus("model-execution"); setArchitectureFocus({ kind: "model" }) }
+  }, [measuredMode, requestOrder])
 
   function selectComponent(component: WorkflowComponentId) {
     onSelect({ kind: "component", id: component })
@@ -74,18 +99,26 @@ export function ExecutionWorkspace({
   function exploreComponent(component: WorkflowComponentId) {
     selectComponent(component)
     setFocus(component)
+    setArchitectureFocus(component === "model-execution" ? { kind: "model" } : null)
   }
+
+  function exploreArchitecture(next: ArchitectureFocus) {
+    setFocus("model-execution")
+    setArchitectureFocus(next)
+  }
+
+  function backToOverview() { setFocus(null); setArchitectureFocus(null) }
 
   function moveCamera(action: CameraAction) {
     setCameraCommand((current) => ({ id: (current?.id ?? 0) + 1, action }))
   }
 
   return (
-    <section className="workspace-main min-h-0 min-w-0 overflow-hidden bg-canvas" aria-label="Execution explorer">
+    <section className="workspace-main min-h-0 min-w-0 bg-canvas" aria-label="Execution explorer">
       <header className="workspace-head border-b border-line bg-surface px-4 py-3">
         <div className="min-w-0">
           <h1 className="text-balance text-base font-semibold text-ink">
-            {view === "spatial" ? (focus ? workflowComponent(focus).label : "Execution workflow") : "Request lanes"}
+            {view === "spatial" ? (architectureFocus ? architectureFocusLabel(architectureFocus) : focus ? workflowComponent(focus).label : "Model and serving architecture") : "Request lanes"}
           </h1>
           <p className="meta truncate text-pretty text-xs text-muted">{timeBasisLabel}</p>
           {submittedNote ? <p className="meta truncate text-pretty text-xs text-muted">{submittedNote}</p> : null}
@@ -100,7 +133,7 @@ export function ExecutionWorkspace({
             aria-pressed={view === "spatial"}
             onClick={() => onView("spatial")}
           >
-            Workflow
+            3D architecture
           </button>
           <button
             type="button"
@@ -145,22 +178,22 @@ export function ExecutionWorkspace({
           />
         </div>
       ) : (
-        <div className="spatial-view relative flex min-h-[28rem] flex-1 flex-col overflow-hidden">
+        <div className="spatial-view relative flex min-h-[24rem] flex-1 flex-col">
           <p className="sr-only">
             The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output.
             Use the component controls below the canvas for equivalent keyboard access.
           </p>
 
-          <div className="relative min-h-0 flex-1">
+          <div className="scene-viewport relative min-h-[22rem] flex-1">
             <div className="absolute left-3 top-3 z-10 flex items-center gap-2">
               {focus ? (
                 <nav className="flex items-center gap-1 rounded-md border border-line bg-surface px-2 py-1 text-sm" aria-label="Component breadcrumb">
                   <button
                     type="button"
                     className="border-0 bg-transparent px-1 text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    onClick={() => setFocus(null)}
+                    onClick={backToOverview}
                   >
-                    Workflow
+                    Overview
                   </button>
                   <ChevronRight className="size-4 text-muted" aria-hidden="true" />
                   <span className="max-w-44 truncate text-ink" aria-current="page">{workflowComponent(focus).label}</span>
@@ -172,7 +205,8 @@ export function ExecutionWorkspace({
               )}
             </div>
 
-            <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-line bg-surface p-1" role="group" aria-label="3D camera controls">
+            <div className="camera-controls absolute right-3 top-3 z-10 flex items-center gap-1 rounded-md border border-line bg-surface p-1" role="group" aria-label="3D camera controls">
+              {([ ["pan-left", "Pan camera left", ArrowLeft], ["pan-right", "Pan camera right", ArrowRight], ["pan-up", "Pan camera up", ArrowUp], ["pan-down", "Pan camera down", ArrowDown] ] as const).map(([action, label, Icon]) => <button key={action} type="button" className="grid size-8 place-items-center border-0 bg-transparent p-0 text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" aria-label={label} onClick={() => moveCamera(action)}><Icon className="size-4" aria-hidden="true" /></button>)}
               <button
                 type="button"
                 className="grid size-8 place-items-center border-0 bg-transparent p-0 text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
@@ -215,8 +249,16 @@ export function ExecutionWorkspace({
               </button>
             </div>
 
+            <div className="absolute inset-0">
             <ExecutionScene
               state={replay}
+              manifest={manifest}
+              measuredProfile={measuredProfile}
+              architectureFocus={architectureFocus}
+              teachingProgress={teachingProgress}
+              trackedRequestId={trackedRequestId}
+              trackedTokenPosition={trackedTokenPosition}
+              kvCache={cache}
               requestOrder={requestOrder}
               selection={selection}
               animate={animate}
@@ -224,9 +266,13 @@ export function ExecutionWorkspace({
               cameraCommand={cameraCommand}
               onSelect={onSelect}
               onExplore={exploreComponent}
+              onArchitectureExplore={exploreArchitecture}
             />
+            </div>
+          </div>
 
-            <details className="absolute bottom-3 left-3 z-10 max-h-52 w-[min(26rem,calc(100%-1.5rem))] overflow-auto rounded-md border border-line bg-surface p-2">
+          <div className="flex flex-wrap items-start border-t border-line bg-surface">
+            <details className="max-h-52 w-[min(26rem,100%)] overflow-auto p-2">
               <summary className="cursor-pointer text-sm font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
                 Find a request <span className="tabular-nums text-muted">({samples.length})</span>
               </summary>
@@ -263,12 +309,16 @@ export function ExecutionWorkspace({
                 <p className="m-0 mt-2 text-pretty text-xs text-muted">No request matches. Clear the search to see every request.</p>
               )}
             </details>
-          </div>
 
           {focus ? (
-            <FocusedObjectBar component={focus} state={state} samples={samples} selection={selection} onSelect={onSelect} onBack={() => setFocus(null)} />
+            <details className="min-w-64 flex-1 px-3 py-2">
+              <summary className="cursor-pointer text-sm font-medium text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">{focus === "model-execution" ? "Model structure controls" : focus === "kv-cache" ? "Find a physical KV block" : "Recorded objects"}</summary>
+              <div className="pt-3">
+              {focus === "model-execution" ? <ArchitectureNavigation architecture={architecture} focus={architectureFocus} onExplore={exploreArchitecture} onSelect={onSelect} progress={teachingProgress} onProgress={onTeachingProgress} /> : focus === "kv-cache" ? <PoolNavigation cache={cache} onSelect={onSelect} /> : <FocusedObjectBar component={focus} state={state} samples={samples} selection={selection} onSelect={onSelect} />}
+              </div>
+            </details>
           ) : (
-            <ol className="grid list-none grid-cols-2 gap-2 border-t border-line bg-surface p-3 md:grid-cols-5">
+            <ol className="grid w-full list-none grid-cols-2 gap-2 border-t border-line bg-surface p-3 md:grid-cols-5">
               {WORKFLOW_COMPONENTS.map((component) => {
                 const snapshot = componentSnapshot(state, component.id)
                 const selected = selectedComponent === component.id
@@ -299,6 +349,7 @@ export function ExecutionWorkspace({
               })}
             </ol>
           )}
+          </div>
         </div>
       )}
     </section>
@@ -311,32 +362,18 @@ function FocusedObjectBar({
   samples,
   selection,
   onSelect,
-  onBack,
 }: {
   component: WorkflowComponentId
   state: ReplayState | null
   samples: SampleProjection[]
   selection: Selection | null
   onSelect: (selection: Selection) => void
-  onBack: () => void
 }) {
   const definition = workflowComponent(component)
   const objects = focusedObjects(component, state, samples)
   return (
-    <div className="border-t border-line bg-surface p-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-balance text-sm font-semibold text-ink">{definition.label}</h2>
-          <p className="m-0 truncate text-pretty text-xs text-muted">{definition.description}</p>
-        </div>
-        <button
-          type="button"
-          className="shrink-0 rounded-md border border-line bg-raised px-3 py-1.5 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          onClick={onBack}
-        >
-          Back to overview
-        </button>
-      </div>
+    <div>
+      <p className="m-0 text-pretty text-xs text-muted">{definition.description}</p>
       {objects.length > 0 ? (
         <ul className="mt-2 flex list-none gap-2 overflow-x-auto p-0 pb-1" aria-label={`${definition.label} recorded objects`}>
           {objects.map((object) => (
