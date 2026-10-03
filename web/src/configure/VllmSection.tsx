@@ -4,6 +4,7 @@ import type { ReadinessState } from "./types.ts"
 import {
   CheckboxField,
   ConfigureSection,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -118,15 +119,15 @@ export function VllmSection({
           </p>
         </div>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={issues.some((issue) => [
+          forceOpen={issues.some((issue) => [
             "setting-gpu-memory",
             "setting-temperature",
             "setting-top-p",
             "setting-seed",
             "setting-stop-strings",
-          ].includes(issue.fieldId)) || undefined}
+          ].includes(issue.fieldId))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Memory and sampling
@@ -206,7 +207,7 @@ export function VllmSection({
               <FieldError id="setting-stop-strings-error" message={issueFor("setting-stop-strings")} />
             </label>
           </div>
-        </details>
+        </Details>
 
         {effectiveSettings && Object.keys(effectiveSettings).length > 0 ? (
           <details className="rounded-lg border border-slate-800 bg-slate-950">

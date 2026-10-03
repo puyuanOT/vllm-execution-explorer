@@ -10,6 +10,7 @@ import {
   ChoiceCard,
   ConfigureSection,
   dangerButtonClass,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -228,9 +229,9 @@ export function ModelSection({
           </label>
         </div>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={Boolean(issueFor("setting-model-revision") || issueFor("setting-tokenizer-revision")) || undefined}
+          forceOpen={Boolean(issueFor("setting-model-revision") || issueFor("setting-tokenizer-revision"))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Model revisions
@@ -263,11 +264,11 @@ export function ModelSection({
               <FieldError id="setting-tokenizer-revision-error" message={issueFor("setting-tokenizer-revision")} />
             </label>
           </div>
-        </details>
+        </Details>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={issues.some((issue) => issue.fieldId.startsWith("adapter-")) || undefined}
+          forceOpen={issues.some((issue) => issue.fieldId.startsWith("adapter-"))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             LoRA adapters <span className="ml-2 text-xs tabular-nums text-slate-400">{settings.loraAdapters.length} attached</span>
@@ -366,7 +367,7 @@ export function ModelSection({
               </>
             )}
           </div>
-        </details>
+        </Details>
 
         {readiness?.message ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 p-4" role={readiness.tone === "error" ? "alert" : "status"}>

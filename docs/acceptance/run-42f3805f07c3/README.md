@@ -57,7 +57,7 @@ the source and therefore describes the original pre-sanitization configuration.
 From the repository root, load and re-evaluate the bundle with:
 
 ```bash
-PYTHONPATH=.:instrumentation .venv/bin/python - <<'PY'
+.venv/bin/python - <<'PY'
 from pathlib import Path
 from runner.load import load_recording
 from runner.report import evaluate

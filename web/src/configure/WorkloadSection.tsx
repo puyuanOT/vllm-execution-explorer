@@ -10,6 +10,7 @@ import {
   buttonClass,
   ConfigureSection,
   dangerButtonClass,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -122,7 +123,7 @@ export function WorkloadSection({
               ))
               return (
                 <li key={batch.id}>
-                  <details className="group/batch rounded-lg border border-slate-800 bg-slate-950" open={batchHasIssue || undefined}>
+                  <Details className="group/batch rounded-lg border border-slate-800 bg-slate-950" forceOpen={batchHasIssue}>
                     <summary className="cursor-pointer list-none rounded-lg px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-slate-800 text-xs font-semibold tabular-nums text-slate-300" aria-hidden="true">
@@ -214,9 +215,9 @@ export function WorkloadSection({
                         <ul className="space-y-2" aria-label={`Requests in ${batch.label || batch.id}`}>
                           {batch.samples.map((sample, requestIndex) => (
                             <li key={sample.id}>
-                              <details
+                              <Details
                                 className="group/request rounded-md border border-slate-800 bg-slate-900"
-                                open={issues.some((issue) => issue.fieldId.includes(sample.id)) || undefined}
+                                forceOpen={issues.some((issue) => issue.fieldId.includes(sample.id))}
                               >
                                 <summary className="cursor-pointer list-none rounded-md px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
                                   <div className="flex items-center gap-3">
@@ -238,7 +239,7 @@ export function WorkloadSection({
                                     commitPositiveInteger={commitPositiveInteger}
                                   />
                                 </div>
-                              </details>
+                              </Details>
                             </li>
                           ))}
                         </ul>
@@ -256,7 +257,7 @@ export function WorkloadSection({
                         </button>
                       </div>
                     </div>
-                  </details>
+                  </Details>
                 </li>
               )
             })}
@@ -451,7 +452,10 @@ function RequestEditor({
 }
 
 function blurOnEnter(event: KeyboardEvent<HTMLInputElement>) {
-  if (event.key === "Enter") event.currentTarget.blur()
+  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+    event.preventDefault()
+    event.currentTarget.blur()
+  }
 }
 
 function plural(count: number, one: string, many: string) {
