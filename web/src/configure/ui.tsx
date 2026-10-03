@@ -1,11 +1,33 @@
-import { useState, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import { cn } from "../lib/cn.ts"
 
-export const inputClass = "mt-1.5 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+export const inputClass = "block mt-1.5 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
 export const buttonClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-200 outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
 export const primaryButtonClass = "inline-flex min-h-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
 export const dangerButtonClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-red-300 outline-none focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+
+export function Details({
+  defaultOpen = false,
+  forceOpen = false,
+  className,
+  children,
+}: {
+  defaultOpen?: boolean
+  forceOpen?: boolean
+  className?: string
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen || forceOpen)
+  useEffect(() => {
+    if (forceOpen) setOpen(true)
+  }, [forceOpen])
+  return (
+    <details className={className} open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+      {children}
+    </details>
+  )
+}
 
 export function ConfigureSection({
   number,
@@ -27,16 +49,13 @@ export function ConfigureSection({
   children: ReactNode
 }) {
   const headingId = `configure-section-${number}-heading`
-  const [open, setOpen] = useState(defaultOpen)
   return (
     <section className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm" aria-labelledby={headingId}>
       <h2 id={headingId} className="sr-only text-balance">{title}</h2>
-      <details
+      <Details
         className="group"
-        open={forceOpen || open}
-        onToggle={(event) => {
-          if (!forceOpen) setOpen(event.currentTarget.open)
-        }}
+        defaultOpen={defaultOpen}
+        forceOpen={forceOpen}
       >
         <summary className="cursor-pointer list-none rounded-xl px-5 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
           <div className="flex items-start gap-4">
@@ -55,7 +74,7 @@ export function ConfigureSection({
           </div>
         </summary>
         <div className="border-t border-slate-800 px-5 py-5">{children}</div>
-      </details>
+      </Details>
     </section>
   )
 }

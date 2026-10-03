@@ -10,6 +10,7 @@ import {
   ChoiceCard,
   ConfigureSection,
   dangerButtonClass,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -102,8 +103,8 @@ export function ModelSection({
         </fieldset>
 
         {settings.modelSource === "huggingface" ? (
-          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
-            <label className="text-xs font-medium text-slate-400" htmlFor="setting-model">
+          <div className="grid items-start gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-model">
               Repository
               <input
                 id="setting-model"
@@ -117,7 +118,7 @@ export function ModelSection({
               />
               <FieldError id="setting-model-error" message={issueFor("setting-model")} />
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="huggingface-token">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="huggingface-token">
               Hugging Face token <span className="font-normal text-slate-400">optional</span>
               <input
                 id="huggingface-token"
@@ -148,8 +149,8 @@ export function ModelSection({
             <FieldError id="setting-model-error" message={issueFor("setting-model")} />
           </label>
         ) : (
-          <div className="grid gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
-            <label className="text-xs font-medium text-slate-400" htmlFor="setting-model">
+          <div className="grid items-start gap-4 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-model">
               Path on this computer
               <input
                 id="setting-model"
@@ -165,7 +166,7 @@ export function ModelSection({
               <FieldError id="setting-model-error" message={issueFor("setting-model")} />
             </label>
             {settings.hostKind === "ssh" ? (
-              <label className="text-xs font-medium text-slate-400" htmlFor="model-destination">
+              <label className="block text-xs font-medium text-slate-400" htmlFor="model-destination">
                 Remote staging directory
                 <input
                   id="model-destination"
@@ -186,8 +187,8 @@ export function ModelSection({
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-xs font-medium text-slate-400" htmlFor="model-dtype">
+        <div className="grid items-start gap-4 md:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="model-dtype">
             Precision
             <select
               id="model-dtype"
@@ -201,7 +202,7 @@ export function ModelSection({
               <option value="float32">float32</option>
             </select>
           </label>
-          <label className="text-xs font-medium text-slate-400" htmlFor="model-quantization">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="model-quantization">
             Weight quantization
             <select
               id="model-quantization"
@@ -228,15 +229,15 @@ export function ModelSection({
           </label>
         </div>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={Boolean(issueFor("setting-model-revision") || issueFor("setting-tokenizer-revision")) || undefined}
+          forceOpen={Boolean(issueFor("setting-model-revision") || issueFor("setting-tokenizer-revision"))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Model revisions
           </summary>
-          <div className="grid gap-4 border-t border-slate-800 p-4 md:grid-cols-2">
-            <label className="text-xs font-medium text-slate-400" htmlFor="setting-model-revision">
+          <div className="grid items-start gap-4 border-t border-slate-800 p-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-model-revision">
               Model revision {settings.modelSource === "huggingface" ? null : <span className="font-normal text-slate-400">optional</span>}
               <input
                 id="setting-model-revision"
@@ -249,7 +250,7 @@ export function ModelSection({
               />
               <FieldError id="setting-model-revision-error" message={issueFor("setting-model-revision")} />
             </label>
-            <label className="text-xs font-medium text-slate-400" htmlFor="setting-tokenizer-revision">
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-tokenizer-revision">
               Tokenizer revision {settings.modelSource === "huggingface" ? null : <span className="font-normal text-slate-400">optional</span>}
               <input
                 id="setting-tokenizer-revision"
@@ -263,11 +264,11 @@ export function ModelSection({
               <FieldError id="setting-tokenizer-revision-error" message={issueFor("setting-tokenizer-revision")} />
             </label>
           </div>
-        </details>
+        </Details>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={issues.some((issue) => issue.fieldId.startsWith("adapter-")) || undefined}
+          forceOpen={issues.some((issue) => issue.fieldId.startsWith("adapter-"))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             LoRA adapters <span className="ml-2 text-xs tabular-nums text-slate-400">{settings.loraAdapters.length} attached</span>
@@ -290,8 +291,8 @@ export function ModelSection({
                         <h3 className="text-balance text-sm font-semibold text-slate-200">Adapter {index + 1}</h3>
                         <RemoveAdapterButton name={adapter.name || `Adapter ${index + 1}`} onRemove={() => onRemoveAdapter(adapter.id)} />
                       </div>
-                      <div className="mt-3 grid gap-4 md:grid-cols-2">
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`adapter-name-${adapter.id}`}>
+                      <div className="mt-3 grid items-start gap-4 md:grid-cols-2">
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`adapter-name-${adapter.id}`}>
                           Name
                           <input
                             id={`adapter-name-${adapter.id}`}
@@ -304,7 +305,7 @@ export function ModelSection({
                           />
                           <FieldError id={`adapter-name-${adapter.id}-error`} message={issueFor(`adapter-name-${adapter.id}`)} />
                         </label>
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`adapter-source-${adapter.id}`}>
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`adapter-source-${adapter.id}`}>
                           Source
                           <select
                             id={`adapter-source-${adapter.id}`}
@@ -366,7 +367,7 @@ export function ModelSection({
               </>
             )}
           </div>
-        </details>
+        </Details>
 
         {readiness?.message ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 p-4" role={readiness.tone === "error" ? "alert" : "status"}>

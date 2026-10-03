@@ -20,12 +20,26 @@ The explorer labels authored drafts and deterministic fixtures separately from G
 
 ## Local setup
 
+Use Python 3.11.15 and Node.js 22.14.0, matching CI. With `uv` and Node.js/npm
+installed, run these commands from the repository root. Local controller,
+fixture, and replay development does not require vLLM, PyTorch, CUDA, or a GPU.
+
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e ".[dev]"
-.venv/bin/python -m runner.lessons web/public/recordings
-npm install --prefix web
+node --version
+uv python install 3.11.15
+uv venv --python 3.11.15 --seed .venv
+.venv/bin/python -m pip install \
+  fastapi==0.141.1 \
+  httpx==0.28.1 \
+  pytest==9.1.1 \
+  python-multipart==0.0.32 \
+  uvicorn==0.53.0
+.venv/bin/python -m pip install --no-deps -e .
+npm ci --prefix web
 ```
+
+The teaching fixtures are tracked in Git and need no regeneration. Replay has
+no separate npm dependencies.
 
 Start the local controller and UI in separate terminals:
 
@@ -34,18 +48,28 @@ Start the local controller and UI in separate terminals:
 ```
 
 ```bash
-npm run dev --prefix web
+npm run dev --prefix web -- --strictPort
 ```
 
-Open `http://127.0.0.1:5173`. The default draft contains six requests in batches at 0 ms, 100 ms, and 120 ms. Nothing executes until **Prepare and capture** is pressed.
+Open `http://127.0.0.1:5173`. Leave the controller endpoint blank to use the
+local controller at `http://127.0.0.1:8765` through Vite's `/api` proxy.
+The default draft contains six requests in batches at 0 ms, 100 ms, and 120 ms.
+Nothing executes until **Prepare and capture** is pressed.
+
+A fresh browser selects live vLLM on the local host. For a first run without a
+GPU, open **Visualization Server → Connection details → Execution source**,
+choose **Demo fixture**, retain the local host, and press **Prepare and capture**.
+The fixture remains labeled as synthetic evidence.
 
 ## Verification
 
 ```bash
-.venv/bin/pytest -q
+.venv/bin/python -m pytest -q
+.venv/bin/python -m compileall -q runner instrumentation
 npm test --prefix replay
 npm test --prefix web
 npm run build --prefix web
+git diff --check
 ```
 
 The deterministic fixture exercises the complete local setup, capture, recording, replay, and UI flow without presenting its teaching timings as GPU measurements.

@@ -29,6 +29,7 @@ import {
   type ReadinessState,
   type SetupStage,
 } from "./configure/index.ts"
+import { focusValidationField } from "./configure/focusValidation.ts"
 import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
 import { SelectionInspector } from "./execution/SelectionInspector.tsx"
@@ -39,6 +40,8 @@ import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
 import { eventAt, nextSequence, previousSequence, SPEEDS } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
+import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
+import { monitorTargetConnection } from "./scenario/targetConnection.ts"
 import type { ScenarioAction } from "./scenario/reducer.ts"
 import { expectedRunFailure, shouldLoadExpectedRecording } from "./scenario/runCompletion.ts"
 import { cloneScenario, scenarioFromRecordedPlan, toRunBody, workloadPlan } from "./scenario/serialize.ts"
@@ -394,6 +397,7 @@ export function App() {
     setValidationMessage("")
     setAnnounce("Checking the execution host.")
     setSshVerification(null)
+    setHostCheck({ label: "Checking", message: "Checking the selected execution host.", tone: "neutral" })
     setSetupStages(EMPTY_STAGES.map((stage, index) => ({ ...stage, status: index === 0 ? "active" : "pending" })))
     try {
       if (settings.hostKind === "ssh") {
@@ -405,12 +409,23 @@ export function App() {
         form.set("port", settings.sshPort.trim())
         form.set("automatic_setup", String(settings.automaticSetup))
         form.set("identity", identity)
-        const response = await fetch("/api/targets/connect", { method: "POST", body: form })
+        const stopProgress = monitorTargetConnection(setSetupStages)
+        let response: Response
+        try {
+          response = await fetch("/api/targets/connect", { method: "POST", body: form })
+        } finally {
+          stopProgress()
+        }
         if (!response.ok) throw new Error(await responseDetail(response, "Could not connect to the GPU host."))
         const body = await response.json() as { runner_endpoint?: string; message?: string; gpu?: string | null; vllm_version?: string | null }
         if (!body.runner_endpoint) throw new Error("The GPU host connected without a runner endpoint.")
         const runtimeProblem = remoteRuntimeError(body.gpu, body.vllm_version)
         if (runtimeProblem) throw new Error(runtimeProblem)
+        setSetupStages([
+          { id: "connect", label: "Reach execution host", status: "complete" },
+          { id: "runtime", label: "Prepare CUDA and vLLM runtime", status: "complete", detail: [body.gpu, body.vllm_version && `vLLM ${body.vllm_version}`].filter(Boolean).join(" · ") },
+          { id: "ready", label: "Confirm loopback controller", status: "active", detail: "Verifying the remote controller and CUDA preflight." },
+        ])
         const checked = await runner.refresh(body.runner_endpoint)
         if (!checked.preflight || !checked.capabilities) {
           throw new Error(`The SSH tunnel opened, but the remote runner could not be verified. ${checked.health}`)
@@ -428,14 +443,13 @@ export function App() {
       } else {
         if (settings.runnerUrl) setSettings((current) => ({ ...current, runnerUrl: "" }))
         const checked = await runner.refresh()
-        setSetupStages([
-          { id: "connect", label: "Reach execution host", status: "complete", detail: "Local controller" },
-          { id: "runtime", label: "Inspect CUDA and vLLM runtime", status: checked.preflight?.ok || settings.engine === "fixture" ? "complete" : "error", detail: checked.preflight?.message },
-          { id: "ready", label: "Confirm loopback controller", status: checked.preflight ? "complete" : "error", detail: checked.health },
-        ])
-        setHostCheck(checked.preflight
-          ? { label: settings.engine === "fixture" || checked.preflight.ok ? "Ready" : "Needs GPU host", message: checked.preflight.message ?? checked.health, tone: settings.engine === "fixture" || checked.preflight.ok ? "ready" : "warning" }
-          : { label: "Unavailable", message: "Start the local controller and retry.", tone: "error" })
+        const presentation = localHostCheckPresentation(
+          settings.engine,
+          checked.health,
+          checked.preflight ? { ok: checked.preflight.ok, message: checked.preflight.message } : null,
+        )
+        setSetupStages(presentation.stages)
+        setHostCheck(presentation.readiness)
         setAnnounce("The local execution host check finished.")
       }
     } catch (error) {
@@ -466,7 +480,7 @@ export function App() {
     if (problems.length > 0) {
       setIssues(problems)
       setValidationMessage(problems[0]?.message ?? "Check the configuration.")
-      window.requestAnimationFrame(() => document.getElementById(problems[0]?.fieldId ?? "")?.focus())
+      focusValidationField(problems[0]?.fieldId ?? "")
       return
     }
     setIssues([])
@@ -628,7 +642,9 @@ export function App() {
     ? `${statusLabel(runner.live?.status ?? "running")}${runner.live?.message ? ` · ${runner.live.message}` : ""}`
     : preparingRun ? preparationStatus || "Preparing capture"
     : recording ? `Recording · ${recording.source}` : runner.health || "Runner unchecked"
-  const hostReadiness = hostCheck ?? deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message)
+  const hostReadiness = hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
+    ? { label: "Unchecked", message: "Choose the SSH key and check the selected remote host before capture.", tone: "neutral" as const }
+    : deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message))
   const runBlockedReason = settings.engine === "vllm" && settings.hostKind === "local" && runner.preflight?.ok !== true
     ? hostReadiness.message
     : undefined

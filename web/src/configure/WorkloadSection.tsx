@@ -3,13 +3,15 @@ import type { KeyboardEvent } from "react"
 import type { Limits } from "../api.ts"
 import { cn } from "../lib/cn.ts"
 import { sampleCount, type ScenarioAction } from "../scenario/reducer.ts"
-import { formatTime, parseTime } from "../scenario/time.ts"
+import { formatTime } from "../scenario/time.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import type { FieldIssue } from "../scenario/validate.ts"
+import { resolveBatchTime, resolvePositiveInteger } from "../scenario/workloadFields.ts"
 import {
   buttonClass,
   ConfigureSection,
   dangerButtonClass,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -46,13 +48,12 @@ export function WorkloadSection({
   }
 
   function commitPositiveInteger(fieldId: string, raw: string, onCommit: (value: number) => void) {
-    const trimmed = raw.trim()
-    const value = Number(trimmed)
-    if (!/^\d+$/.test(trimmed) || !Number.isSafeInteger(value) || value < 1) {
-      onInvalid({ fieldId, message: "Enter a positive whole number." })
+    const result = resolvePositiveInteger(fieldId, raw)
+    if ("issue" in result) {
+      onInvalid(result.issue)
       return
     }
-    onCommit(value)
+    onCommit(result.value)
   }
 
   return (
@@ -122,7 +123,7 @@ export function WorkloadSection({
               ))
               return (
                 <li key={batch.id}>
-                  <details className="group/batch rounded-lg border border-slate-800 bg-slate-950" open={batchHasIssue || undefined}>
+                  <Details className="group/batch rounded-lg border border-slate-800 bg-slate-950" forceOpen={batchHasIssue}>
                     <summary className="cursor-pointer list-none rounded-lg px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-slate-800 text-xs font-semibold tabular-nums text-slate-300" aria-hidden="true">
@@ -139,8 +140,8 @@ export function WorkloadSection({
                       </div>
                     </summary>
                     <div className="space-y-5 border-t border-slate-800 p-4">
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`batch-label-${batch.id}`}>
+                      <div className="grid items-start gap-4 md:grid-cols-2">
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`batch-label-${batch.id}`}>
                           Batch label
                           <input
                             id={`batch-label-${batch.id}`}
@@ -153,7 +154,7 @@ export function WorkloadSection({
                           />
                           <FieldError id={`batch-label-${batch.id}-error`} message={labelError} />
                         </label>
-                        <label className="text-xs font-medium text-slate-400" htmlFor={`batch-time-${batch.id}`}>
+                        <label className="block text-xs font-medium text-slate-400" htmlFor={`batch-time-${batch.id}`}>
                           Planned send offset ({unit})
                           <input
                             key={`${batch.id}-${batch.arrivalOffsetMs}-${unit}`}
@@ -165,17 +166,12 @@ export function WorkloadSection({
                             aria-invalid={Boolean(timeError)}
                             aria-describedby={timeError ? `batch-time-${batch.id}-error` : undefined}
                             onBlur={(event) => {
-                              const value = parseTime(event.target.value, unit)
-                              if (value == null) {
-                                onInvalid({
-                                  fieldId: `batch-time-${batch.id}`,
-                                  message: unit === "ms"
-                                    ? "Enter a nonnegative whole number of milliseconds."
-                                    : "Enter seconds precise to a whole millisecond, such as 0.12.",
-                                })
+                              const result = resolveBatchTime(`batch-time-${batch.id}`, event.target.value, unit)
+                              if ("issue" in result) {
+                                onInvalid(result.issue)
                                 return
                               }
-                              onAction({ type: "commit-batch-time", batchId: batch.id, arrivalOffsetMs: value })
+                              onAction({ type: "commit-batch-time", batchId: batch.id, arrivalOffsetMs: result.value })
                             }}
                             onKeyDown={blurOnEnter}
                           />
@@ -214,9 +210,9 @@ export function WorkloadSection({
                         <ul className="space-y-2" aria-label={`Requests in ${batch.label || batch.id}`}>
                           {batch.samples.map((sample, requestIndex) => (
                             <li key={sample.id}>
-                              <details
+                              <Details
                                 className="group/request rounded-md border border-slate-800 bg-slate-900"
-                                open={issues.some((issue) => issue.fieldId.includes(sample.id)) || undefined}
+                                forceOpen={issues.some((issue) => issue.fieldId.includes(sample.id))}
                               >
                                 <summary className="cursor-pointer list-none rounded-md px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
                                   <div className="flex items-center gap-3">
@@ -238,7 +234,7 @@ export function WorkloadSection({
                                     commitPositiveInteger={commitPositiveInteger}
                                   />
                                 </div>
-                              </details>
+                              </Details>
                             </li>
                           ))}
                         </ul>
@@ -256,7 +252,7 @@ export function WorkloadSection({
                         </button>
                       </div>
                     </div>
-                  </details>
+                  </Details>
                 </li>
               )
             })}
@@ -301,8 +297,8 @@ function RequestEditor({
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-label-${sample.id}`}>
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-label-${sample.id}`}>
           Request label
           <input
             id={`sample-label-${sample.id}`}
@@ -315,7 +311,7 @@ function RequestEditor({
           />
           <FieldError id={`sample-label-${sample.id}-error`} message={labelError} />
         </label>
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-mode-${sample.id}`}>
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-mode-${sample.id}`}>
           Input mode
           <select
             id={`sample-mode-${sample.id}`}
@@ -380,8 +376,8 @@ function RequestEditor({
         </label>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-output-${sample.id}`}>
+      <div className="grid items-start gap-4 md:grid-cols-2">
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-output-${sample.id}`}>
           Maximum output tokens
           <input
             key={`${sample.id}-output-${sample.maxOutputTokens}`}
@@ -403,7 +399,7 @@ function RequestEditor({
           />
           <FieldError id={`sample-output-${sample.id}-error`} message={outputError} />
         </label>
-        <label className="text-xs font-medium text-slate-400" htmlFor={`sample-move-${sample.id}`}>
+        <label className="block text-xs font-medium text-slate-400" htmlFor={`sample-move-${sample.id}`}>
           Arrival batch
           <select
             id={`sample-move-${sample.id}`}
@@ -451,7 +447,10 @@ function RequestEditor({
 }
 
 function blurOnEnter(event: KeyboardEvent<HTMLInputElement>) {
-  if (event.key === "Enter") event.currentTarget.blur()
+  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+    event.preventDefault()
+    event.currentTarget.blur()
+  }
 }
 
 function plural(count: number, one: string, many: string) {

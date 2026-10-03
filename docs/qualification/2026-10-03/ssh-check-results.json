@@ -1,0 +1,216 @@
+{
+  "scope": "UI-driven automatic SSH host check, runtime availability, and loopback tunnel; no new GPU model capture",
+  "status": {
+    "status": "ready",
+    "phase": "runtime_and_tunnel_ready",
+    "message": "Connected to ubuntu@146.235.202.149. NVIDIA A10, 23028 MiB. vLLM 0.30.0 is installed. Runs use http://127.0.0.1:8766. The private key stays on this computer.",
+    "history": [
+      {
+        "phase": "checking_ssh_and_preparing_runtime",
+        "status": "connecting",
+        "observed_monotonic_ns": 171006909696500,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "checking_ssh",
+        "status": "connecting",
+        "observed_monotonic_ns": 171006910047875,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "copying_project",
+        "status": "connecting",
+        "observed_monotonic_ns": 171007586164291,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "preparing_runtime",
+        "status": "connecting",
+        "observed_monotonic_ns": 171008624227125,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "opening_tunnel",
+        "status": "connecting",
+        "observed_monotonic_ns": 171019385379791,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "checking_controller",
+        "status": "connecting",
+        "observed_monotonic_ns": 171019895676000,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "runtime_and_tunnel_ready",
+        "status": "ready",
+        "observed_monotonic_ns": 171020267351041,
+        "clock_domain": "controller:time.monotonic_ns"
+      }
+    ],
+    "execution_target": {
+      "kind": "ssh",
+      "engine_location": "remote",
+      "client_platform": "darwin",
+      "runner_endpoint": "http://127.0.0.1:8766",
+      "remote_bind": "127.0.0.1",
+      "ssh": {
+        "user": "ubuntu",
+        "host": "146.235.202.149",
+        "remote_bind": "127.0.0.1"
+      }
+    }
+  },
+  "elapsed_seconds": 13.358,
+  "preflight": {
+    "ok": true,
+    "message": "This Linux machine can host the vLLM 0.30.0 engine.",
+    "platform": "linux"
+  },
+  "runtime": {
+    "platform": "linux",
+    "cuda_available": true,
+    "cuda_compute_capability": [
+      8,
+      6
+    ],
+    "vllm_version": "0.30.0",
+    "pinned_vllm": "0.30.x"
+  },
+  "assessment": {
+    "connected": true,
+    "observed_phases": [
+      "checking_ssh_and_preparing_runtime",
+      "checking_ssh",
+      "copying_project",
+      "preparing_runtime",
+      "opening_tunnel",
+      "checking_controller",
+      "runtime_and_tunnel_ready"
+    ],
+    "preflight_passed": true
+  },
+  "failure_case": {
+    "scope": "UI-driven unreachable SSH port 1 on the same host; expected failure with recovery controls",
+    "status": {
+      "status": "failed",
+      "phase": "connection_failed",
+      "message": "ssh: connect to host 146.235.202.149 port 1: Operation timed out",
+      "history": [
+        {
+          "phase": "checking_ssh_and_preparing_runtime",
+          "status": "connecting",
+          "observed_monotonic_ns": 171119320332875,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "checking_ssh",
+          "status": "connecting",
+          "observed_monotonic_ns": 171119320393958,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "connection_failed",
+          "status": "failed",
+          "observed_monotonic_ns": 171139336182916,
+          "clock_domain": "controller:time.monotonic_ns"
+        }
+      ],
+      "execution_target": null
+    },
+    "elapsed_seconds": 20.016,
+    "assessment": {
+      "expected_failure": true,
+      "previous_execution_target_cleared": true,
+      "no_runtime_ready_claim": true
+    }
+  },
+  "prepared_recovery_case": {
+    "scope": "UI-driven retry on port 22 with automatic setup disabled, using existing prepared runtime",
+    "status": {
+      "status": "ready",
+      "phase": "runtime_and_tunnel_ready",
+      "message": "Connected to ubuntu@146.235.202.149. NVIDIA A10, 23028 MiB. vLLM 0.30.0 is installed. Runs use http://127.0.0.1:8766. The private key stays on this computer.",
+      "history": [
+        {
+          "phase": "validating_prepared_runtime",
+          "status": "connecting",
+          "observed_monotonic_ns": 171201942916416,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "checking_ssh",
+          "status": "connecting",
+          "observed_monotonic_ns": 171201943568333,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "preparing_runtime",
+          "status": "connecting",
+          "observed_monotonic_ns": 171202620734875,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "opening_tunnel",
+          "status": "connecting",
+          "observed_monotonic_ns": 171210002427416,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "checking_controller",
+          "status": "connecting",
+          "observed_monotonic_ns": 171210511946750,
+          "clock_domain": "controller:time.monotonic_ns"
+        },
+        {
+          "phase": "runtime_and_tunnel_ready",
+          "status": "ready",
+          "observed_monotonic_ns": 171210870199333,
+          "clock_domain": "controller:time.monotonic_ns"
+        }
+      ],
+      "execution_target": {
+        "kind": "ssh",
+        "engine_location": "remote",
+        "client_platform": "darwin",
+        "runner_endpoint": "http://127.0.0.1:8766",
+        "remote_bind": "127.0.0.1",
+        "ssh": {
+          "user": "ubuntu",
+          "host": "146.235.202.149",
+          "remote_bind": "127.0.0.1"
+        }
+      }
+    },
+    "elapsed_seconds": 8.927,
+    "preflight": {
+      "ok": true,
+      "message": "This Linux machine can host the vLLM 0.30.0 engine.",
+      "platform": "linux"
+    },
+    "assessment": {
+      "connected": true,
+      "preflight_passed": true,
+      "no_project_copy": true
+    }
+  },
+  "history_scope": "The initial status history covers the first attempt. Failure and recovery histories are complete per-attempt slices of the accumulated backend history; earlier attempts are omitted from those slices.",
+  "functional_revision": "23aece686c387e822adbc4f36021f670ec2f3ad3",
+  "ui_field_spacing": {
+    "header": "vLLM 0.30.0 Execution Explorer",
+    "checked_ids": [
+      "ssh-port",
+      "setting-model",
+      "model-dtype"
+    ],
+    "label_display": "block",
+    "label_line_height_px": 16,
+    "control_top_minus_label_top_px": 22,
+    "control_margin_top_px": 6,
+    "narrow_viewport": [
+      768,
+      1024
+    ],
+    "narrow_document_horizontal_overflow": false
+  }
+}

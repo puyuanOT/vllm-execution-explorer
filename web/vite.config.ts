@@ -10,8 +10,8 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8765",
-        timeout: 1_800_000,
-        proxyTimeout: 1_800_000,
+        timeout: 2_100_000,
+        proxyTimeout: 2_100_000,
       },
     },
   },
@@ -21,8 +21,8 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://127.0.0.1:8765",
-        timeout: 1_800_000,
-        proxyTimeout: 1_800_000,
+        timeout: 2_100_000,
+        proxyTimeout: 2_100_000,
       },
     },
   },

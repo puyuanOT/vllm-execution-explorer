@@ -1,0 +1,218 @@
+Backend qualification — 2026-10-03
+
+Actual runner.load, runner.report.evaluate(profile="integrity"), and runner.export.export_structural were used.
+Seven new UI-driven recordings are synthetic fixtures; they establish no new GPU acceptance.
+Two failed-before-fix user-intent cases remain explicitly failed even though their recordings pass structural integrity.
+Current fixed-implementation qualification checks pass. A complete event stream is distinct from a completed workload.
+Raw prompt/output text, token payloads, credentials, and absolute execution-host paths are omitted. Probe and authored-label preservation are booleans only.
+
+completed_prompt_probe: run-2842db898f61
+Classification: passed; case result: pass.
+Workload outcome: completed; 209 events, 21 scheduler steps, 52 accepted tokens; 6 request completions.
+Recording report
+
+[pass] sequences: 209 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 21 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 209 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 21 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+prompt_mode_cancellation: run-05e531789cc0
+Classification: passed; case result: pass.
+Workload outcome: cancelled; 22 events, 2 scheduler steps, 2 accepted tokens; 0 request completions.
+The cancelled run preserves a complete captured prefix with no request terminal events; cancelled workload status remains explicit.
+Recording report
+
+[pass] sequences: 22 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 2 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 2 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 22 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 2 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 2 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+default_workload_reduced_scheduler_limits: run-17b41a944f4c
+Classification: passed; case result: pass.
+Workload outcome: completed; 219 events, 27 scheduler steps, 48 accepted tokens; 6 request completions.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+invalid_raw_time_unexpected_capture_before_fix: run-8a05a5982e46
+Classification: failed_before_fix; case result: FAIL user intent.
+Workload outcome: completed; 219 events, 27 scheduler steps, 48 accepted tokens; 6 request completions.
+Failure: The UI created a capture using the last valid saved offset while the current numeric editor was invalid.
+Expected: A nonnumeric current batch-time field must block capture.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+latest_raw_values_and_keyboard_capture_after_fix: run-32d16275bf8f
+Classification: passed_after_fix; case result: pass.
+Workload outcome: completed; 234 events, 30 scheduler steps, 51 accepted tokens; 6 request completions.
+Expected: A valid latest authored snapshot must reach the recording unchanged, with output bounded by its submitted request caps.
+Latest submitted snapshot verified: offsets 15/120/120 ms, caps 11/8/8/8/8/8; authored label and unchanged default prompt preservation checks pass.
+Recording report
+
+[pass] sequences: 234 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 30 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 234 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 30 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+radio_enter_unintended_capture_before_keyboard_guard_fix: run-b6113e1b1816
+Classification: failed_before_fix; case result: FAIL user intent.
+Workload outcome: completed; 219 events, 27 scheduler steps, 48 accepted tokens; 6 request completions.
+Failure: The UI created a capture through implicit form submission while the time-display radio was focused.
+Expected: Pressing Enter on a time-display radio control must not submit a capture.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export not repeated for this redundant default fixture. Raw content remains only in ignored run storage.
+
+explicit_button_enter_capture_after_keyboard_guard_fix: run-8c190859dd4c
+Classification: passed_after_fix; case result: pass.
+Workload outcome: completed; 219 events, 27 scheduler steps, 48 accepted tokens; 6 request completions.
+Expected: Enter on the explicit Prepare and capture button starts the valid draft, while Enter on configuration inputs does not submit implicitly.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Structural export: event bytes unchanged; content absent; recursive forbidden manifest fields removed; destination Git-ignored.
+Recording report
+
+[pass] sequences: 219 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 27 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 6 block transitions follow reference counts and allocation generations
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+
+Result: pass
+
+Preserved historical GPU acceptance bundle: run-42f3805f07c3
+Three evidence-file checksums checked once and matched; 8 integrity findings pass. This is historical replay evidence, with no new GPU execution.
+
+Final result: current qualification checks pass; 2 failed-before-fix user-intent cases retained.

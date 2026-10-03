@@ -4,6 +4,7 @@ import type { ReadinessState } from "./types.ts"
 import {
   CheckboxField,
   ConfigureSection,
+  Details,
   FieldError,
   FieldHint,
   inputClass,
@@ -45,8 +46,8 @@ export function VllmSection({
       ].includes(issue.fieldId))}
     >
       <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-3">
-          <label className="text-xs font-medium text-slate-400" htmlFor="setting-max-model-len">
+        <div className="grid items-start gap-4 md:grid-cols-3">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-max-model-len">
             Maximum context length
             <input
               id="setting-max-model-len"
@@ -61,7 +62,7 @@ export function VllmSection({
             <FieldHint id="setting-max-model-len-hint">Maximum prompt and generated tokens per request.</FieldHint>
             <FieldError id="setting-max-model-len-error" message={issueFor("setting-max-model-len")} />
           </label>
-          <label className="text-xs font-medium text-slate-400" htmlFor="setting-max-seqs">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-max-seqs">
             Maximum concurrent sequences
             <input
               id="setting-max-seqs"
@@ -76,7 +77,7 @@ export function VllmSection({
             <FieldHint id="setting-max-seqs-hint">Upper bound for sequences scheduled together.</FieldHint>
             <FieldError id="setting-max-seqs-error" message={issueFor("setting-max-seqs")} />
           </label>
-          <label className="text-xs font-medium text-slate-400" htmlFor="setting-token-budget">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-token-budget">
             Tokens per scheduler iteration
             <input
               id="setting-token-budget"
@@ -93,7 +94,7 @@ export function VllmSection({
           </label>
         </div>
 
-        <div className="grid gap-5 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
+        <div className="grid items-start gap-5 rounded-lg border border-slate-800 bg-slate-950 p-4 md:grid-cols-2">
           <CheckboxField
             id="chunked-prefill"
             checked={settings.chunkedPrefill}
@@ -118,15 +119,15 @@ export function VllmSection({
           </p>
         </div>
 
-        <details
+        <Details
           className="rounded-lg border border-slate-800 bg-slate-950"
-          open={issues.some((issue) => [
+          forceOpen={issues.some((issue) => [
             "setting-gpu-memory",
             "setting-temperature",
             "setting-top-p",
             "setting-seed",
             "setting-stop-strings",
-          ].includes(issue.fieldId)) || undefined}
+          ].includes(issue.fieldId))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
             Memory and sampling
@@ -148,8 +149,8 @@ export function VllmSection({
               <FieldError id="setting-gpu-memory-error" message={issueFor("setting-gpu-memory")} />
             </label>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <label className="text-xs font-medium text-slate-400" htmlFor="setting-temperature">
+            <div className="grid items-start gap-4 md:grid-cols-3">
+              <label className="block text-xs font-medium text-slate-400" htmlFor="setting-temperature">
                 Temperature
                 <input
                   id="setting-temperature"
@@ -163,7 +164,7 @@ export function VllmSection({
                 />
                 <FieldError id="setting-temperature-error" message={issueFor("setting-temperature")} />
               </label>
-              <label className="text-xs font-medium text-slate-400" htmlFor="setting-top-p">
+              <label className="block text-xs font-medium text-slate-400" htmlFor="setting-top-p">
                 Top-p
                 <input
                   id="setting-top-p"
@@ -177,7 +178,7 @@ export function VllmSection({
                 />
                 <FieldError id="setting-top-p-error" message={issueFor("setting-top-p")} />
               </label>
-              <label className="text-xs font-medium text-slate-400" htmlFor="setting-seed">
+              <label className="block text-xs font-medium text-slate-400" htmlFor="setting-seed">
                 Seed <span className="font-normal text-slate-400">optional</span>
                 <input
                   id="setting-seed"
@@ -206,7 +207,7 @@ export function VllmSection({
               <FieldError id="setting-stop-strings-error" message={issueFor("setting-stop-strings")} />
             </label>
           </div>
-        </details>
+        </Details>
 
         {effectiveSettings && Object.keys(effectiveSettings).length > 0 ? (
           <details className="rounded-lg border border-slate-800 bg-slate-950">
