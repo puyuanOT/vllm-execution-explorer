@@ -3,9 +3,10 @@ import type { KeyboardEvent } from "react"
 import type { Limits } from "../api.ts"
 import { cn } from "../lib/cn.ts"
 import { sampleCount, type ScenarioAction } from "../scenario/reducer.ts"
-import { formatTime, parseTime } from "../scenario/time.ts"
+import { formatTime } from "../scenario/time.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import type { FieldIssue } from "../scenario/validate.ts"
+import { resolveBatchTime, resolvePositiveInteger } from "../scenario/workloadFields.ts"
 import {
   buttonClass,
   ConfigureSection,
@@ -47,13 +48,12 @@ export function WorkloadSection({
   }
 
   function commitPositiveInteger(fieldId: string, raw: string, onCommit: (value: number) => void) {
-    const trimmed = raw.trim()
-    const value = Number(trimmed)
-    if (!/^\d+$/.test(trimmed) || !Number.isSafeInteger(value) || value < 1) {
-      onInvalid({ fieldId, message: "Enter a positive whole number." })
+    const result = resolvePositiveInteger(fieldId, raw)
+    if ("issue" in result) {
+      onInvalid(result.issue)
       return
     }
-    onCommit(value)
+    onCommit(result.value)
   }
 
   return (
@@ -166,17 +166,12 @@ export function WorkloadSection({
                             aria-invalid={Boolean(timeError)}
                             aria-describedby={timeError ? `batch-time-${batch.id}-error` : undefined}
                             onBlur={(event) => {
-                              const value = parseTime(event.target.value, unit)
-                              if (value == null) {
-                                onInvalid({
-                                  fieldId: `batch-time-${batch.id}`,
-                                  message: unit === "ms"
-                                    ? "Enter a nonnegative whole number of milliseconds."
-                                    : "Enter seconds precise to a whole millisecond, such as 0.12.",
-                                })
+                              const result = resolveBatchTime(`batch-time-${batch.id}`, event.target.value, unit)
+                              if ("issue" in result) {
+                                onInvalid(result.issue)
                                 return
                               }
-                              onAction({ type: "commit-batch-time", batchId: batch.id, arrivalOffsetMs: value })
+                              onAction({ type: "commit-batch-time", batchId: batch.id, arrivalOffsetMs: result.value })
                             }}
                             onKeyDown={blurOnEnter}
                           />

@@ -29,6 +29,7 @@ import {
   type ReadinessState,
   type SetupStage,
 } from "./configure/index.ts"
+import { focusValidationField } from "./configure/focusValidation.ts"
 import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
 import { SelectionInspector } from "./execution/SelectionInspector.tsx"
@@ -466,7 +467,7 @@ export function App() {
     if (problems.length > 0) {
       setIssues(problems)
       setValidationMessage(problems[0]?.message ?? "Check the configuration.")
-      window.requestAnimationFrame(() => document.getElementById(problems[0]?.fieldId ?? "")?.focus())
+      focusValidationField(problems[0]?.fieldId ?? "")
       return
     }
     setIssues([])

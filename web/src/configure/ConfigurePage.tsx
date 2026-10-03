@@ -4,6 +4,8 @@ import type { FeatureCapability, Limits } from "../api.ts"
 import type { ScenarioAction } from "../scenario/reducer.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import type { FieldIssue } from "../scenario/validate.ts"
+import { resolveWorkloadFields } from "../scenario/workloadFields.ts"
+import { focusValidationField } from "./focusValidation.ts"
 import { ModelSection } from "./ModelSection.tsx"
 import { ServerSection } from "./ServerSection.tsx"
 import type { ConfigureRuntimeInputs, ReadinessState, SetupStage } from "./types.ts"
@@ -110,12 +112,27 @@ export function ConfigurePage({
       <form
         className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8"
         aria-busy={running || checkingHost}
+        noValidate
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.nativeEvent.isComposing && event.target instanceof HTMLInputElement) event.preventDefault()
+          if (event.key === "Enter" && !event.nativeEvent.isComposing && event.target instanceof HTMLInputElement
+            && ["text", "search", "tel", "url", "email", "password", "date", "month", "week", "time", "datetime-local", "number"].includes(event.target.type)) {
+            event.preventDefault()
+          }
         }}
         onSubmit={(event) => {
           event.preventDefault()
-          if (!running && !checkingHost) onRun(scenario, runtime)
+          if (running || checkingHost) return
+          const form = event.currentTarget
+          const result = resolveWorkloadFields(scenario, unit, (fieldId) => {
+            const input = form.elements.namedItem(fieldId)
+            return input instanceof HTMLInputElement ? input.value : undefined
+          })
+          if ("issue" in result) {
+            onInvalid(result.issue)
+            focusValidationField(result.issue.fieldId)
+            return
+          }
+          onRun(result.scenario, runtime)
         }}
       >
         <header className="mb-2 flex flex-col gap-5 border-b border-slate-800 pb-7 lg:flex-row lg:items-end lg:justify-between">
