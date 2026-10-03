@@ -1,6 +1,12 @@
 {
   "recordings": [
     {
+      "id": "model-kv-walkthrough",
+      "title": "Model and KV walkthrough",
+      "summary": "Six staggered synthetic requests explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. This teaching fixture loads no model weights and contains no GPU timing measurements.",
+      "evidence": "fixture"
+    },
+    {
       "id": "continuous-batching",
       "title": "Continuous batching",
       "summary": "Request B is admitted after A has accepted an output token. A later step lists both request ids. This file was produced by the fixture engine.",

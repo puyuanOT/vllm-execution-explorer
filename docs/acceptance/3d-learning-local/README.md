@@ -16,6 +16,7 @@ This is **local synthetic and contract evidence**, not GPU qualification. The re
 | Case | Success criteria | Observed result |
 | --- | --- | --- |
 | Fresh integrated staggered capture, run-609e5a887c09 | Actual UI/controller capture; complete inventory, ordered queues, request outcomes and valid recording | 289 events, 16 steps, six completed requests, eight accepted output tokens each; all nine integrity checks and configuration hash passed independently |
+| Default offline walkthrough | Fresh preview opens an explicitly synthetic lesson with architecture and complete pool available | The verified staggered fixture is the first bundled lesson; pinned public Qwen3 geometry and all eight blocks are available without importing files or loading model weights |
 | KV result boundary | Reserved slots are not computed; returned writes establish occupancy | First scheduler step at event 14 showed reservations; event 23 showed block 1 with 4/16 computed positions; slot 1 selected sample-2 position 1, ID 2 |
 | Final output token | Accepted final token must not be marked computed | Actual replay keeps the final token of all six requests not_computed |
 | Architecture drill | All layers and heads reachable; captured GQA mapping retained | UI Model → Attention → Query head 8; Qwen3 geometry 2560 hidden, 9728 FFN, 32 Q/8 KV, 128 head dimension; Q8 shares KV2 |
