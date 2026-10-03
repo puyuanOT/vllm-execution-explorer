@@ -1,0 +1,1329 @@
+{
+  "all_observed_cases_pass": false,
+  "base_commit": "ce82dd97611e8f3a6cee4b131e60ff526305b9f6",
+  "case_counts": {
+    "failed_before_fix": 2,
+    "qualified": 5,
+    "total": 7
+  },
+  "current_qualification_ok": true,
+  "evaluated_implementation": [
+    "runner.load.load_recording",
+    "runner.report.evaluate:integrity",
+    "runner.export.export_structural"
+  ],
+  "historical_user_intent_failure_count": 2,
+  "limitations": [
+    "New recordings use the synthetic fixture engine and fixture_direct transport; they do not qualify live vLLM, CUDA, HTTP serving boundaries, tokenizer measurement, or prefix-cache behavior.",
+    "Cancellation retains a complete captured event prefix with no per-request terminal events in this early cancellation. Workload completion status is explicitly cancelled.",
+    "The preserved GPU bundle validates replay of historical evidence, not a new GPU run.",
+    "run-8a05a5982e46 is deliberately retained as a failed user-intent case from before the raw-editor fix, despite passing backend recording integrity. The final fixed capture and browser regressions are separate evidence.",
+    "run-b6113e1b1816 retains a second failed user-intent case: Enter on a time-display radio created an unintended capture before the keyboard guard fix. Its integrity passed; no redundant structural export was performed. Root owns the post-fix keyboard UI regression evidence."
+  ],
+  "new_gpu_execution": false,
+  "ok": false,
+  "ok_scope": "All seven observed cases, including two intentionally retained failed-before-fix user-intent cases. current_qualification_ok summarizes successful qualification of the fixed implementation.",
+  "preserved_gpu_acceptance": {
+    "checksum_files": [
+      {
+        "file": "manifest.json",
+        "matches": true,
+        "sha256": "c384bb05f08d2612e707e239a8b3710d1b3e95370e60528ff5e0c88d35bef5b1"
+      },
+      {
+        "file": "events.jsonl",
+        "matches": true,
+        "sha256": "d04a18ddaa3e0cd0977cc25dab39a55abaeb0444763c7dd8016acc8bdfa858e4"
+      },
+      {
+        "file": "integrity-report.txt",
+        "matches": true,
+        "sha256": "07cf83817a20c536b1dc386223dcaa8c7f9e2a6481e65893745274d909da4a62"
+      }
+    ],
+    "finding_count": 8,
+    "integrity_ok": true,
+    "new_execution": false,
+    "run_id": "run-42f3805f07c3"
+  },
+  "privacy": "Raw prompt/output text, token payloads, credentials, and absolute host paths omitted. The prompt probe is recorded only as an exact-preservation boolean.",
+  "qualified_at": "2026-10-03T12:46:56-06:00",
+  "reevaluated_base_commit": "67b1f0b38f41ade4085396017f549427a2f6acec",
+  "runs": [
+    {
+      "case": "completed_prompt_probe",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "all_planned_requests_dispatched": true,
+        "all_planned_requests_have_completion_events": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "expected_accepted_token_count": true,
+        "expected_completion_status": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "probe_accepted_tokens_12": true,
+        "probe_max_output_tokens_12": true,
+        "probe_prompt_exactly_preserved": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 0,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 2048,
+          "max_num_seqs": 4,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 6,
+        "requests": [
+          {
+            "accepted_tokens": 12,
+            "id": "sample-1",
+            "max_output_tokens": 12,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-2",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 6
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 2048,
+          "max_num_seqs": 4
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 52,
+        "cancellation_event_count": 0,
+        "completed_request_count": 6,
+        "content_record_count": 116,
+        "dispatched_request_count": 6,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 6,
+        "event_count": 209,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 4,
+        "max_step_scheduled_tokens": 9,
+        "step_count": 21,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "209 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "21 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "run_id": "run-2842db898f61",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-2842db898f61-0d57e5bc",
+        "event_sha256": "5eb6cf75bc1d42c60a7a3e8f6c7c079f48f81edc4923befe3b07be085032f0cd",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct"
+    },
+    {
+      "case": "prompt_mode_cancellation",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "cancelled_prefix_retained": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "expected_accepted_token_count": true,
+        "expected_completion_status": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true
+      },
+      "completion_status": "cancelled",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 4,
+        "batches": [
+          {
+            "planned_offset_ms": 10,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 4
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          },
+          {
+            "planned_offset_ms": 220,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 2048,
+          "max_num_seqs": 4,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 8,
+        "requests": [
+          {
+            "accepted_tokens": 1,
+            "id": "sample-15c242d4eaf7e670",
+            "max_output_tokens": 12,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 1,
+            "id": "sample-ad21efabfc465a0c",
+            "max_output_tokens": 8,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-1",
+            "max_output_tokens": 12,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": null
+          },
+          {
+            "accepted_tokens": 0,
+            "id": "sample-013e952886084f13",
+            "max_output_tokens": 1000,
+            "terminal_event": null
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 8
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 2048,
+          "max_num_seqs": 4
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 2,
+        "cancellation_event_count": 0,
+        "completed_request_count": 0,
+        "content_record_count": 14,
+        "dispatched_request_count": 2,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 2,
+        "event_count": 22,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 2,
+        "max_step_scheduled_tokens": 9,
+        "step_count": 2,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "22 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "2 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "2 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "run_id": "run-05e531789cc0",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-05e531789cc0-153aece9",
+        "event_sha256": "2baab3828f41783171c0ed56c2a244c02ee331305f340280f999c21bc4155fce",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct"
+    },
+    {
+      "case": "default_workload_reduced_scheduler_limits",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "all_planned_requests_dispatched": true,
+        "all_planned_requests_have_completion_events": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "default_workload_2_3_1_at_0_100_120_ms": true,
+        "expected_accepted_token_count": true,
+        "expected_completion_status": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "scheduler_limits_2_sequences_32_tokens": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 0,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 6,
+        "requests": [
+          {
+            "accepted_tokens": 8,
+            "id": "sample-1",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-2",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 6
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 48,
+        "cancellation_event_count": 0,
+        "completed_request_count": 6,
+        "content_record_count": 108,
+        "dispatched_request_count": 6,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 6,
+        "event_count": 219,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 2,
+        "max_step_scheduled_tokens": 8,
+        "step_count": 27,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "219 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "27 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "run_id": "run-17b41a944f4c",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-17b41a944f4c-458f3497",
+        "event_sha256": "c554a510c4dc78613b767989bb44f9ed905ecc5113ddfdd4b00758af0c4fa4ca",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct"
+    },
+    {
+      "case": "invalid_raw_time_unexpected_capture_before_fix",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "all_planned_requests_dispatched": true,
+        "all_planned_requests_have_completion_events": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "expected_accepted_token_count": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "recorded_completion_status_completed": true,
+        "recording_confirms_previous_default_caps_used": true,
+        "recording_confirms_previous_offsets_0_100_120_used": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true,
+        "user_intent_satisfied": false
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 0,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 6,
+        "requests": [
+          {
+            "accepted_tokens": 8,
+            "id": "sample-1",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-2",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 6
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 48,
+        "cancellation_event_count": 0,
+        "completed_request_count": 6,
+        "content_record_count": 108,
+        "dispatched_request_count": 6,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 6,
+        "event_count": 219,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 2,
+        "max_step_scheduled_tokens": 8,
+        "step_count": 27,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "expectation": "A nonnumeric current batch-time field must block capture.",
+      "failure": "The UI created a capture using the last valid saved offset while the current numeric editor was invalid.",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "219 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "27 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": false,
+      "remediated_by_run_id": "run-32d16275bf8f",
+      "result_classification": "failed_before_fix",
+      "run_id": "run-8a05a5982e46",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-8a05a5982e46-1712064c",
+        "event_sha256": "fc042f50d241aea395ce0635b07dff4d5322b10c83702a9c1241cfd95dace8b3",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct",
+      "user_intent_failure_evidence_source": "Root browser interaction at pre-fix ce82 revision; the structural recording confirms the previous valid values were used.",
+      "user_intent_satisfied": false
+    },
+    {
+      "case": "latest_raw_values_and_keyboard_capture_after_fix",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "all_planned_requests_dispatched": true,
+        "all_planned_requests_have_completion_events": true,
+        "authored_first_batch_label_preserved": true,
+        "authored_offsets_15_120_120_ms_recorded": true,
+        "authored_request_caps_11_then_five_8_recorded": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "expected_accepted_token_count": true,
+        "first_request_accepted_tokens_11": true,
+        "first_request_default_prompt_unchanged": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "recorded_completion_status_completed": true,
+        "scheduler_limits_2_sequences_32_tokens": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true,
+        "user_intent_satisfied": true
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 15,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 6,
+        "requests": [
+          {
+            "accepted_tokens": 11,
+            "id": "sample-1",
+            "max_output_tokens": 11,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-2",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 6
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 51,
+        "cancellation_event_count": 0,
+        "completed_request_count": 6,
+        "content_record_count": 114,
+        "dispatched_request_count": 6,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 6,
+        "event_count": 234,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 2,
+        "max_step_scheduled_tokens": 8,
+        "step_count": 30,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "expectation": "A valid latest authored snapshot must reach the recording unchanged, with output bounded by its submitted request caps.",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "234 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "30 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "related_ui_regression_evidence_source": "Root exercised invalid current inputs, repeated hidden validation, and keyboard capture through the UI after the fix; browser outcomes are maintained in the UI qualification summary.",
+      "result_classification": "passed_after_fix",
+      "run_id": "run-32d16275bf8f",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-32d16275bf8f-7deab856",
+        "event_sha256": "64258e047e62719db2e189b95340f6f7a2667fa1561c05bc355a63bb760bad80",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct",
+      "user_intent_satisfied": true
+    },
+    {
+      "case": "radio_enter_unintended_capture_before_keyboard_guard_fix",
+      "checks": {
+        "accepted_token_count_48": true,
+        "default_workload_2_3_1_at_0_100_120_ms": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "recorded_completion_status_completed": true,
+        "user_intent_satisfied": false
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 0,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "max_num_scheduled_tokens": 32,
+        "max_num_seqs": 2,
+        "request_count": 6,
+        "request_output_caps": [
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ]
+      },
+      "evidence": {
+        "accepted_token_count": 48,
+        "completed_request_count": 6,
+        "event_count": 219,
+        "step_count": 27,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "expectation": "Pressing Enter on a time-display radio control must not submit a capture.",
+      "failure": "The UI created a capture through implicit form submission while the time-display radio was focused.",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "219 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "27 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": false,
+      "result_classification": "failed_before_fix",
+      "run_id": "run-b6113e1b1816",
+      "structural_export": {
+        "performed": false,
+        "reason": "Redundant default fixture; structural export sanitization was already checked on the other default fixture runs."
+      },
+      "transport": "fixture_direct",
+      "user_intent_failure_evidence_source": "Root browser interaction at 925a3ad before the keyboard guard correction. Loader/evaluator independently checked the resulting default fixture recording.",
+      "user_intent_satisfied": false
+    },
+    {
+      "case": "explicit_button_enter_capture_after_keyboard_guard_fix",
+      "checks": {
+        "accepted_counts_within_request_caps": true,
+        "all_planned_requests_dispatched": true,
+        "all_planned_requests_have_completion_events": true,
+        "configuration_snapshot_digest_matches": true,
+        "configured_and_effective_scheduler_limits_match": true,
+        "default_request_caps_8": true,
+        "default_workload_2_3_1_at_0_100_120_ms": true,
+        "expected_accepted_token_count": true,
+        "expected_completion_status": true,
+        "fixture_provenance_explicit": true,
+        "integrity_pass": true,
+        "step_participants_within_effective_limit": true,
+        "step_tokens_within_effective_budget": true,
+        "structural_events_content_free_recursive": true,
+        "user_intent_satisfied": true
+      },
+      "completion_status": "completed",
+      "configuration": {
+        "adapter_count": 0,
+        "batch_count": 3,
+        "batches": [
+          {
+            "planned_offset_ms": 0,
+            "request_count": 2
+          },
+          {
+            "planned_offset_ms": 100,
+            "request_count": 3
+          },
+          {
+            "planned_offset_ms": 120,
+            "request_count": 1
+          }
+        ],
+        "engine_effective": {
+          "async_scheduling": false,
+          "enable_prefix_caching": false,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2,
+          "prefix_caching_applied": false
+        },
+        "input_modes": [
+          "prompt"
+        ],
+        "model_dtype": "auto",
+        "model_source_kind": "huggingface",
+        "quantization_kind": "none",
+        "request_count": 6,
+        "requests": [
+          {
+            "accepted_tokens": 8,
+            "id": "sample-1",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-2",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-3",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-4",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-5",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          },
+          {
+            "accepted_tokens": 8,
+            "id": "sample-6",
+            "max_output_tokens": 8,
+            "terminal_event": "completion"
+          }
+        ],
+        "sampling": {
+          "seed": 0,
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "sampling_stop_count": 0,
+        "token_validation": {
+          "client_reported_request_count": 0,
+          "engine_verified_request_count": 0,
+          "pending_engine_verification_count": 6
+        },
+        "vllm_requested": {
+          "enable_chunked_prefill": true,
+          "enable_prefix_caching": false,
+          "fresh_prefix_cache": true,
+          "gpu_memory_utilization": 0.9,
+          "max_model_len": 4096,
+          "max_num_scheduled_tokens": 32,
+          "max_num_seqs": 2
+        }
+      },
+      "evidence": {
+        "accepted_token_count": 48,
+        "cancellation_event_count": 0,
+        "completed_request_count": 6,
+        "content_record_count": 108,
+        "dispatched_request_count": 6,
+        "dropped_event_count": 0,
+        "engine_admitted_event_count": 6,
+        "event_count": 219,
+        "http_receipt_count": 0,
+        "max_step_participant_count": 2,
+        "max_step_scheduled_tokens": 8,
+        "step_count": 27,
+        "stream_completeness": "complete",
+        "trace_gap_count": 0
+      },
+      "execution_kind": "fixture",
+      "expectation": "Enter on the explicit Prepare and capture button starts the valid draft, while Enter on configuration inputs does not submit implicitly.",
+      "gpu_execution": false,
+      "integrity": [
+        {
+          "code": "sequences",
+          "detail": "219 recorded events are ordered",
+          "ok": true
+        },
+        {
+          "code": "event_types",
+          "detail": "every event type is in the v1 contract",
+          "ok": true
+        },
+        {
+          "code": "content_separated",
+          "detail": "prompt text, token ids, and text deltas stay in the content attachment",
+          "ok": true
+        },
+        {
+          "code": "step_identity",
+          "detail": "27 steps keep their own result association",
+          "ok": true
+        },
+        {
+          "code": "cursors",
+          "detail": "scheduled ranges meet the previous cursor, including after preemption",
+          "ok": true
+        },
+        {
+          "code": "blocks",
+          "detail": "6 block transitions follow reference counts and allocation generations",
+          "ok": true
+        },
+        {
+          "code": "arrivals",
+          "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations",
+          "ok": true
+        },
+        {
+          "code": "completeness",
+          "detail": "event stream is complete",
+          "ok": true
+        }
+      ],
+      "ok": true,
+      "related_ui_regression_evidence_source": "Root browser interaction verified radio/checkbox Enter remained on Configure, Space retained selection behavior, file input Enter opened its chooser, and explicit capture-button Enter started this run.",
+      "result_classification": "passed_after_fix",
+      "run_id": "run-8c190859dd4c",
+      "structural_export": {
+        "checks": {
+          "content_file_absent": true,
+          "content_retained_false": true,
+          "event_bytes_unchanged": true,
+          "forbidden_manifest_fields_absent_recursive": true,
+          "integrity_pass": true,
+          "loaded_content_empty": true,
+          "structural_export_true": true
+        },
+        "directory": "recordings/runs/qualification-structural-run-8c190859dd4c-aad49d3a",
+        "event_sha256": "b046ea1edbbd706b3780954692dddcfe7393eb394eb0c7cf0ff6a2fdfca13ccf",
+        "source_forbidden_manifest_fields_removed": [
+          "engine_output_token_ids"
+        ]
+      },
+      "transport": "fixture_direct",
+      "user_intent_satisfied": true
+    }
+  ],
+  "schema_version": 1,
+  "updated_at": "2026-10-03T13:05:49-06:00"
+}

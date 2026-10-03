@@ -1,0 +1,364 @@
+23aece686c387e822adbc4f36021f670ec2f3ad3
+Python 3.11.15
+v22.14.0
+10.9.2
+........................................................................ [ 67%]
+...................................                                      [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.11/site-packages/fastapi/testclient.py:1
+  /Users/pliu/Documents/vllm-execution-explorer-qualification/.venv/lib/python3.11/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+107 passed, 1 warning in 1.90s
+
+> test
+> node --experimental-strip-types --test src/*.test.ts
+
+TAP version 13
+# (node:55822) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: bundled fixture lessons replay without inventing a GPU trace
+ok 1 - bundled fixture lessons replay without inventing a GPU trace
+  ---
+  duration_ms: 8.023292
+  ...
+# (node:55825) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: wide integer parsing preserves prompts, escaped quotes, arrays, and numeric syntax
+ok 2 - wide integer parsing preserves prompts, escaped quotes, arrays, and numeric syntax
+  ---
+  duration_ms: 0.762583
+  ...
+# Subtest: replay is deterministic and seeks match the event prefix
+ok 3 - replay is deterministic and seeks match the event prefix
+  ---
+  duration_ms: 3.438291
+  ...
+# Subtest: HTTP capture boundaries apply recorded intake facts without regressing later state
+ok 4 - HTTP capture boundaries apply recorded intake facts without regressing later state
+  ---
+  duration_ms: 0.259625
+  ...
+# Subtest: a successful HTTP response with an engine finish reason closes an early-EOS request
+ok 5 - a successful HTTP response with an engine finish reason closes an early-EOS request
+  ---
+  duration_ms: 0.075375
+  ...
+# Subtest: an HTTP boundary without a successful terminal finish reason is not completion evidence
+ok 6 - an HTTP boundary without a successful terminal finish reason is not completion evidence
+  ---
+  duration_ms: 0.10575
+  ...
+# Subtest: a trace gap prevents later HTTP evidence from being treated as observed
+ok 7 - a trace gap prevents later HTTP evidence from being treated as observed
+  ---
+  duration_ms: 0.082459
+  ...
+# Subtest: a trace gap freezes later events
+ok 8 - a trace gap freezes later events
+  ---
+  duration_ms: 0.10175
+  ...
+# Subtest: content stays out of the structural state until it is attached
+ok 9 - content stays out of the structural state until it is attached
+  ---
+  duration_ms: 0.319417
+  ...
+# Subtest: unsupported schema and a broken sequence are rejected
+ok 10 - unsupported schema and a broken sequence are rejected
+  ---
+  duration_ms: 0.322834
+  ...
+# Subtest: request model routing is a supported observed boundary
+ok 11 - request model routing is a supported observed boundary
+  ---
+  duration_ms: 0.260291
+  ...
+# Subtest: explanations keep observed facts apart from policy
+ok 12 - explanations keep observed facts apart from policy
+  ---
+  duration_ms: 0.635917
+  ...
+# (node:55828) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: planned rows stay visible before any receipt event
+ok 13 - planned rows stay visible before any receipt event
+  ---
+  duration_ms: 1.379125
+  ...
+# Subtest: HTTP intake milestones retain their named boundaries and exact observed clocks
+ok 14 - HTTP intake milestones retain their named boundaries and exact observed clocks
+  ---
+  duration_ms: 1.710875
+  ...
+# Subtest: prefix playback hides future output and restores it only at that event
+ok 15 - prefix playback hides future output and restores it only at that event
+  ---
+  duration_ms: 1.083834
+  ...
+# Subtest: mixed ranges, preemption, trace gaps, and unsubmitted samples stay distinct
+ok 16 - mixed ranges, preemption, trace gaps, and unsubmitted samples stay distinct
+  ---
+  duration_ms: 0.393875
+  ...
+# Subtest: legacy recordings do not invent an origin or arrival groups
+ok 17 - legacy recordings do not invent an origin or arrival groups
+  ---
+  duration_ms: 0.192375
+  ...
+# Subtest: recorded time keeps elapsed across timestamps outside the safe integer range
+ok 18 - recorded time keeps elapsed across timestamps outside the safe integer range
+  ---
+  duration_ms: 0.25575
+  ...
+# Subtest: a missing controller origin stays anchored at the first event
+ok 19 - a missing controller origin stays anchored at the first event
+  ---
+  duration_ms: 0.178833
+  ...
+# Subtest: shared blocks are not assigned to one request
+ok 20 - shared blocks are not assigned to one request
+  ---
+  duration_ms: 0.208667
+  ...
+# Subtest: terminal and preempted requests stop owning reused block numbers
+ok 21 - terminal and preempted requests stop owning reused block numbers
+  ---
+  duration_ms: 0.891041
+  ...
+# Subtest: block tables do not claim ownership of a free block or an ambiguous pool
+ok 22 - block tables do not claim ownership of a free block or an ambiguous pool
+  ---
+  duration_ms: 5.079791
+  ...
+# Subtest: active requests shedding a block do not retain ownership of its next allocation
+ok 23 - active requests shedding a block do not retain ownership of its next allocation
+  ---
+  duration_ms: 0.247708
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 116.490417
+
+> test
+> node --experimental-strip-types --test src/scenario/*.test.ts
+
+TAP version 13
+# (node:55821) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a demo fixture host check does not report the missing CUDA runtime as complete
+ok 1 - a demo fixture host check does not report the missing CUDA runtime as complete
+  ---
+  duration_ms: 0.466875
+  ...
+# Subtest: a live local engine keeps a failed CUDA check visible
+ok 2 - a live local engine keeps a failed CUDA check visible
+  ---
+  duration_ms: 0.066875
+  ...
+# Subtest: a ready CUDA runtime is reported as ready
+ok 3 - a ready CUDA runtime is reported as ready
+  ---
+  duration_ms: 0.084209
+  ...
+# Subtest: a missing preflight reports that the controller was not reached
+ok 4 - a missing preflight reports that the controller was not reached
+  ---
+  duration_ms: 0.063542
+  ...
+# Subtest: each host check returns its own stage objects
+ok 5 - each host check returns its own stage objects
+  ---
+  duration_ms: 0.104625
+  ...
+# (node:55823) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only a matching completed run triggers the recording fallback
+ok 6 - only a matching completed run triggers the recording fallback
+  ---
+  duration_ms: 0.473208
+  ...
+# Subtest: a matching failed run preserves the controller error for Configure
+ok 7 - a matching failed run preserves the controller error for Configure
+  ---
+  duration_ms: 0.068666
+  ...
+# Subtest: the fallback ignores active, mismatched, and manually superseded runs
+ok 8 - the fallback ignores active, mismatched, and manually superseded runs
+  ---
+  duration_ms: 0.041625
+  ...
+# (node:55824) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: the example flattens to the 0/100/120 offsets without merging equal times
+ok 9 - the example flattens to the 0/100/120 offsets without merging equal times
+  ---
+  duration_ms: 0.733
+  ...
+# Subtest: authoring the acceptance sequence keeps identities when labels change
+ok 10 - authoring the acceptance sequence keeps identities when labels change
+  ---
+  duration_ms: 1.860667
+  ...
+# Subtest: duplicate, move, and delete keep other sample identities
+ok 11 - duplicate, move, and delete keep other sample identities
+  ---
+  duration_ms: 0.158583
+  ...
+# Subtest: equal arrival times stay in authoring order and are not merged
+ok 12 - equal arrival times stay in authoring order and are not merged
+  ---
+  duration_ms: 0.062208
+  ...
+# Subtest: seconds convert exactly and reject sub-millisecond values
+ok 13 - seconds convert exactly and reject sub-millisecond values
+  ---
+  duration_ms: 0.29025
+  ...
+# Subtest: dragging an arrival marker lands on integer milliseconds
+ok 14 - dragging an arrival marker lands on integer milliseconds
+  ---
+  duration_ms: 0.148875
+  ...
+# Subtest: saved v1 drafts from before input modes are normalized
+ok 15 - saved v1 drafts from before input modes are normalized
+  ---
+  duration_ms: 0.264375
+  ...
+# Subtest: run serialization emits the nested capture contract
+ok 16 - run serialization emits the nested capture contract
+  ---
+  duration_ms: 0.351166
+  ...
+# Subtest: runner capabilities block an unavailable saved quantization choice
+ok 17 - runner capabilities block an unavailable saved quantization choice
+  ---
+  duration_ms: 0.633333
+  ...
+# Subtest: recorded base routes remain explicit when copied into an adapter draft
+ok 18 - recorded base routes remain explicit when copied into an adapter draft
+  ---
+  duration_ms: 0.549916
+  ...
+# (node:55826) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SSH verification is bound to the checked host, setup mode, key, and endpoint
+ok 19 - SSH verification is bound to the checked host, setup mode, key, and endpoint
+  ---
+  duration_ms: 0.476125
+  ...
+# Subtest: SSH capture requires both a key and a completed host check
+ok 20 - SSH capture requires both a key and a completed host check
+  ---
+  duration_ms: 0.076375
+  ...
+# Subtest: remote readiness requires a visible GPU and vLLM 0.30.x
+ok 21 - remote readiness requires a visible GPU and vLLM 0.30.x
+  ---
+  duration_ms: 0.100375
+  ...
+# (node:55827) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: malformed stored batches and samples recover without a startup exception
+ok 22 - malformed stored batches and samples recover without a startup exception
+  ---
+  duration_ms: 1.379708
+  ...
+# Subtest: valid incomplete drafts remain editable after reload
+ok 23 - valid incomplete drafts remain editable after reload
+  ---
+  duration_ms: 0.405709
+  ...
+# Subtest: older stored drafts still gain input-mode and settings defaults
+ok 24 - older stored drafts still gain input-mode and settings defaults
+  ---
+  duration_ms: 0.233417
+  ...
+# Subtest: malformed persisted settings cannot reach string or adapter controls
+ok 25 - malformed persisted settings cannot reach string or adapter controls
+  ---
+  duration_ms: 0.90525
+  ...
+# (node:55829) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SSH reachability stays active until the host has responded
+ok 26 - SSH reachability stays active until the host has responded
+  ---
+  duration_ms: 0.717333
+  ...
+# Subtest: runtime copying and preparation show SSH complete without claiming the controller ready
+ok 27 - runtime copying and preparation show SSH complete without claiming the controller ready
+  ---
+  duration_ms: 0.069125
+  ...
+# Subtest: tunnel phases wait for final controller verification
+ok 28 - tunnel phases wait for final controller verification
+  ---
+  duration_ms: 0.085084
+  ...
+# Subtest: prior ready or failed responses and unknown phases cannot replace current progress
+ok 29 - prior ready or failed responses and unknown phases cannot replace current progress
+  ---
+  duration_ms: 0.042042
+  ...
+# (node:55830) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: invalid raw output values block a saved valid draft
+ok 30 - invalid raw output values block a saved valid draft
+  ---
+  duration_ms: 0.537625
+  ...
+# Subtest: invalid raw offsets block the previous valid time in either display unit
+ok 31 - invalid raw offsets block the previous valid time in either display unit
+  ---
+  duration_ms: 0.192167
+  ...
+# Subtest: submission uses latest valid raw values and preserves identities and order
+ok 32 - submission uses latest valid raw values and preserves identities and order
+  ---
+  duration_ms: 0.634292
+  ...
+# Subtest: synthetic lengths are validated only for the active request mode
+ok 33 - synthetic lengths are validated only for the active request mode
+  ---
+  duration_ms: 0.065833
+  ...
+# Subtest: unchanged fields retain their draft values without losing valid zero offsets
+ok 34 - unchanged fields retain their draft values without losing valid zero offsets
+  ---
+  duration_ms: 0.199333
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 110.166667
+
+> build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 1790 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.70 kB │ gzip:   0.39 kB
+dist/assets/index-B5gosWoG.css     32.00 kB │ gzip:   7.21 kB
+dist/assets/index-BLw794Fa.js   1,387.72 kB │ gzip: 387.05 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.61s
