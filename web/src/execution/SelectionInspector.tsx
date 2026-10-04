@@ -30,7 +30,9 @@ export function SelectionInspector({
   profileError = "",
   measuredMode = false,
   onProfileTime,
+  framed = true,
 }: {
+  framed?: boolean
   selection: Selection | null
   samples: SampleProjection[]
   state: ReplayState | null
@@ -55,7 +57,7 @@ export function SelectionInspector({
   const component = selection?.kind === "component" ? selection.id : null
   const labels = new Map(samples.map((item) => [item.sample.id, item.sample.label]))
   return (
-    <aside className="inspector grid min-h-0 content-start gap-3 overflow-auto border-l border-line bg-[#060a11] px-[18px] py-4" aria-label="Inspector">
+    <aside className={framed ? "inspector grid min-h-0 content-start gap-3 overflow-auto border-l border-line bg-[#060a11] px-[18px] py-4" : "inspector grid min-h-0 content-start gap-3"} aria-label="Inspector">
       <header className="grid gap-1 border-b border-line pb-3">
         <p className="cp-label m-0">{inspectorKind(selection, Boolean(sample), Boolean(step), Boolean(block), component)}</p>
         <div className="flex items-start justify-between gap-2">

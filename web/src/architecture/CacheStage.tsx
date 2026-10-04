@@ -23,7 +23,7 @@ export function CacheStage({ cache, requestOrder, requestLabels, selection, trac
   const tokenBlocks = useMemo(() => selection?.kind === "token" ? blocks.filter((block) => [...block.contents, ...block.bindings].some((span) =>
     span.requestId === selection.requestId && selection.position >= span.tokenStart && selection.position < span.tokenEnd,
   )) : [], [blocks, selection])
-  if (!cache.pools.length) return <group><FloorGrid y={DIE_Y - 0.25} /><SceneEmpty label="Full KV pool inventory unavailable" detail={cache.reason ?? "Capture a new run with pool inventory enabled."} /></group>
+  if (!cache.pools.length) return <group><FloorGrid y={DIE_Y - 0.25} /><SceneEmpty label="Full KV pool inventory not observed" detail={cache.reason ?? "Capture a new run with pool inventory enabled."} /></group>
   const selected = selection?.kind === "block" ? blocks.find((block) => blockMatches(block, selection.key))
     : tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
   const span = cache.pools.length > 1 ? 9 : 11
@@ -136,9 +136,9 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
   const activePosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
   const header = (
     <div className="mb-2 flex items-center gap-2">
-      <span className="grid h-[18px] place-items-center border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">BLK {block.blockId}</span>
-      <span className="font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
-      <span className="truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
+      <span className="grid h-[18px] shrink-0 place-items-center whitespace-nowrap border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">BLK {block.blockId}</span>
+      <span className="shrink-0 whitespace-nowrap font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
+      <span className="min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
       <span className="flex-1" />
       <EvidenceTag kind={block.trust === "unknown" ? "unknown" : "observed"}>{block.trust === "unknown" ? "Unknown" : "Observed"}</EvidenceTag>
     </div>

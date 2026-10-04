@@ -225,7 +225,7 @@ export function ExecutionWorkspace({
                 ) : (
                   <p className="cp-hud m-0 flex h-7 items-center gap-2 px-2.5 font-mono text-[11px] text-ink"><Scan className="size-3.5 text-faint" aria-hidden="true" />Overview</p>
                 )}
-                <p className="m-0 hidden text-[11.5px] text-faint md:block"><b className="font-medium text-muted">Click</b> to inspect · <b className="font-medium text-muted">double-click</b> to drill in · <b className="font-medium text-muted">drag</b> to orbit</p>
+                <p className="m-0 hidden text-[11.5px] text-faint md:block"><b className="font-medium text-muted">Click</b> to inspect · <b className="font-medium text-muted">double-click</b> to drill in · <b className="font-medium text-muted">drag</b> to orbit · <b className="font-medium text-muted">right-drag</b> to pan · <b className="font-medium text-muted">scroll</b> to zoom</p>
               </div>
               <EventTicker event={currentEvent} labels={labels} />
             </div>

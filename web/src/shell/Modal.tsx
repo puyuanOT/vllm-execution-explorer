@@ -17,7 +17,7 @@ export function Modal({
   title: string
   description: string
   children: ReactNode
-  placement?: "center" | "right"
+  placement?: "center" | "right" | "sheet"
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -26,15 +26,20 @@ export function Modal({
         <Dialog.Viewport
           className={cn(
             "safe-dialog-viewport fixed inset-0 z-50 flex overflow-y-auto p-4",
-            placement === "right" ? "items-stretch justify-end" : "items-center justify-center",
+            placement === "right" ? "items-stretch justify-end"
+              : placement === "sheet" ? "items-end justify-center max-sm:!p-0 sm:items-stretch sm:justify-end"
+                : "items-center justify-center",
           )}
         >
           <Dialog.Popup
             className={cn(
               "relative max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border border-slate-700 bg-slate-950 p-5 text-slate-100 shadow-xl outline-none",
-              placement === "right" ? "h-full w-full max-w-md" : "w-full max-w-xl",
+              placement === "right" ? "h-full w-full max-w-md"
+                : placement === "sheet" ? "max-h-[82dvh] w-full rounded-none border-x-0 border-b-0 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:h-full sm:max-h-[calc(100dvh-2rem)] sm:max-w-md sm:border sm:pb-5"
+                  : "w-full max-w-xl",
             )}
           >
+            {placement === "sheet" ? <div className="mx-auto -mt-2 mb-3 h-1 w-10 bg-slate-700 sm:hidden" aria-hidden="true" /> : null}
             <div className="mb-4 pr-10">
               <Dialog.Title className="text-balance text-lg font-semibold">{title}</Dialog.Title>
               <Dialog.Description className="mt-1 text-pretty text-sm text-slate-400">

@@ -987,7 +987,7 @@ export function App() {
         onOpenChange={setInspectorOpen}
         title="Execution inspector"
         description="Recorded evidence for the selected workflow object."
-        placement="right"
+        placement="sheet"
       >
         <SelectionInspector
           selection={selection}
@@ -1002,6 +1002,7 @@ export function App() {
           measuredMode={mode === "measured"}
           onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
           showClose={false}
+          framed={false}
           onSeek={seek}
           onSelect={choose}
           onClose={() => setInspectorOpen(false)}

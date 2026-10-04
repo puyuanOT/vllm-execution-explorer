@@ -266,7 +266,7 @@ function WorkflowOverview(props: SceneProps) {
     <KvBank cache={cache} requestOrder={props.requestOrder} selected={selectedComponent === "kv-cache"} onSelect={select("kv-cache")} onExplore={explore("kv-cache")} />
     <SceneCard position={[bankLeft - 0.05, FLOOR + 0.1, KV_BANK.z - 0.2]} anchor="left" code="KV" name="KV-cache manager"
       value={cache.pools.length ? `${referenced.toLocaleString()}/${capacity.toLocaleString()}` : "—"}
-      detail={!cache.pools.length ? "pool inventory unavailable" : cache.status === "unknown" ? "blocks · state unknown after gap" : "blocks referenced"} active={selectedComponent === "kv-cache"} />
+      detail={!cache.pools.length ? "pool inventory not observed" : cache.status === "unknown" ? "blocks · state unknown after gap" : "blocks referenced"} active={selectedComponent === "kv-cache"} />
 
     {flows.map(([from, to], index) => <Polyline key={index} points={[from, to]} color={SCENE_COLORS.line} />)}
     <Packets from={flows[1][0]} to={flows[1][1]} colors={(latest?.requests ?? []).slice(0, 6).map((request) => color(request.requestId))} animate={props.animate} />
@@ -327,7 +327,7 @@ function KvBank({ cache, requestOrder, selected, onSelect, onExplore }: {
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>
-    </group> : <SceneText text="Pool inventory unavailable" position={[0, 0.3, 0]} muted />}
+    </group> : <SceneText text="Pool inventory not observed" position={[0, 0.3, 0]} muted />}
   </group>
 }
 

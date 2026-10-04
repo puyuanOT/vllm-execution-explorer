@@ -130,7 +130,7 @@ export function projectKvCache(state: ReplayState, _manifest?: RecordingManifest
   const observed = content.length ? attachContent(state, content) : state
   if (!observed.cacheInventory) return {
     status: state.trust === "unknown" ? "unknown" : "unavailable",
-    reason: "This recording does not contain a full initial KV pool inventory.",
+    reason: "No full KV pool inventory has been observed at this playhead. Play forward, or capture a run that records the initial pool inventory.",
     pools: [],
     groups: [],
   }

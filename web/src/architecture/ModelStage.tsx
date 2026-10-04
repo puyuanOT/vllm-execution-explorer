@@ -116,7 +116,7 @@ export function LayerStack({ architecture, compact = false, baseY, ...props }: M
     {activeLayer != null ? <BoxEdges size={plate} position={[0, layerY(activeLayer), 0]} color={SCENE_COLORS.explain} /> : null}
     {[...measuredLayers].map((layer) => <BoxEdges key={`m-${layer}`} size={plate} position={[0, layerY(layer), 0]} color={SCENE_COLORS.measured} />)}
     <BoxEdges size={[width + 0.35, height + 0.4, depth + 0.35]} position={[0, top - height / 2, 0]} color={SCENE_COLORS.edge} opacity={hover.hovered ? 1 : 0.85} />
-    {markers.map((layer) => <SceneText key={`label-${layer}`} text={`L${layer + 1}`} position={[width / 2 + 0.5, layerY(layer), depth / 2]} muted />)}
+    {markers.map((layer) => <SceneText key={`label-${layer}`} text={`L${layer + 1}`} position={[width / 2 + 0.5, layerY(layer), depth / 2]} muted={compact} strong={!compact} />)}
     {!compact ? <>
       <SceneText text="Token embeddings" position={[0, top + 0.45, 0]} />
       <SceneText text="Norm → LM head → sampling" position={[0, top - height - 0.6, 0]} muted />
