@@ -32,9 +32,11 @@ import {
   type SetupStage,
 } from "./configure/index.ts"
 import { focusValidationField } from "./configure/focusValidation.ts"
-import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
+import { ExecutionWorkspace, type EvidenceKind } from "./execution/ExecutionWorkspace.tsx"
 import { projectArchitecture } from "../../replay/src/learning.ts"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
+import { scopeChannel, sequencePosition, type ScopeMarker, type ScopeTick } from "./execution/scope.ts"
+import { telemetryPoint, telemetrySeries, telemetryThrough } from "./execution/telemetry.ts"
 import { SelectionInspector } from "./execution/SelectionInspector.tsx"
 import type { PlaybackMode, Selection, WorkspaceView } from "./execution/types.ts"
 import { useAppRoute } from "./hooks/useAppRoute.ts"
@@ -58,6 +60,7 @@ import { loadSettings, saveSettings } from "./scenario/storage.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "./scenario/types.ts"
 import { validateScenario, type FieldIssue } from "./scenario/validate.ts"
 import { AppHeader } from "./shell/AppHeader.tsx"
+import { cn } from "./lib/cn.ts"
 import { ConfirmDialog } from "./shell/ConfirmDialog.tsx"
 import { Modal } from "./shell/Modal.tsx"
 import { RecordingLibrary } from "./shell/RecordingLibrary.tsx"
@@ -325,10 +328,17 @@ export function App() {
   }, [samples])
   const highlighted = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
   const maxSequence = built.player?.maxSequence ?? 0
+  const telemetrySamples = useMemo(() => telemetrySeries(built.player), [built.player])
+  const telemetry = useMemo(() => viewState ? telemetryThrough(telemetrySamples, telemetryPoint(viewState)) : [], [telemetrySamples, viewState])
   const atEnd = mode === "measured" ? Boolean(profileExtent && nativeProfileTime >= profileExtent.endUs)
     : mode === "teaching" ? teachingProgress >= 1 && index.steps.length > 0 && nextStepSequence(index.steps, sequence) == null
     : sequence >= maxSequence && maxSequence > 0
   const currentEvent = eventAt(events, sequence)
+  const eventTicks = useMemo<ScopeTick[]>(() => events.flatMap((event) => {
+    const channel = scopeChannel(event.event_type)
+    return channel ? [{ position: sequencePosition(event.sequence, maxSequence), channel }] : []
+  }), [events, maxSequence])
+  const stepMarkers = useMemo<ScopeMarker[]>(() => index.steps.map((step, order) => ({ position: sequencePosition(step.sequence, maxSequence), label: `S${order + 1}` })), [index.steps, maxSequence])
   const elapsed = elapsedMsAt(index, sequence)
   const valueText = currentEvent
     ? `Event ${currentEvent.sequence}, ${currentEvent.event_type}${elapsed == null ? "" : `, ${elapsed} ms`}. ${index.roster.timeBasisLabel}`
@@ -751,6 +761,18 @@ export function App() {
   }
 
   const evidence = evidenceText(manifest, showingDraft)
+  const evidenceKind: EvidenceKind = showingDraft ? "draft"
+    : manifest.execution_kind === "gpu" ? "gpu"
+      : manifest.demo_fixture === true || manifest.execution_kind === "fixture" ? "synthetic"
+        : "recorded"
+  const profileSpan = profileExtent ? Math.max(1, profileExtent.endUs - profileExtent.startUs) : 1
+  const profileTicks = useMemo<ScopeTick[]>(() => profileExtent
+    ? measuredProfile.activities.map((activity) => ({ position: (activity.startUs - profileExtent.startUs) / profileSpan, channel: "model" as const }))
+    : [], [measuredProfile.activities, profileExtent, profileSpan])
+  const profileMarkers = useMemo<ScopeMarker[]>(() => profileExtent
+    ? profileBoundaryTimes(measuredProfile.activities, "batch").map((time, order) => ({ position: (time - profileExtent.startUs) / profileSpan, label: `B${order + 1}` }))
+    : [], [measuredProfile.activities, profileExtent, profileSpan])
+  const gapPosition = viewState?.trust === "unknown" && viewState.gap ? sequencePosition(viewState.gap.sequence, maxSequence) : null
   const warning = [
     viewState?.trust === "unknown" ? `Trace gap at event ${viewState.gap?.sequence ?? "?"}. Later state is unknown.` : "",
     manifest.content_retained === false ? "Prompt and output text were not retained." : "",
@@ -793,7 +815,18 @@ export function App() {
     <div className={route === "explore" ? "flex h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 text-slate-100" : "min-h-dvh bg-slate-950 text-slate-100"}>
       <p className="sr-only" aria-live="polite">{announce}</p>
       <p className="sr-only" aria-live="assertive">{validationMessage}</p>
-      <AppHeader route={route} status={status} onNavigate={navigate} onRecordings={() => setRecordingsOpen(true)} />
+      <AppHeader
+        route={route}
+        status={runnerActive ? status : preparingRun ? preparationStatus || "Preparing capture" : runner.health || "Checking controller"}
+        recording={route === "explore" ? recording ? recording.source : showingLive ? `Live · ${runner.live?.run_id ?? "capture"}` : "Draft preview" : null}
+        evidence={route === "explore" && evidenceKind !== "recorded" ? evidenceKind : null}
+        controller={{
+          label: settings.runnerUrl ? controllerLabel(settings.runnerUrl) : "Local controller",
+          tone: !runner.health ? "neutral" : runner.health === "Runner is reachable." ? "ready" : "error",
+        }}
+        onNavigate={navigate}
+        onRecordings={() => setRecordingsOpen(true)}
+      />
 
       {route === "configure" ? (
         <ConfigurePage
@@ -837,12 +870,7 @@ export function App() {
         />
       ) : (
         <>
-          <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2 text-xs text-muted">
-            <span className="mr-auto truncate">{recording ? `Open recording: ${recording.source}` : showingLive ? "Live capture" : "Draft preview"}</span>
-            {editableScenario ? <button type="button" onClick={editAsNew}>Edit as new sequence</button> : null}
-            {compact && selection ? <button type="button" onClick={() => setInspectorOpen(true)}>Open inspector</button> : null}
-          </div>
-          <main className="explore-grid min-h-0 flex-1">
+          <main className={cn("grid min-h-0 flex-1", compact ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_372px]")}>
             <ExecutionWorkspace
               samples={samples}
               state={viewState}
@@ -864,8 +892,15 @@ export function App() {
                 ? "Draft plan. No execution evidence has been recorded."
                 : `${index.roster.timeBasisLabel}${index.roster.groupingKnown ? "" : " Arrival groups were not recorded."}`}
               evidence={evidence}
+              evidenceKind={evidenceKind}
               warning={warning}
               submittedNote={showingLive && submitted ? "Showing the immutable submitted sequence." : ""}
+              currentEvent={currentEvent}
+              telemetry={telemetry}
+              allSteps={index.steps}
+              sequence={sequence}
+              onEditAsNew={editableScenario ? editAsNew : undefined}
+              onOpenInspector={compact && selection ? () => setInspectorOpen(true) : undefined}
               onSelect={choose}
             />
             {!compact ? (
@@ -904,6 +939,10 @@ export function App() {
             followAvailable={showingLive && runIsActive(runner.live?.status)}
             connected={trace.connected}
             reduced={forceReduced}
+            ticks={mode === "measured" ? profileTicks : eventTicks}
+            markers={mode === "measured" ? profileMarkers : stepMarkers}
+            gapPosition={mode === "measured" ? null : gapPosition}
+            currentPosition={mode === "measured" || !currentEvent ? null : sequencePosition(currentEvent.sequence, maxSequence)}
             onReduced={setForceReduced}
             onTogglePlay={() => { setFollowLive(false); setPlaying((current) => !current) }}
             onReplay={restartPlayback}
@@ -1056,6 +1095,14 @@ function deriveVllmReadiness(settings: EngineSettings, capabilities: ReturnType<
   if (!mode) return { label: "Unchecked", message: "Check the selected host to resolve runtime support.", tone: "neutral" }
   if (mode.status === "blocked") return { label: "Unavailable", message: mode.message, tone: "error" }
   return { label: "Configured", message: mode.message, tone: mode.status === "available" ? "ready" : "warning" }
+}
+
+function controllerLabel(url: string): string {
+  try {
+    return new URL(url).host || url
+  } catch {
+    return url
+  }
 }
 
 function normalizeRemoteDestination(value: string, user: string, suffix: string): string {
