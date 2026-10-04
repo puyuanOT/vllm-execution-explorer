@@ -204,6 +204,7 @@ p { text-wrap: pretty; }
 .cp-led[data-tone="error"] { --led: var(--danger); }
 .cp-led[data-tone="accent"] { --led: var(--accent); }
 .cp-led[data-tone="explain"] { --led: var(--explain); }
+.cp-led[data-tone="synthetic"] { --led: var(--synthetic); }
 .cp-led[data-tone="neutral"] { --led: #43536c; box-shadow: none; }
 
 .cp-chip {

@@ -40,3 +40,23 @@ export function learningExample(id: LearningExampleId, settings: EngineSettings)
   })) : [{ id: `batch-${id}`, label: LEARNING_EXAMPLES.find((example) => example.id === id)!.label, arrivalOffsetMs: 0, createdOrder: 0, defaultAdapterId: null, samples }]
   return { scenario: { version: 1, id: `scenario-${id}`, name: LEARNING_EXAMPLES.find((example) => example.id === id)!.label, nextOrder: batches.length, batches }, settings: { ...settings, ...overrides } }
 }
+
+/** The example whose workload and scheduling/cache overrides the draft still matches; ids and token counts resolved later are ignored. */
+export function matchingLearningExample(scenario: ScenarioDraft, settings: EngineSettings): LearningExampleId | null {
+  for (const { id } of LEARNING_EXAMPLES) {
+    const example = learningExample(id, settings)
+    const sameSettings = (Object.keys(example.settings) as Array<keyof EngineSettings>).every((key) => example.settings[key] === settings[key])
+    if (sameSettings && workloadSignature(scenario) === workloadSignature(example.scenario)) return id
+  }
+  return null
+}
+
+function workloadSignature(scenario: ScenarioDraft): string {
+  return JSON.stringify(scenario.batches.map((batch) => [
+    batch.label, batch.arrivalOffsetMs, batch.defaultAdapterId,
+    batch.samples.map((sample) => [
+      sample.label, sample.inputMode, sample.inputMode === "synthetic" ? sample.syntheticInputTokens : sample.prompt,
+      sample.maxOutputTokens, sample.adapterId, sample.priority ?? 0,
+    ]),
+  ]))
+}

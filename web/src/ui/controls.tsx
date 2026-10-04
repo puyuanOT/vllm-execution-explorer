@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { cn } from "../lib/cn.ts"
 
-export type Tone = "neutral" | "ready" | "warning" | "error" | "accent" | "explain"
+export type Tone = "neutral" | "ready" | "warning" | "error" | "accent" | "explain" | "synthetic"
 export type EvidenceKind = "observed" | "derived" | "explanatory" | "unknown" | "synthetic" | "gpu" | "warning" | "error" | "neutral"
 
 export function Led({ tone = "ready", label }: { tone?: Tone; label?: string }) {
