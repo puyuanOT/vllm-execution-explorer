@@ -10,7 +10,7 @@ import { activeTeachingStep, architectureLabel, dieCellPosition, dieLayout, type
 import { LayerStack, ModelStage } from "./architecture/ModelStage.tsx"
 import { SceneProfileDiagnostics } from "./architecture/SceneProfileDiagnostics.tsx"
 import { BoxEdges, Connector, FloorGrid, Polyline, SceneCard, SceneEmpty, SceneText, SceneTile, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./architecture/primitives.tsx"
-import { componentSnapshot, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
+import { componentSnapshot, requestLabel, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
 import type { Selection } from "./execution/types.ts"
 import { requestColor } from "./theme.ts"
 
@@ -22,6 +22,7 @@ export interface SceneProps {
   manifest?: RecordingManifest | null
   kvCache?: KvCacheProjection
   requestOrder: string[]
+  requestLabels?: ReadonlyMap<string, string>
   selection: Selection | null
   animate: boolean
   focus?: WorkflowComponentId | null
@@ -345,7 +346,7 @@ function bankColor(block: KvBlockProjection, requestOrder: string[]): string {
 function FocusedStage(props: SceneProps & { focus: WorkflowComponentId }) {
   if (props.focus === "model-execution") return <ModelStage {...props} />
   if (props.focus === "kv-cache") return <CacheStage cache={props.kvCache ?? projectKvCache(props.state, props.manifest)}
-    requestOrder={props.requestOrder} selection={props.selection} trackedRequestId={props.trackedRequestId} trackedTokenPosition={props.trackedTokenPosition} onSelect={props.onSelect} />
+    requestOrder={props.requestOrder} requestLabels={props.requestLabels} selection={props.selection} trackedRequestId={props.trackedRequestId} trackedTokenPosition={props.trackedTokenPosition} onSelect={props.onSelect} />
   if (props.focus === "scheduler") return <SchedulerStage {...props} />
   const requests = orderedRequests(props.state, props.requestOrder)
   return <group>
@@ -353,7 +354,7 @@ function FocusedStage(props: SceneProps & { focus: WorkflowComponentId }) {
     {!requests.length ? <SceneEmpty label="No request observation at this playhead" detail="Play or step forward until a request arrives." /> : <>
       <SceneText text={componentLabel(props.focus)} position={[0, 3.7, 0]} strong />
       {requests.slice(0, 24).map((request, index) => <SceneTile key={request.id} position={gridPosition(index, 4)}
-        label={request.id} width={2.4} color={requestColor(props.requestOrder, request.id)}
+        label={requestLabel(props.requestLabels, request.id)} width={2.4} color={requestColor(props.requestOrder, request.id)}
         selected={props.selection?.kind === "request" && props.selection.id === request.id || props.trackedRequestId === request.id}
         detail={props.focus === "output" ? `${request.acceptedTokenCount} accepted · ${request.finishReason ?? request.status}` : request.status}
         onSelect={() => props.onSelect({ kind: "request", id: request.id })} />)}
@@ -390,7 +391,7 @@ function SchedulerStage(props: SceneProps) {
       return <group key={request.requestId}>
         <Polyline points={[[0, 0.48, 0], [0, -1.6, 0], [x, -1.6, 0], [x, -2.38, 0]]} color={SCENE_COLORS.lineDim} />
         <SceneTile position={[x, -2.95, 0.4]} width={2.45} height={0.9}
-          label={request.requestId} color={requestColor(props.requestOrder, request.requestId)}
+          label={requestLabel(props.requestLabels, request.requestId)} color={requestColor(props.requestOrder, request.requestId)}
           detail={`${request.promptTokens} prefill + ${request.generationTokens} decode`}
           selected={props.trackedRequestId === request.requestId || props.selection?.kind === "request" && props.selection.id === request.requestId}
           onSelect={() => props.onSelect({ kind: "request", id: request.requestId })} />
@@ -401,8 +402,9 @@ function SchedulerStage(props: SceneProps) {
   </group>
 }
 
-function QueueColumn({ waiting, running, x, onSelect, requestOrder, selection }: {
-  waiting: QueueEntry[]; running: QueueEntry[]; x: number; onSelect: (selection: Selection) => void; requestOrder: string[]; selection: Selection | null
+function QueueColumn({ waiting, running, x, onSelect, requestOrder, requestLabels, selection }: {
+  waiting: QueueEntry[]; running: QueueEntry[]; x: number; onSelect: (selection: Selection) => void; requestOrder: string[];
+  requestLabels?: ReadonlyMap<string, string>; selection: Selection | null
 }) {
   const entries = [...running.map((entry) => ({ entry, label: "running" })), ...waiting.map((entry) => ({ entry, label: "waiting" }))]
   const shown = entries.slice(0, QUEUE_ROWS)
@@ -410,7 +412,7 @@ function QueueColumn({ waiting, running, x, onSelect, requestOrder, selection }:
     <SceneText text={`Running ${running.length} · waiting ${waiting.length}`} position={[x, 2.5, 0]} muted />
     {shown.map(({ entry, label }, index) => <SceneTile key={`${label}-${entry.requestId}`}
       position={[x, 1.85 - index * 0.78, -0.4]} width={2.7} height={0.62} depth={0.3}
-      label={entry.requestId} detail={`${label} · cursor ${entry.computedTokens ?? "?"}`}
+      label={requestLabel(requestLabels, entry.requestId)} detail={`${label} · cursor ${entry.computedTokens ?? "?"}`}
       color={requestColor(requestOrder, entry.requestId)}
       selected={selection?.kind === "request" && selection.id === entry.requestId}
       onSelect={() => onSelect({ kind: "request", id: entry.requestId })} />)}

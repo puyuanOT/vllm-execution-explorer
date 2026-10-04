@@ -3,6 +3,7 @@ import * as THREE from "three"
 
 import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
 import type { Selection } from "../execution/types.ts"
+import { requestLabel } from "../explore/model.ts"
 import { requestColor } from "../theme.ts"
 import { activeTeachingStep, architectureFocusLabel, architectureLabel, kvHeadForQuery, observedProfileTokenPositions, poolCellPosition, poolGridLayout, projectArchitecture, scheduledTokenPositions, teachingLayer } from "./model.ts"
 import type { ArchitectureFocus, MeasuredSceneProfile, ModelArchitecture, ScheduledTokenPosition } from "./model.ts"
@@ -13,6 +14,7 @@ export interface ModelStageProps {
   state: ReplayState
   manifest?: RecordingManifest | null
   requestOrder: string[]
+  requestLabels?: ReadonlyMap<string, string>
   selection: Selection | null
   architectureFocus?: ArchitectureFocus | null
   activeStepId?: string | null
@@ -318,7 +320,7 @@ function InputCaption({ position, lines }: { position: Position3; lines: Array<{
   </SceneLabel>
 }
 
-function ParticipantInputs({ state, requestOrder, selection, activeStepId, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { y: number; summary: string }) {
+function ParticipantInputs({ state, requestOrder, requestLabels, selection, activeStepId, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { y: number; summary: string }) {
   const step = activeTeachingStep(state, activeStepId)
   const tokens = useMemo(() => step ? scheduledTokenPositions(step) : [], [step])
   if (!step || state.trust !== "known") return null
@@ -331,19 +333,19 @@ function ParticipantInputs({ state, requestOrder, selection, activeStepId, track
       <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
       <SceneText text="Scheduled input positions" position={[0, 0.9, 0]} muted />
     </group>
-    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={request.requestId}
+    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, request.requestId)}
       color={requestColor(requestOrder, request.requestId)} selected={request.requestId === requestId}
       detail={`${request.promptTokens} prefill / ${request.generationTokens} decode`}
       onSelect={() => onSelect({ kind: "request", id: request.requestId })} />
     <InputCaption position={[0.75, y, 0.8]} lines={[
       { text: summary, tone: "strong" },
-      { text: requestId && position != null ? `${requestId} / p${position}${request.requestId === requestId && position >= request.rangeStart && position < request.rangeStart + request.rangeLength ? ` / ${position < request.numPromptTokens ? "prefill" : "decode"}` : " / outside this batch"}` : `${step.requests.length} requests · ${step.totalScheduledTokens} positions` },
+      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / p${position}${request.requestId === requestId && position >= request.rangeStart && position < request.rangeStart + request.rangeLength ? ` / ${position < request.numPromptTokens ? "prefill" : "decode"}` : " / outside this batch"}` : `${step.requests.length} requests · ${step.totalScheduledTokens} positions` },
       { text: "Decode lighter · explanatory layout", tone: "muted" },
     ]} />
   </group>
 }
 
-function MeasuredParticipantInputs({ profile, requestOrder, selection, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { profile: MeasuredSceneProfile; y: number; summary: string }) {
+function MeasuredParticipantInputs({ profile, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { profile: MeasuredSceneProfile; y: number; summary: string }) {
   const tokens = useMemo(() => observedProfileTokenPositions(profile.packedRows), [profile.packedRows])
   if (!tokens.length) return <SceneText text={summary} position={[0, y, 0.7]} muted />
   const requestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
@@ -356,12 +358,12 @@ function MeasuredParticipantInputs({ profile, requestOrder, selection, trackedRe
       <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
       <SceneText text={profile.evidenceKind === "fixture" ? "Fixture packed rows" : "Observed packed rows"} position={[0, 0.9, 0]} muted />
     </group>
-    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={shownRequest} detail={`${shownRows.length} mapped input positions`}
+    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, shownRequest)} detail={`${shownRows.length} mapped input positions`}
       color={requestColor(requestOrder, shownRequest)} selected={shownRequest === requestId}
       onSelect={() => onSelect({ kind: "request", id: shownRequest })} />
     <InputCaption position={[0.75, y, 0.8]} lines={[
       { text: summary, tone: "strong" },
-      { text: requestId && position != null ? `${requestId} / p${position}${mapped.some((token) => token.position === position) ? " / mapped" : " / outside this batch"}` : `${tokens.length} real input rows · padding excluded` },
+      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / p${position}${mapped.some((token) => token.position === position) ? " / mapped" : " / outside this batch"}` : `${tokens.length} real input rows · padding excluded` },
       { text: "Batch/layer timing · no token or head duration", tone: "muted" },
     ]} />
   </group>

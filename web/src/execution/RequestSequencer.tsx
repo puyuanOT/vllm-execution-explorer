@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import type { ReplayState } from "../../../replay/src/reduce.ts"
 import type { IndexedStep, SampleProjection } from "../../../replay/src/timeline.ts"
+import { arrivalGroup } from "../explore/model.ts"
 import { cn } from "../lib/cn.ts"
 import { EvidenceTag } from "../ui/controls.tsx"
 import type { Selection } from "./types.ts"
@@ -119,7 +120,7 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
             <div key={group.batchId} className="contents">
               <div className="cp-roll-label col-span-1 flex items-center gap-2 border-t border-line-strong bg-[#0a1220] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">
                 <b className="font-semibold tracking-[0.06em] text-ink">{group.batchLabel}</b>
-                <span className="truncate">{group.arrivalOffsetMs == null ? "arrival time not planned" : `t+${group.arrivalOffsetMs} ms`} · {group.samples.length}</span>
+                <span className="truncate">{group.recorded ? `${group.arrivalOffsetMs == null ? "arrival time not planned" : `t+${group.arrivalOffsetMs} ms`} · ` : ""}{group.samples.length}</span>
               </div>
               <div className="border-t border-line-strong bg-[#0a1220]" />
               {group.samples.map((item) => {
@@ -278,20 +279,35 @@ function StepDetail({ step, current, columns, labels, colors, steps, onSelect }:
   )
 }
 
-function groupByBatch(samples: SampleProjection[]): Array<{ batchId: string; batchLabel: string; arrivalOffsetMs: number | null; samples: SampleProjection[] }> {
-  const groups: Array<{ batchId: string; batchLabel: string; arrivalOffsetMs: number | null; samples: SampleProjection[] }> = []
+function groupByBatch(samples: SampleProjection[]): Array<{ batchId: string; batchLabel: string; recorded: boolean; arrivalOffsetMs: number | null; samples: SampleProjection[] }> {
+  const groups: Array<{ batchId: string; batchLabel: string; recorded: boolean; arrivalOffsetMs: number | null; samples: SampleProjection[] }> = []
   for (const item of samples) {
+    const group = arrivalGroup(item.sample)
     const previous = groups[groups.length - 1]
-    if (previous && previous.batchId === item.sample.batchId) {
+    if (previous && previous.batchId === group.key) {
       previous.samples.push(item)
       continue
     }
     groups.push({
-      batchId: item.sample.batchId,
-      batchLabel: item.sample.batchLabel === "Ungrouped" ? "Arrival group not recorded" : `Batch ${item.sample.batchLabel}`,
+      batchId: group.key,
+      batchLabel: group.label,
+      recorded: group.recorded,
       arrivalOffsetMs: item.sample.arrivalOffsetMs,
       samples: [item],
     })
   }
   return groups
+}
+
+export function SequencerLegend() {
+  const item = "flex items-center gap-1.5"
+  return (
+    <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1 p-0 font-mono text-[10.5px] text-muted" aria-label="Lane legend">
+      <li className={item}><i className="h-2.5 w-4 bg-[#6f86a6]" aria-hidden="true" />Prefill range</li>
+      <li className={item}><i className="size-2.5 border border-[#8fa5c4] bg-[#8fa5c4]/15" aria-hidden="true" />Decode position</li>
+      <li className={item}><i className="h-2.5 w-4 border border-dashed border-[#6b7a92]" aria-hidden="true" />Waiting</li>
+      <li className={item}><i className="cp-hatch h-2.5 w-4 border border-[#2a3c58]" aria-hidden="true" />Unplayed</li>
+      <li className={item}><i className="h-3 w-[1.5px] bg-accent" aria-hidden="true" />Playhead</li>
+    </ul>
+  )
 }

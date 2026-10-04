@@ -3,6 +3,7 @@ import * as THREE from "three"
 
 import type { KvBlockProjection, KvCacheProjection, KvPoolProjection } from "../../../replay/src/learning.ts"
 import type { Selection } from "../execution/types.ts"
+import { requestLabel } from "../explore/model.ts"
 import { requestColor } from "../theme.ts"
 import { EvidenceTag } from "../ui/controls.tsx"
 import { dieCellPosition, dieLayout, mappedBlockSlot } from "./model.ts"
@@ -12,8 +13,8 @@ import { BoxEdges, FloorGrid, SceneEmpty, SceneLabel, SceneText, SCENE_COLORS, s
 const DIE_Y = -1.0
 const RIM_LIMIT = 400
 
-export function CacheStage({ cache, requestOrder, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
-  cache: KvCacheProjection; requestOrder: string[]; selection: Selection | null;
+export function CacheStage({ cache, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
+  cache: KvCacheProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
 }) {
   const lastBlock = useRef<string | null>(null)
@@ -30,7 +31,7 @@ export function CacheStage({ cache, requestOrder, selection, trackedRequestId, t
   return <group>
     <FloorGrid y={DIE_Y - 0.25} />
     {cache.pools.map((pool, index) => (
-      <PoolDie key={pool.pool} pool={pool} span={span} x={offset(index)} requestOrder={requestOrder} selection={selection}
+      <PoolDie key={pool.pool} pool={pool} span={span} x={offset(index)} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection}
         selected={selected?.pool === pool.pool ? selected : null}
         trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} onSelect={onSelect} />
     ))}
@@ -38,8 +39,8 @@ export function CacheStage({ cache, requestOrder, selection, trackedRequestId, t
   </group>
 }
 
-function PoolDie({ pool, span, x, requestOrder, selection, selected, trackedRequestId, trackedTokenPosition, onSelect }: {
-  pool: KvPoolProjection; span: number; x: number; requestOrder: string[]; selection: Selection | null; selected: KvBlockProjection | null;
+function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, selected, trackedRequestId, trackedTokenPosition, onSelect }: {
+  pool: KvPoolProjection; span: number; x: number; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null; selected: KvBlockProjection | null;
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
 }) {
   const layout = useMemo(() => dieLayout(pool.capacity, span), [pool.capacity, span])
@@ -117,16 +118,17 @@ function PoolDie({ pool, span, x, requestOrder, selection, selected, trackedRequ
     <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
       <SceneLabel position={[selectedPosition[0], heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={selectedPosition[0] > layout.width * 0.15 ? "left" : "right"} interactive>
-        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} onSelect={onSelect} />
+        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
   </group>
 }
 
-function BlockCartridge({ block, pool, requestOrder, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
-  block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; selection: Selection | null;
+function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
+  block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
 }) {
+  const nameOf = (requestId: string) => requestLabel(requestLabels, requestId)
   const groups = new Set([...block.contents, ...block.bindings].map((span) => span.cacheGroup))
   const sizes = [...new Set(pool.groups.filter((group) => group.pool === pool.pool && group.blockSize != null).map((group) => group.blockSize))]
   const blockSize = pool.blockSize ?? (sizes.length === 1 ? sizes[0] : null)
@@ -175,7 +177,7 @@ function BlockCartridge({ block, pool, requestOrder, selection, trackedRequestId
               outlineOffset: isSelected ? 1 : undefined,
             }}
             disabled={!known || mapped.position == null || mapped.requestId == null}
-            aria-label={`Slot ${slot}: ${status}${mapped.requestId ? `, ${mapped.requestId} position ${mapped.position}` : ""}${mapped.sourceRequestId && mapped.sourceRequestId !== mapped.requestId ? `; content source ${mapped.sourceRequestId}` : ""}`}
+            aria-label={`Slot ${slot}: ${status}${mapped.requestId ? `, ${nameOf(mapped.requestId)} position ${mapped.position}` : ""}${mapped.sourceRequestId && mapped.sourceRequestId !== mapped.requestId ? `; content source ${nameOf(mapped.sourceRequestId)}` : ""}`}
             onClick={() => { if (mapped.requestId && mapped.position != null) onSelect({ kind: "token", requestId: mapped.requestId, position: mapped.position }) }}
           >
             {status === "unknown" ? <span className="cp-hatch absolute inset-0 opacity-40" aria-hidden="true" /> : null}
@@ -189,8 +191,8 @@ function BlockCartridge({ block, pool, requestOrder, selection, trackedRequestId
       })}
     </ol>
     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] text-faint">
-      {holder ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {holder}</span> : null}
-      {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {origin}</span> : null}
+      {holder ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span> : null}
+      {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {nameOf(origin)}</span> : null}
       <span className="flex-1" />
       <span>Rim = origin · fill = holder · no tensor values</span>
     </div>

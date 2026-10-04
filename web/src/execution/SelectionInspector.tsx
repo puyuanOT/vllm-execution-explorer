@@ -8,7 +8,7 @@ import {
   type SampleProjection,
   type TimelineIndex,
 } from "../../../replay/src/timeline.ts"
-import { componentSnapshot, workflowComponent } from "../explore/model.ts"
+import { arrivalGroup, componentSnapshot, workflowComponent } from "../explore/model.ts"
 import type { EvidenceKind, WorkflowComponentId } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
 import { LearningDetails } from "./LearningDetails.tsx"
@@ -53,6 +53,7 @@ export function SelectionInspector({
   const blocks = state ? describeBlocks(state) : []
   const block = selection?.kind === "block" ? blocks.find((item) => item.key === selection.key || `${item.pool}:${item.blockId}` === selection.key) ?? null : null
   const component = selection?.kind === "component" ? selection.id : null
+  const labels = new Map(samples.map((item) => [item.sample.id, item.sample.label]))
   return (
     <aside className="inspector grid min-h-0 content-start gap-3 overflow-auto border-l border-line bg-[#060a11] px-[18px] py-4" aria-label="Inspector">
       <header className="grid gap-1 border-b border-line pb-3">
@@ -60,7 +61,7 @@ export function SelectionInspector({
         <div className="flex items-start justify-between gap-2">
         <h2 className="text-balance text-[19px] font-semibold tracking-[-0.01em] text-ink">
           {sample
-            ? sample.sample.label
+            ? <>{sample.sample.label || sample.sample.id}{sample.sample.label && sample.sample.label !== sample.sample.id ? <span className="ml-2 font-mono text-xs font-normal tracking-normal text-faint">{sample.sample.id}</span> : null}</>
             : step
               ? step.id
               : block
@@ -114,7 +115,7 @@ export function SelectionInspector({
           </button>
         </section>
       ) : null}
-      <LearningDetails selection={selection} state={state} manifest={manifest} onSelect={onSelect} />
+      <LearningDetails selection={selection} state={state} manifest={manifest} labels={labels} onSelect={onSelect} />
       {block && state ? (
         <details open={!state.cacheInventory || undefined}>
           <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted">Block lifecycle evidence</summary>
@@ -215,7 +216,7 @@ function SampleDetails({
       <p className="phase">{sample.phaseLabel}</p>
       <dl className="facts">
         <div><dt>Request id</dt><dd className="mono">{sample.sample.id}</dd></div>
-        <div><dt>Arrival batch</dt><dd>{sample.sample.batchLabel}</dd></div>
+        <div><dt>Arrival batch</dt><dd>{arrivalGroup(sample.sample).recorded ? sample.sample.batchLabel : "Not recorded"}</dd></div>
         <div>
           <dt>Model route</dt>
           <dd>{modelRouteLabel(request)}</dd>

@@ -13,7 +13,7 @@ import { cn } from "../lib/cn.ts"
 import { ExecutionScene } from "../scene.tsx"
 import type { CameraAction, CameraCommand } from "../scene.tsx"
 import { Chip, Segmented, Sparkline } from "../ui/controls.tsx"
-import { RequestSequencer } from "./RequestSequencer.tsx"
+import { RequestSequencer, SequencerLegend } from "./RequestSequencer.tsx"
 import type { TelemetryPoint } from "./telemetry.ts"
 import type { Selection, WorkspaceView } from "./types.ts"
 
@@ -162,8 +162,9 @@ export function ExecutionWorkspace({
 
       {view === "timeline" ? (
         <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-3">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <EvidenceChip kind={evidenceKind} evidence={evidence} />
+            <SequencerLegend />
           </div>
           <RequestSequencer
             samples={samples}
@@ -195,6 +196,7 @@ export function ExecutionWorkspace({
                 trackedTokenPosition={trackedTokenPosition}
                 kvCache={cache}
                 requestOrder={requestOrder}
+                requestLabels={labels}
                 selection={selection}
                 animate={animate}
                 focus={focus}
