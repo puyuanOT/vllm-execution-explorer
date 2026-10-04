@@ -370,52 +370,72 @@ function EvidenceChip({ kind, evidence }: { kind: EvidenceKind; evidence: string
 function RequestFinder({ samples, onSelect }: { samples: SampleProjection[]; onSelect: (selection: Selection) => void }) {
   const [query, setQuery] = useState("")
   const [open, setOpen] = useState(false)
+  const [active, setActive] = useState(0)
   const normalized = query.trim().toLocaleLowerCase()
   const matches = (normalized ? samples.filter((sample) => (
     sample.sample.label.toLocaleLowerCase().includes(normalized)
     || sample.sample.id.toLocaleLowerCase().includes(normalized)
     || sample.phaseLabel.toLocaleLowerCase().includes(normalized)
   )) : samples).slice(0, 8)
+  const activeIndex = Math.max(0, Math.min(active, matches.length - 1))
+  const expanded = open && matches.length > 0
   function choose(id: string) {
     onSelect({ kind: "request", id })
     setOpen(false)
   }
   return (
-    <div className="relative">
+    <div className="relative" onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false) }}>
       <label className="relative block">
         <span className="sr-only">Find a request</span>
         <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-faint" aria-hidden="true" />
         <input
           type="search"
+          role="combobox"
           className="h-8 w-40 rounded border-line-strong bg-surface py-0 pl-7 pr-2 font-mono text-[11px] text-ink placeholder:text-faint"
           placeholder={`Find request (${samples.length})`}
           value={query}
-          aria-expanded={open}
+          aria-autocomplete="list"
+          aria-expanded={expanded}
           aria-controls="request-finder-results"
+          aria-activedescendant={expanded ? `request-finder-option-${activeIndex}` : undefined}
           onFocus={() => setOpen(true)}
-          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
-          onChange={(event) => { setQuery(event.target.value); setOpen(true) }}
+          onChange={(event) => { setQuery(event.target.value); setActive(0); setOpen(true) }}
           onKeyDown={(event) => {
-            if (event.key === "Enter" && matches[0]) { event.preventDefault(); choose(matches[0].sample.id) }
-            if (event.key === "Escape") { setQuery(""); setOpen(false) }
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault()
+              setOpen(true)
+              if (expanded) setActive(Math.max(0, Math.min(matches.length - 1, activeIndex + (event.key === "ArrowDown" ? 1 : -1))))
+            } else if (event.key === "Enter" && expanded) {
+              event.preventDefault()
+              choose(matches[activeIndex].sample.id)
+            } else if (event.key === "Escape") {
+              if (open) { event.preventDefault(); setOpen(false) } else setQuery("")
+            }
           }}
         />
       </label>
-      {open ? (
-        <ul id="request-finder-results" className="absolute right-0 top-full z-30 mt-1 grid max-h-72 w-72 list-none gap-px overflow-auto border border-line-strong bg-surface p-1 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)]">
-          {matches.length ? matches.map((sample) => (
-            <li key={sample.sample.id}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-3 border-0 bg-transparent px-2 py-1.5 text-left text-sm text-muted hover:bg-raised hover:text-ink"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => choose(sample.sample.id)}
-              >
-                <span className="truncate font-mono text-xs text-ink">{sample.sample.label}</span>
-                <span className="truncate text-[11px]">{sample.phaseLabel}</span>
-              </button>
+      {open && !matches.length ? (
+        <p className="absolute right-0 top-full z-30 m-0 mt-1 w-72 border border-line-strong bg-surface px-3 py-2 text-xs text-muted shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)]" role="status">
+          No request matches. Clear the search to see every request.
+        </p>
+      ) : null}
+      {expanded ? (
+        <ul id="request-finder-results" role="listbox" aria-label="Matching requests" className="absolute right-0 top-full z-30 mt-1 grid max-h-72 w-72 list-none gap-px overflow-auto border border-line-strong bg-surface p-1 shadow-[0_18px_40px_-20px_rgba(0,0,0,0.9)]">
+          {matches.map((sample, index) => (
+            <li
+              key={sample.sample.id}
+              id={`request-finder-option-${index}`}
+              role="option"
+              aria-selected={index === activeIndex}
+              className={cn("flex cursor-pointer items-center justify-between gap-3 px-2 py-1.5 text-sm text-muted", index === activeIndex && "bg-raised text-ink")}
+              onMouseDown={(event) => event.preventDefault()}
+              onMouseEnter={() => setActive(index)}
+              onClick={() => choose(sample.sample.id)}
+            >
+              <span className="truncate font-mono text-xs text-ink">{sample.sample.label}</span>
+              <span className="truncate text-[11px]">{sample.phaseLabel}</span>
             </li>
-          )) : <li className="px-2 py-1.5 text-xs text-muted">No request matches. Clear the search to see every request.</li>}
+          ))}
         </ul>
       ) : null}
     </div>
