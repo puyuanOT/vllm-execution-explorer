@@ -812,7 +812,7 @@ export function App() {
   const editableScenario = scenarioFromRecordedPlan(manifest.workload_plan, promptsFromContent(content))
 
   return (
-    <div className={route === "explore" ? "flex min-h-dvh flex-col bg-[#05080e] text-slate-100 sm:h-dvh sm:min-h-0 sm:overflow-hidden" : "min-h-dvh bg-[#05080e] text-slate-100"}>
+    <div className={route === "explore" ? "flex min-h-dvh flex-col bg-[#05080e] text-slate-100 tall:h-dvh tall:min-h-0 tall:overflow-hidden" : "min-h-dvh bg-[#05080e] text-slate-100"}>
       <p className="sr-only" aria-live="polite">{announce}</p>
       <p className="sr-only" aria-live="assertive">{validationMessage}</p>
       <AppHeader

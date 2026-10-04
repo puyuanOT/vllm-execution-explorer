@@ -323,12 +323,15 @@ p { text-wrap: pretty; }
   .scene-card-metric span { display: none; }
 }
 
-@container (max-width: 600px) {
+@container (max-width: 600px) or (max-height: 380px) {
   .scene-card { display: flex; align-items: center; gap: 6px; padding: 3px 7px 3px 4px; }
   .scene-card-name { display: none; }
   .scene-card-metric { margin-top: 0; }
   .scene-card-metric b { font-size: 12px; }
   .scene-card-metric span { display: none; }
+}
+
+@container (max-width: 600px) {
   .scene-tag { display: block; max-width: 86cqw; white-space: normal; text-align: center; font-size: 8.5px; }
 }
 

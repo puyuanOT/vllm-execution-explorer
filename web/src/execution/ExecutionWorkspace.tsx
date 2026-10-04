@@ -126,7 +126,7 @@ export function ExecutionWorkspace({
   const latestStep = replay.steps.at(-1) ?? null
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col bg-canvas" aria-label="Execution explorer">
+    <section className="flex min-h-0 min-w-0 flex-col overflow-y-auto bg-canvas" aria-label="Execution explorer">
       <header className="flex min-h-[46px] flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[#060a11] px-3.5 py-1.5">
         <div className="flex min-w-fit flex-1 items-baseline gap-3">
           <h1 className="shrink-0 text-[15px] font-semibold text-ink">{title}</h1>
@@ -185,7 +185,7 @@ export function ExecutionWorkspace({
             Use the component controls below the canvas for equivalent keyboard access.
           </p>
 
-          <div className="scene-viewport relative min-h-[62vh] flex-1 overflow-hidden sm:min-h-72">
+          <div className="scene-viewport relative min-h-[max(62vh,22rem)] flex-1 overflow-hidden tall:min-h-72">
             <div className="absolute inset-0">
               <ExecutionScene
                 state={replay}

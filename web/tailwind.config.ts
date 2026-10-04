@@ -82,6 +82,9 @@ export default {
       full: "9999px",
     },
     extend: {
+      screens: {
+        tall: { raw: "(min-width: 640px) and (min-height: 600px)" },
+      },
       colors: {
         slate: steel,
         blue: signal,
