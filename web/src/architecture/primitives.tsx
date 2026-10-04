@@ -53,6 +53,7 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     const parent = gl.domElement.parentElement
     if (!parent) return
     element.className = "scene-label"
+    element.style.pointerEvents = "none"
     parent.appendChild(element)
     const next = createRoot(element)
     root.current = next
@@ -66,11 +67,11 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
 
   useLayoutEffect(() => {
     element.dataset.anchor = anchor
-    element.style.pointerEvents = interactive ? "auto" : "none"
-  }, [element, anchor, interactive])
+  }, [element, anchor])
 
+  // Only the translated inner box takes pointer events; the outer box stays at the anchor and would block the scene.
   useLayoutEffect(() => {
-    root.current?.render(<div className="scene-label-inner">{children}</div>)
+    root.current?.render(<div className="scene-label-inner" style={interactive ? { pointerEvents: "auto" } : undefined}>{children}</div>)
   })
 
   useEffect(() => { invalidate() }, [position[0], position[1], position[2], invalidate])

@@ -85,7 +85,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   const left = -layout.width / 2
   const selectedPosition = selected ? dieCellPosition(selected.blockId, layout) : null
   // A small die leaves room beside it, so the cartridge sits off the die instead of covering its other blocks.
-  const besideDie = layout.width < span * 0.75 && viewportWidth >= 700
+  const besideDie = layout.width < span * 0.75 && viewportWidth >= 900
   const cartridgeSide = selectedPosition && selectedPosition[0] < 0 ? "left" : "right"
   const cartridgeX = selectedPosition ? besideDie ? (cartridgeSide === "right" ? 1 : -1) * (layout.width / 2 + 0.45) : selectedPosition[0] : 0
   const cartridgeAnchor = besideDie ? cartridgeSide : selectedPosition && selectedPosition[0] > layout.width * 0.15 ? "left" : "right"
