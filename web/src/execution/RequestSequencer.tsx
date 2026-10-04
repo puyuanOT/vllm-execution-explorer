@@ -89,7 +89,7 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
           <div className="cp-roll-head col-span-2">
             <div className="cp-roll-corner flex shrink-0 flex-col justify-center px-2.5" style={{ width: LABEL_WIDTH, height: 46 }}>
               <span className="cp-label">Request</span>
-              <span className="cp-label text-[#3d4f6c]">{columns.length} steps{current ? ` · budget ${current.tokenBudget}` : ""}</span>
+              <span className="cp-label">{columns.length} steps{current ? ` · budget ${current.tokenBudget}` : ""}</span>
             </div>
             <div className="relative flex" style={{ width: trackWidth }}>
               {columns.map((column, index) => (

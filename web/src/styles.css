@@ -15,7 +15,7 @@
   --line-bright: #2a3c58;
   --text: #e2eaf4;
   --text-dim: #95a5bb;
-  --text-faint: #63738c;
+  --text-faint: #6e7e97;
   --accent: #3fcde6;
   --accent-soft: rgba(63, 205, 230, 0.12);
   --accent-line: rgba(63, 205, 230, 0.45);
@@ -313,7 +313,7 @@ p { text-wrap: pretty; }
 .scene-card-metric { margin-top: 4px; display: flex; align-items: baseline; gap: 6px; }
 .scene-card-metric b { font-family: var(--mono); font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
 .scene-card-metric span { font-size: 11.5px; color: var(--text-faint); }
-.scene-tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: #52627b; text-transform: uppercase; white-space: nowrap; }
+.scene-tag { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; color: var(--text-faint); text-transform: uppercase; white-space: nowrap; }
 .scene-text { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
 .scene-text[data-tone="strong"] { color: var(--text); font-size: 11.5px; }
 

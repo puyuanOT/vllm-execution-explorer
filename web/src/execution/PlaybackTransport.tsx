@@ -251,7 +251,7 @@ function Scope({ label, readout, ticks, markers, gapPosition, currentPosition, v
           const path = model.bins[channel.id].map((column) => `M${x(column)},${y + 1}v${ROW - 2}`).join("")
           return (
             <g key={channel.id}>
-              <text x={0} y={y + ROW - 1} className="fill-[#55657e] font-mono text-[8.5px] tracking-[0.06em]">{channel.code}</text>
+              <text x={0} y={y + ROW - 1} className="fill-faint font-mono text-[8.5px] tracking-[0.06em]">{channel.code}</text>
               <rect x={GUTTER} y={y} width={columns + 1} height={ROW} fill="#070c15" stroke="#111c2d" />
               {path ? <path d={path} stroke="#7d90ad" strokeOpacity={0.6} strokeWidth={1.2} /> : null}
             </g>
@@ -276,7 +276,7 @@ function Scope({ label, readout, ticks, markers, gapPosition, currentPosition, v
           return (
             <g key={`${marker.label}-${index}`}>
               <line x1={mx} x2={mx} y1={TOP - 4} y2={TOP} stroke="#40516b" />
-              {showLabel ? <text x={mx + 2} y={TOP - 4} className="fill-[#55657e] font-mono text-[8px]">{marker.label}</text> : null}
+              {showLabel ? <text x={mx + 2} y={TOP - 4} className="fill-faint font-mono text-[8px]">{marker.label}</text> : null}
             </g>
           )
         })}
