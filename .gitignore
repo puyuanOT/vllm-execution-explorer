@@ -10,6 +10,7 @@ dist/
 build/
 .vite/
 recordings/runs/
+recordings/qualification-3d-live/
 recordings/keys/
 *.egg-info/
 .coverage

@@ -1,6 +1,6 @@
 # Preliminary local acceptance — 2026-10-03
 
-This is **local synthetic and contract evidence**, not GPU qualification. The redesign has not run the canonical Qwen model or actual native CUDA profiler. No redesign LLM calls were made: LangSmith credentials were unavailable on the laptop and execution host. A credential-location question remains with the user. No key contents are stored here.
+This is **local synthetic and contract evidence**, not GPU qualification. The redesign has not run the canonical Qwen model or actual native CUDA profiler. No redesign LLM calls were made: LangSmith credentials were unavailable on the laptop and execution host. The user subsequently waived LangSmith for this project on 2026-10-03; that credential question is no longer a blocker. No key contents are stored here.
 
 ## Final local checks
 
@@ -40,9 +40,9 @@ Three independent preliminary reviewers reassessed correctness, integration/evid
 
 ## Remaining qualification
 
-1. Provide LangSmith credentials securely on the execution host, without putting a key in chat or recordings.
+1. LangSmith was explicitly waived by the user on 2026-10-03; preserve and inspect local request/output and native trace evidence instead.
 2. Run actual Qwen3-4B-Instruct-2507 serving and eager diagnostic scenarios, including prefix reuse, chunked prefill, cache pressure, cancellation, and partial/error retention. Use an isolated checkout/runtime and preserve existing services.
 3. Check every recording, returned token outcome, immutable model/tokenizer revision, actual loaded architecture, complete physical pool, scheduler queue snapshots, and packed post-reorder row mapping. Inspect raw native traces and correlations, and record unsupported/unknown evidence honestly.
-4. Inspect each experiment in LangSmith through its API and UI, including hierarchy, per-call effective settings, inputs/outputs and failure outcomes. Queued SDK metadata is insufficient.
+4. Inspect each experiment’s retained inputs/outputs, effective settings, scheduler/KV observations, controller log and native profiler attachments. This replaces the waived LangSmith inspection requirement.
 5. Evaluate frame time, picking, memory/resource stability on the real pool and target browser; synthetic addressability alone is not a GPU performance benchmark.
 6. Obtain three independent final reviews, pass final CI and merge only after the evidence gate is met.

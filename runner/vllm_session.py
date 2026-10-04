@@ -8,9 +8,11 @@ Speculative decoding stays off. A fixture run never constructs this object.
 from __future__ import annotations
 
 import inspect
+import gc
 import json
 import os
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -35,6 +37,49 @@ class _LoRARoute:
     resolved_path: str
     source: dict[str, Any]
     request: Any
+
+
+_ENGINE_SESSION_LOCK = threading.Lock()
+
+
+def _clear_vllm_env_cache() -> None:
+    """Keep the installed env-cache wrapper, but invalidate stale runner selection."""
+    envs = sys.modules.get("vllm.envs")
+    clear = getattr(getattr(envs, "__getattr__", None), "cache_clear", None)
+    if callable(clear):
+        clear()
+
+
+class _EngineSessionLease:
+    """Own process-global runner selection until the in-process engine is shut down."""
+
+    def __init__(self, diagnostic: bool) -> None:
+        if not _ENGINE_SESSION_LOCK.acquire(blocking=False):
+            raise RuntimeError("Another in-process vLLM session is still preparing, running, or closing.")
+        self._held = True
+        self._diagnostic = diagnostic
+        self._previous = os.environ.get("VLLM_USE_V2_MODEL_RUNNER")
+        try:
+            if diagnostic:
+                os.environ["VLLM_USE_V2_MODEL_RUNNER"] = "0"
+                _clear_vllm_env_cache()
+        except BaseException:
+            self.release()
+            raise
+
+    def release(self) -> None:
+        if not self._held:
+            return
+        self._held = False
+        try:
+            if self._diagnostic:
+                if self._previous is None:
+                    os.environ.pop("VLLM_USE_V2_MODEL_RUNNER", None)
+                else:
+                    os.environ["VLLM_USE_V2_MODEL_RUNNER"] = self._previous
+                _clear_vllm_env_cache()
+        finally:
+            _ENGINE_SESSION_LOCK.release()
 
 
 class VllmSession:
@@ -69,6 +114,7 @@ class VllmSession:
         self._sampling = canonical_sampling(None)
         self._lora_routes = dict(lora_routes or {})
         self._profile: Any = None
+        self._engine_lease: _EngineSessionLease | None = None
         self.profiling_record: dict[str, Any] | None = None
 
     @classmethod
@@ -78,70 +124,79 @@ class VllmSession:
         os.environ["VLLM_DISABLE_REQUEST_ID_RANDOMIZATION"] = "1"
         _expose_venv_tools()
         preparation_started = time.monotonic_ns()
-        lora_routes = _prepare_lora_routes(body)
-        with _huggingface_auth(getattr(body, "huggingface_token", None)):
-            resolution = resolve_model_revisions(body)
-            engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
-        engine_ready = time.monotonic_ns()
-        _warmup(engine)
-        warmup_completed = time.monotonic_ns()
-        reset_started = time.monotonic_ns()
-        if engine.reset_prefix_cache() is not True:
-            raise RuntimeError("prefix cache reset was not verified")
-        reset_completed = time.monotonic_ns()
-        recording.event("cache_reset", verified=True, observation_boundary="vllm.reset_prefix_cache.returned_true_after_warmup")
-        core = _engine_core(engine)
-        _reject_speculative(engine)
-        version = _import_vllm_version()
-        from vllm_030.install import install
-
-        tokenizer = _loaded_tokenizer(engine)
-        pieces = (lambda ids: _decoded_token_pieces(tokenizer, ids)) if callable(getattr(tokenizer, "decode", None)) else None
+        profiling = getattr(body, "profiling_configuration", None) or {"mode": "off", "max_steps": 8}
+        diagnostic = profiling.get("mode") == "eager_diagnostic"
+        lease = _EngineSessionLease(diagnostic)
+        engine, session = None, None
         try:
-            adapter = install(core, recording, vllm_version=version, check_sources=True, token_pieces=pieces)
-        except Exception:
-            shutdown = getattr(getattr(engine, "engine_core", None), "shutdown", None)
-            if callable(shutdown):
-                shutdown()
-            raise
-        session = cls(engine, adapter, recording, lora_routes=lora_routes)
-        session.revision_resolution = resolution
-        if getattr(body, "requests", None):
-            from runner.configuration import parse_run_configuration
-            from runner.workload import parse_run_workload
+            lora_routes = _prepare_lora_routes(body)
+            with _huggingface_auth(getattr(body, "huggingface_token", None)):
+                resolution = resolve_model_revisions(body)
+                engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
+            session = cls(engine, None, recording, lora_routes=lora_routes)
+            session._engine_lease = lease
+            engine_ready = time.monotonic_ns()
+            if diagnostic and getattr(engine.vllm_config, "use_v2_model_runner", None) is not False:
+                raise RuntimeError("Eager diagnostic profiling requires verified V1 model-runner selection for the entire session.")
+            _warmup(engine)
+            warmup_completed = time.monotonic_ns()
+            reset_started = time.monotonic_ns()
+            if engine.reset_prefix_cache() is not True:
+                raise RuntimeError("prefix cache reset was not verified")
+            reset_completed = time.monotonic_ns()
+            recording.event("cache_reset", verified=True, observation_boundary="vllm.reset_prefix_cache.returned_true_after_warmup")
+            core = _engine_core(engine)
+            _reject_speculative(engine)
+            version = _import_vllm_version()
+            from vllm_030.install import install
 
-            payload = body.model_dump() if hasattr(body, "model_dump") else vars(body)
-            requests, plan = parse_run_workload(payload)
-            session.resolved_configuration = parse_run_configuration(payload, requests, plan)
-        session._sampling = canonical_sampling(getattr(body, "sampling", None))
-        session.preparation_observations = {
-            "clock_domain": "engine_process:time.monotonic_ns",
-            "preparation_started_monotonic_ns": preparation_started,
-            "engine_ready_monotonic_ns": engine_ready,
-            "warmup_completed_monotonic_ns": warmup_completed,
-            "cache_reset_started_monotonic_ns": reset_started,
-            "cache_reset_completed_monotonic_ns": reset_completed,
-            "capture_ready_monotonic_ns": time.monotonic_ns(),
-        }
-        session._describe(body, version)
-        from runner.profiling import DiagnosticProfile
+            tokenizer = _loaded_tokenizer(engine)
+            pieces = (lambda ids: _decoded_token_pieces(tokenizer, ids)) if callable(getattr(tokenizer, "decode", None)) else None
+            session.adapter = install(core, recording, vllm_version=version, check_sources=True, token_pieces=pieces)
+            session.revision_resolution = resolution
+            if getattr(body, "requests", None):
+                from runner.configuration import parse_run_configuration
+                from runner.workload import parse_run_workload
 
-        try:
-            session._profile = DiagnosticProfile(engine, core, recording, getattr(body, "profiling_configuration", None) or {"mode": "off", "max_steps": 8}, session.architecture_record)
+                payload = body.model_dump() if hasattr(body, "model_dump") else vars(body)
+                requests, plan = parse_run_workload(payload)
+                session.resolved_configuration = parse_run_configuration(payload, requests, plan)
+            session._sampling = canonical_sampling(getattr(body, "sampling", None))
+            session.preparation_observations = {
+                "clock_domain": "engine_process:time.monotonic_ns",
+                "preparation_started_monotonic_ns": preparation_started,
+                "engine_ready_monotonic_ns": engine_ready,
+                "warmup_completed_monotonic_ns": warmup_completed,
+                "cache_reset_started_monotonic_ns": reset_started,
+                "cache_reset_completed_monotonic_ns": reset_completed,
+                "capture_ready_monotonic_ns": time.monotonic_ns(),
+            }
+            session._describe(body, version)
+            from runner.profiling import DiagnosticProfile
+
+            session._profile = DiagnosticProfile(engine, core, recording, profiling, session.architecture_record)
             session._profile.start()
             session.profiling_record = session._profile.record
-        except Exception:
-            session.close()
+            recording.event(
+                "capture_ready",
+                cache_reset_verified=True,
+                warmup_completed_before_reset=warmup_completed <= reset_started,
+                waiting_queue_size=_queue_size(getattr(core.scheduler, "waiting", None)),
+                running_queue_size=_queue_size(getattr(core.scheduler, "running", None)),
+                observation_boundary="after_instrumentation_install",
+            )
+            return session
+        except BaseException as error:
+            try:
+                if session is not None:
+                    session.close()
+                elif engine is not None:
+                    _shutdown_engine(engine)
+            except BaseException as cleanup_error:
+                error.add_note(f"Preparation cleanup also failed ({type(cleanup_error).__name__}).")
+            finally:
+                lease.release()
             raise
-        recording.event(
-            "capture_ready",
-            cache_reset_verified=True,
-            warmup_completed_before_reset=warmup_completed <= reset_started,
-            waiting_queue_size=_queue_size(getattr(core.scheduler, "waiting", None)),
-            running_queue_size=_queue_size(getattr(core.scheduler, "running", None)),
-            observation_boundary="after_instrumentation_install",
-        )
-        return session
 
     def add_request(self, request_id: str, prompt: str, max_output_tokens: int = 16) -> None:
         from vllm.sampling_params import SamplingParams
@@ -275,16 +330,28 @@ class VllmSession:
         if self._closed:
             return
         self._closed = True
-        if self._profile is not None:
-            self._profile.finish()
-            self.profiling_record = self._profile.record
-        if self.adapter is not None:
-            self.adapter.uninstall()
-            self.adapter = None
-        client = getattr(self.engine, "engine_core", None)
-        shutdown = getattr(client, "shutdown", None)
-        if shutdown is not None:
-            shutdown()
+        try:
+            if self._profile is not None:
+                try:
+                    self._profile.finish()
+                finally:
+                    self.profiling_record = self._profile.record
+        finally:
+            self._profile = None
+            try:
+                if self.adapter is not None:
+                    self.adapter.uninstall()
+            finally:
+                self.adapter = None
+                try:
+                    _shutdown_engine(self.engine)
+                finally:
+                    self.engine = None
+                    try:
+                        _release_unused_cuda_memory()
+                    finally:
+                        if self._engine_lease is not None:
+                            self._engine_lease.release()
 
     def _describe(self, body: Any, version: str) -> None:
         decision = decide_target(
@@ -334,6 +401,7 @@ class VllmSession:
             "continuous_batching": True,
             "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
             "enforce_eager": bool(getattr(config.model_config, "enforce_eager", False)),
+            "model_runner": ("v2" if config.use_v2_model_runner else "v1") if hasattr(config, "use_v2_model_runner") else None,
         }
         model = str(getattr(body, "model", None) or config.model_config.model)
         revision = None if body.model_revision is None else str(body.model_revision)
@@ -373,9 +441,33 @@ class VllmSession:
         }
 
 
+def _shutdown_engine(engine: Any) -> None:
+    try:
+        shutdown = getattr(getattr(engine, "engine_core", None), "shutdown", None)
+        if callable(shutdown):
+            shutdown()
+    finally:
+        # vLLM's engine finalizer removes compile bytecode hooks that keep model
+        # weights alive after worker shutdown. Closed HTTP sessions retain their
+        # recording metadata, so waiting for engine GC would retain those hooks.
+        finalizer = getattr(engine, "_finalizer", None)
+        if callable(finalizer):
+            finalizer()
+
+
+def _release_unused_cuda_memory() -> None:
+    gc.collect()
+    cuda = getattr(sys.modules.get("torch"), "cuda", None)
+    initialized = getattr(cuda, "is_initialized", None)
+    if callable(initialized) and initialized():
+        cuda.empty_cache()
+
+
 def _expose_venv_tools() -> None:
     """torch.compile looks up ninja on PATH. A venv python does not put its bin directory there."""
-    bindir = os.path.dirname(os.path.realpath(sys.executable))
+    # A venv's python is commonly a symlink to the system interpreter; resolving
+    # it would lose the directory containing the venv's ninja executable.
+    bindir = os.path.dirname(os.path.abspath(sys.executable))
     current = os.environ.get("PATH", "")
     parts = current.split(os.pathsep) if current else []
     if parts[:1] != [bindir]:
