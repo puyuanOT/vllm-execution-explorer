@@ -335,8 +335,8 @@ export function App() {
     : `Start. ${index.roster.timeBasisLabel}`
 
   useEffect(() => {
-    if (followLive && runIsActive(runner.live?.status)) setSequence(maxSequence)
-  }, [followLive, maxSequence, runner.live?.status])
+    if (followLive && showingLive && runIsActive(runner.live?.status)) setSequence(maxSequence)
+  }, [followLive, maxSequence, runner.live?.status, showingLive])
 
   useEffect(() => {
     if (!playing || mode !== "events" || events.length === 0 || followLive) return
@@ -901,7 +901,7 @@ export function App() {
             maxSequence={mode === "measured" && profileExtent ? profileExtent.endUs - profileExtent.startUs : maxSequence}
             valueText={mode === "measured" ? `Profiler clock: ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start. Host replay remains at event ${sequence}.` : valueText}
             followLive={followLive}
-            followAvailable={runIsActive(runner.live?.status)}
+            followAvailable={showingLive && runIsActive(runner.live?.status)}
             connected={trace.connected}
             reduced={forceReduced}
             onReduced={setForceReduced}
