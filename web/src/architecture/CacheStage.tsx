@@ -223,4 +223,3 @@ function cellColor(block: KvBlockProjection | undefined, requestOrder: string[],
   }
   return block.hasHash ? "#3a2e18" : SCENE_COLORS.free
 }
-
