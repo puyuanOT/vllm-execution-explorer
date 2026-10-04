@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss"
+import plugin from "tailwindcss/plugin"
 
 const steel = {
   50: "#f3f6fa",
@@ -82,9 +83,6 @@ export default {
       full: "9999px",
     },
     extend: {
-      screens: {
-        tall: { raw: "(min-width: 640px) and (min-height: 600px)" },
-      },
       colors: {
         slate: steel,
         blue: signal,
@@ -111,5 +109,8 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // A variant rather than a screen: object-valued screens disable Tailwind's max-* and min-[...] variants.
+    plugin(({ addVariant }) => addVariant("tall", "@media (min-width: 640px) and (min-height: 600px)")),
+  ],
 } satisfies Config

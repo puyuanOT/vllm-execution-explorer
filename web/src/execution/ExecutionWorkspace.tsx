@@ -144,7 +144,7 @@ export function ExecutionWorkspace({
         />
         {onEditAsNew ? (
           <button type="button" className="inline-flex min-h-8 items-center gap-2 border-line-strong bg-transparent px-3 font-mono text-[11px] uppercase tracking-[0.06em] text-ink" onClick={onEditAsNew}>
-            <SquarePen className="size-3.5" aria-hidden="true" />Edit as new<span className="hidden min-[1400px]:inline"> sequence</span>
+            <SquarePen className="size-3.5" aria-hidden="true" /><span>Edit as new<span className="hidden min-[1400px]:inline"> sequence</span></span>
           </button>
         ) : null}
         {onOpenInspector ? (
