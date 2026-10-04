@@ -1,0 +1,848 @@
+{
+  "run_id": "run-1505330dbb54",
+  "scope": "recorded_gpu_contracts",
+  "analysis": {
+    "contract_version": 1,
+    "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+    "replay_projection_sha256": "39def8c4080455226e1ba2bbac1de6ff5b3c4fa5dc976aef9eedcd37ba7ee90b"
+  },
+  "status": "pass",
+  "findings": [
+    {
+      "check": "gpu_provenance",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU execution kind and reported CUDA hardware are required; fixture evidence never qualifies a GPU."
+    },
+    {
+      "check": "vllm_version",
+      "status": "pass",
+      "required": true,
+      "detail": "Exact vLLM 0.30.0 engine metadata."
+    },
+    {
+      "check": "model_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Expected Qwen/Qwen3-4B-Instruct-2507."
+    },
+    {
+      "check": "immutable_revisions",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical model and tokenizer must both use the pinned SHA."
+    },
+    {
+      "check": "qwen3_geometry",
+      "status": "pass",
+      "required": true,
+      "detail": "Explicit head_dim=128 is required; hidden/query-head division would incorrectly give 80."
+    },
+    {
+      "check": "qwen3_operator_metadata",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical dense Qwen3 operator metadata and complete ordered layer identities."
+    },
+    {
+      "check": "loaded_architecture",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU geometry must come from initialized model configuration; fixture reference geometry is separately labeled."
+    },
+    {
+      "check": "warmup_reset_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "Capture readiness follows successful warmup and verified prefix-cache reset."
+    },
+    {
+      "check": "capture_source_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Distributed runner/instrumentation fingerprint matches the specified audited source; docs do not affect it."
+    },
+    {
+      "check": "retained_content",
+      "status": "pass",
+      "required": true,
+      "detail": "Token content sidecars are necessary for ID/provenance checks."
+    },
+    {
+      "check": "event_chain",
+      "status": "pass",
+      "required": true,
+      "detail": "Contiguous per-run event identities."
+    },
+    {
+      "check": "complete_host_capture",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-gap suffixes are never used to claim current state."
+    },
+    {
+      "check": "existing_integrity.sequences",
+      "status": "pass",
+      "required": true,
+      "detail": "82 recorded events are ordered"
+    },
+    {
+      "check": "existing_integrity.event_types",
+      "status": "pass",
+      "required": true,
+      "detail": "every event type is in the v1 contract"
+    },
+    {
+      "check": "existing_integrity.content_separated",
+      "status": "pass",
+      "required": true,
+      "detail": "prompt text, token ids, and text deltas stay in the content attachment"
+    },
+    {
+      "check": "existing_integrity.step_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "3 steps keep their own result association"
+    },
+    {
+      "check": "existing_integrity.cursors",
+      "status": "pass",
+      "required": true,
+      "detail": "scheduled ranges meet the previous cursor, including after preemption"
+    },
+    {
+      "check": "existing_integrity.blocks",
+      "status": "pass",
+      "required": true,
+      "detail": "24 block transitions follow reference counts and allocation generations"
+    },
+    {
+      "check": "existing_integrity.arrivals",
+      "status": "pass",
+      "required": true,
+      "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations"
+    },
+    {
+      "check": "existing_integrity.completeness",
+      "status": "pass",
+      "required": true,
+      "detail": "event stream is complete"
+    },
+    {
+      "check": "existing_integrity.kv_observations",
+      "status": "pass",
+      "required": true,
+      "detail": "Physical generations and token ranges match observed inventories, scheduler work, and returned results."
+    },
+    {
+      "check": "physical_inventory",
+      "status": "pass",
+      "required": true,
+      "detail": "Every physical ID appears exactly once; reserved-null capacity is excluded from allocation availability."
+    },
+    {
+      "check": "token_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Only exact, unsharded full-attention groups qualify live token-slot claims."
+    },
+    {
+      "check": "cache_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Cache-group layer names cover all initialized Qwen3 layers."
+    },
+    {
+      "check": "kv_result_boundaries",
+      "status": "pass",
+      "required": true,
+      "detail": "12 returned KV ranges checked; 0 violations."
+    },
+    {
+      "check": "ordered_scheduler_queues",
+      "status": "pass",
+      "required": true,
+      "detail": "Before/after schedule snapshots must be actually available, not fabricated empty queues."
+    },
+    {
+      "check": "returned_output_ids",
+      "status": "pass",
+      "required": true,
+      "detail": "Accepted output sidecars match each request's separately retained engine output IDs, including zero-output cancellations."
+    },
+    {
+      "check": "final_output_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "0 sampled final output tokens assessed; 1 zero-output requests. Not applicable: every zero-output request has an observed cancellation terminal; no sampled token needs KV assessment.",
+      "applicability": "not_applicable"
+    },
+    {
+      "check": "per_request_streams",
+      "status": "pass",
+      "required": true,
+      "detail": "1 LLM input/output streams, effective sampling/limits and terminal outcomes inspected; 0 contradictions."
+    },
+    {
+      "check": "scenario_cancellation",
+      "status": "pass",
+      "required": true,
+      "detail": "The requested scenario must exercise the actual event."
+    },
+    {
+      "check": "normalized_profile_integrity",
+      "status": "pass",
+      "required": true,
+      "detail": "SHA-256 and size checked for profiling/activities.json."
+    },
+    {
+      "check": "native_clock",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-local microseconds and eager mode stay independent of host monotonic_ns."
+    },
+    {
+      "check": "qualified_native_hook_boundaries",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual eager setting plus source fingerprints establish the installed post-reorder hook boundaries."
+    },
+    {
+      "check": "native_runtime_versions",
+      "status": "pass",
+      "required": true,
+      "detail": "Native profiler records actual vLLM/PyTorch/CUDA runtime versions."
+    },
+    {
+      "check": "post_reorder_packed_rows",
+      "status": "pass",
+      "required": true,
+      "detail": "3 observed prepared batches agree with scheduler positions; order comes from packed rows, not request arrival order."
+    },
+    {
+      "check": "native_cpu_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Explicit Qwen3 CPU scopes cover all actual layers; this does not establish GPU layer durations."
+    },
+    {
+      "check": "native_device_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Mapped device timelines need actual device and stream identity; unknown device groups never get GPU busy-time claims."
+    },
+    {
+      "check": "measured_cuda_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "All 36 layer GPU timelines require observed native CUDA correlations; CPU scopes alone are insufficient."
+    },
+    {
+      "check": "native_step_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Each retained profiled batch has both explicit CPU scopes and correlated CUDA activity for all 36 layers; partial batches remain partial."
+    },
+    {
+      "check": "raw_profile_integrity",
+      "status": "pass",
+      "required": true,
+      "detail": "SHA-256 and size checked for profiling/raw/explorer-run-1505330dbb54_rank0.1791079278094480151.pt.trace.json.gz."
+    },
+    {
+      "check": "raw_cuda_correlations",
+      "status": "pass",
+      "required": true,
+      "detail": "1602 normalized CUDA intervals checked against raw timestamps, native IDs and containing explicit scopes; 0 errors."
+    },
+    {
+      "check": "frontend_native_profile",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual native profile loader/parser/projection accepts the retained attachment."
+    },
+    {
+      "check": "frontend_pool",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual frontend projection includes every physical block, including final ID."
+    },
+    {
+      "check": "frontend_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual token occupancy projection is observed, not merely a fully enumerated physical grid."
+    },
+    {
+      "check": "frontend_final_outputs",
+      "status": "pass",
+      "required": true,
+      "detail": "0 sampled final output tokens projected. Not applicable: observed zero-output cancellations project no sampled final token.",
+      "applicability": "not_applicable"
+    },
+    {
+      "check": "backward_seek",
+      "status": "pass",
+      "required": true,
+      "detail": "Final projection is stable after backward seeking."
+    }
+  ],
+  "facts": {
+    "architecture": {
+      "source": "loaded_model_config",
+      "dimensions": {
+        "num_layers": 36,
+        "hidden_size": 2560,
+        "intermediate_size": 9728,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 8,
+        "head_dim": 128
+      }
+    },
+    "capture_source": {
+      "recorded_sha256": "af7f86400baecd380b7ec08de10ac26f8bf320e22108fff5b7e20d4cbff5703c",
+      "comparison_sha256": "af7f86400baecd380b7ec08de10ac26f8bf320e22108fff5b7e20d4cbff5703c",
+      "comparison_ref": "75f2ccd3a13b585c576f2597449a23dcad670921",
+      "declared_revision": "75f2ccd3a13b585c576f2597449a23dcad670921"
+    },
+    "events": {
+      "cache_reset": 1,
+      "cache_inventory": 1,
+      "capture_ready": 1,
+      "request_dispatched": 1,
+      "request_dispatch_completed": 1,
+      "http_request_received": 1,
+      "request_model_route": 1,
+      "engine_prompt_observed": 1,
+      "engine_admitted": 1,
+      "http_engine_admission_correlated": 1,
+      "prefix_lookup": 1,
+      "block_change": 24,
+      "step_scheduled": 3,
+      "kv_block_binding": 24,
+      "step_submitted": 3,
+      "step_result_received": 3,
+      "kv_block_written": 12,
+      "cancellation": 1,
+      "http_response_completed": 1
+    },
+    "initial_pool": [
+      {
+        "pool": "pool-0",
+        "capacity": 4516,
+        "reserved_null": 1,
+        "allocation_available": 4515,
+        "cached_available": 0
+      }
+    ],
+    "kv_violations": [],
+    "final_output_assessment": {
+      "sampled_final_token_count": 0,
+      "zero_output_request_count": 1,
+      "zero_output_terminal_cancellation_count": 1,
+      "applicability": "not_applicable",
+      "zero_outputs": [
+        {
+          "request_id": "cancel-long",
+          "terminal": "cancellation"
+        }
+      ]
+    },
+    "final_outputs": [],
+    "requests": [
+      {
+        "request_id": "cancel-long",
+        "input_mode": "synthetic",
+        "prompt_token_count": 3500,
+        "accepted_output_token_count": 0,
+        "max_output_tokens": 512,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "cancellation",
+            "reason": "abort",
+            "sequence": 81
+          }
+        ],
+        "prompt_text_characters": 0,
+        "prompt_text_sha256": null,
+        "prompt_ids_sha256": "737eb3b75f2e63ed2f8f630b8dc1f68963b9cc2d951ea6fc1562700427cc6208",
+        "output_text_characters": 0,
+        "output_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "output_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "text_emissions": 0
+      }
+    ],
+    "request_stream_errors": [],
+    "exercised_features": {
+      "prefix_reuse": 0,
+      "preemption": 0,
+      "cancellation": 1,
+      "cache_eviction": 0,
+      "cached_release": 0
+    },
+    "packed_mapping_errors": [],
+    "profiler": {
+      "status": "partial",
+      "qualification": "unverified",
+      "runtime": {
+        "cuda": "13.0",
+        "torch": "2.13.0+cu130",
+        "vllm": "0.30.0"
+      },
+      "captured_steps": 3,
+      "observed_row_steps": 3,
+      "cuda_activities": 1602,
+      "correlated_cuda_activities": 1602,
+      "unmapped_cuda_activities": 0,
+      "cpu_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "cuda_layers": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "step_layer_coverage": [
+        {
+          "step_id": "step-1",
+          "cpu_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "cuda_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "complete_layer_coverage": true
+        },
+        {
+          "step_id": "step-2",
+          "cpu_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "cuda_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "complete_layer_coverage": true
+        },
+        {
+          "step_id": "step-3",
+          "cpu_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "cuda_layers": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35
+          ],
+          "complete_layer_coverage": true
+        }
+      ],
+      "mapped_module_layers": {
+        "attention": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
+        ],
+        "ffn": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35
+        ]
+      }
+    },
+    "raw_correlation_errors": [],
+    "replay": {
+      "trust": "known",
+      "inventoryStatus": "observed",
+      "requests": [
+        {
+          "requestId": "cancel-long",
+          "status": "cancelled",
+          "acceptedTokenCount": 0
+        }
+      ],
+      "pools": [
+        {
+          "pool": "pool-0",
+          "capacity": 4516,
+          "cells": 4516,
+          "lastId": 4515,
+          "tokenOccupancyStatus": "observed"
+        }
+      ],
+      "finals": [],
+      "boundary": {
+        "sequence": 17,
+        "scheduledPosition": 0,
+        "kvState": "reserved",
+        "computedEver": false
+      },
+      "nativeProfile": {
+        "status": "observed",
+        "clock": {
+          "domain": "torch.profiler.chrome_trace",
+          "unit": "microseconds",
+          "origin": "trace_local"
+        },
+        "evidenceKind": "gpu",
+        "steps": 3,
+        "layers": 324
+      },
+      "backwardSeekStable": true
+    }
+  },
+  "limitations": [
+    "No numerical K/V tensors are read; successful result boundaries establish logical full-attention KV writes.",
+    "Packed rows identify batch participants, never individual-token or head duration.",
+    "This script does not qualify GPU/browser performance or inspect actual UI rendering.",
+    "Manifest initialized-config provenance must be supported by the preserved runtime/deployment receipt."
+  ]
+}

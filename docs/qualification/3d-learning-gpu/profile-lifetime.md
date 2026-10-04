@@ -67,7 +67,10 @@ been removed; compiler disk caches are preserved.
 Controller shutdown first requests cancellation and closes intake. It waits a
 bounded grace period, then terminates and, if necessary, kills only its registered
 execution process, joins it, finalizes retained evidence, and shuts down the state
-manager last. A worker that cannot be reaped keeps its handle and blocks another
+manager last. The supervisor waits on the OS process sentinel without reaping, while one
+lifecycle mutex serializes process polling, joining and signalling. Only the
+identity-matched owned handle is cleared before admission is released under
+that mutex. A worker that cannot be reaped keeps its handle and blocks another
 capture. An unexpected exit retains the valid event/content prefix, records an
 explicit trace gap, and labels the capture failed. Before repairing an interrupted
 last record, the original bytes are retained in `*.interrupted` files. Interior
@@ -76,5 +79,5 @@ corruption is reported rather than rewritten as complete evidence.
 Local checks use real spawned fixture workers to cover repeat capture, live
 intake, cancellation, joined readiness, death inside a transaction, shutdown,
 bounded termination, crash recovery, and raw-byte preservation. Those checks
-establish controller semantics; live post-close GPU memory and consecutive
-captures must still be measured on the actual host before claiming qualification.
+establish controller semantics. Subsequent live consecutive captures and
+post-close GPU memory receipts are retained in the [GPU qualification report](README.md).

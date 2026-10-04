@@ -1,6 +1,6 @@
 # Preliminary local acceptance — 2026-10-03
 
-This is **local synthetic and contract evidence**, not GPU qualification. The redesign has not run the canonical Qwen model or actual native CUDA profiler. No redesign LLM calls were made: LangSmith credentials were unavailable on the laptop and execution host. The user subsequently waived LangSmith for this project on 2026-10-03; that credential question is no longer a blocker. No key contents are stored here.
+This preserves the initial **local synthetic and contract checkpoint**, not GPU qualification. At this checkpoint the redesign had not run the canonical Qwen model or actual native CUDA profiler. No redesign LLM calls had been made: LangSmith credentials were unavailable on the laptop and execution host. The user subsequently waived LangSmith for this project on 2026-10-03; that credential question is no longer a blocker. No key contents are stored here.
 
 ## Final local checks
 
@@ -36,9 +36,9 @@ The [authored profile fixture](profile-contract-fixture/README.md) intentionally
 
 Local UI and independent reviews found canvas clipping and intrinsic-height feedback after expanding/collapsing controls, overlapping head explanation and token labels, keyboard shortcuts using the wrong clock, unsupported teaching playback stalling, fallback speeds remaining at 0.001× in event mode, repeated manifest filenames retaining profiler time, teaching completion using the host tail instead of logical progress, incomplete inventory passing the report, unsupported cache layouts receiving generic token mappings, and per-call trace settings being omitted. These were fixed and affected checks rerun. Development HMR also reset in-progress views; subsequent browser checks used the production preview.
 
-Three independent preliminary reviewers reassessed correctness, integration/evidence, and simplification. Their significant findings were addressed; the final GPU/evidence review is still required after access is available. The implementation is a reviewable draft, not a completed qualification.
+Three independent preliminary reviewers reassessed correctness, integration/evidence, and simplification. Their significant findings were addressed. The later [actual GPU qualification](../../qualification/3d-learning-gpu/README.md) records the subsequent live captures and final review status; the synthetic evidence below remains scoped to this checkpoint.
 
-## Remaining qualification
+## Qualification required after this checkpoint
 
 1. LangSmith was explicitly waived by the user on 2026-10-03; preserve and inspect local request/output and native trace evidence instead.
 2. Run actual Qwen3-4B-Instruct-2507 serving and eager diagnostic scenarios, including prefix reuse, chunked prefill, cache pressure, cancellation, and partial/error retention. Use an isolated checkout/runtime and preserve existing services.

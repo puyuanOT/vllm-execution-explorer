@@ -36,6 +36,6 @@ Continuous batching is explained as built-in serving behavior, with actual sched
 
 ## Qualification gate
 
-Local fixture and authored profile tests establish contracts and UI behavior only. Before this redesign can be merged as GPU-qualified, run the canonical Qwen model and representative learning scenarios on the actual vLLM 0.30.0 host, inspect retained native profiler mappings and partial/failure cases, inspect every experiment's retained request/output and native trace evidence, then obtain three independent final reviews of that completed evidence. See [local acceptance](acceptance/3d-learning-local/README.md) for the current state.
+Local fixture and authored profile tests establish contracts and UI behavior only. GPU qualification requires the canonical Qwen model and representative learning scenarios on the actual vLLM 0.30.0 host, inspection of native profiler mappings and partial/failure cases, inspection of every experiment's retained request/output and native trace evidence, and three independent final reviews of that completed evidence. See [GPU qualification](qualification/3d-learning-gpu/README.md) for measured results and the review status. The earlier [local acceptance](acceptance/3d-learning-local/README.md) remains a synthetic contract checkpoint.
 
 The user explicitly waived LangSmith for this project on 2026-10-03. GPU qualification therefore uses the local recording, raw profiler traces, normalized attachments, controller logs, and actual browser inspection; the optional LangSmith integration is not a qualification requirement.

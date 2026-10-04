@@ -1,0 +1,602 @@
+{
+  "run_id": "run-62f5572c5570",
+  "scope": "recorded_gpu_contracts",
+  "analysis": {
+    "contract_version": 1,
+    "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+    "replay_projection_sha256": "39def8c4080455226e1ba2bbac1de6ff5b3c4fa5dc976aef9eedcd37ba7ee90b"
+  },
+  "status": "pass",
+  "findings": [
+    {
+      "check": "gpu_provenance",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU execution kind and reported CUDA hardware are required; fixture evidence never qualifies a GPU."
+    },
+    {
+      "check": "vllm_version",
+      "status": "pass",
+      "required": true,
+      "detail": "Exact vLLM 0.30.0 engine metadata."
+    },
+    {
+      "check": "model_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Expected Qwen/Qwen3-4B-Instruct-2507."
+    },
+    {
+      "check": "immutable_revisions",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical model and tokenizer must both use the pinned SHA."
+    },
+    {
+      "check": "qwen3_geometry",
+      "status": "pass",
+      "required": true,
+      "detail": "Explicit head_dim=128 is required; hidden/query-head division would incorrectly give 80."
+    },
+    {
+      "check": "qwen3_operator_metadata",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical dense Qwen3 operator metadata and complete ordered layer identities."
+    },
+    {
+      "check": "loaded_architecture",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU geometry must come from initialized model configuration; fixture reference geometry is separately labeled."
+    },
+    {
+      "check": "warmup_reset_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "Capture readiness follows successful warmup and verified prefix-cache reset."
+    },
+    {
+      "check": "capture_source_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Distributed runner/instrumentation fingerprint matches the specified audited source; docs do not affect it."
+    },
+    {
+      "check": "retained_content",
+      "status": "pass",
+      "required": true,
+      "detail": "Token content sidecars are necessary for ID/provenance checks."
+    },
+    {
+      "check": "event_chain",
+      "status": "pass",
+      "required": true,
+      "detail": "Contiguous per-run event identities."
+    },
+    {
+      "check": "complete_host_capture",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-gap suffixes are never used to claim current state."
+    },
+    {
+      "check": "existing_integrity.sequences",
+      "status": "pass",
+      "required": true,
+      "detail": "8097 recorded events are ordered"
+    },
+    {
+      "check": "existing_integrity.event_types",
+      "status": "pass",
+      "required": true,
+      "detail": "every event type is in the v1 contract"
+    },
+    {
+      "check": "existing_integrity.content_separated",
+      "status": "pass",
+      "required": true,
+      "detail": "prompt text, token ids, and text deltas stay in the content attachment"
+    },
+    {
+      "check": "existing_integrity.step_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "256 steps keep their own result association"
+    },
+    {
+      "check": "existing_integrity.cursors",
+      "status": "pass",
+      "required": true,
+      "detail": "scheduled ranges meet the previous cursor, including after preemption"
+    },
+    {
+      "check": "existing_integrity.blocks",
+      "status": "pass",
+      "required": true,
+      "detail": "120 block transitions follow reference counts and allocation generations"
+    },
+    {
+      "check": "existing_integrity.arrivals",
+      "status": "pass",
+      "required": true,
+      "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations"
+    },
+    {
+      "check": "existing_integrity.completeness",
+      "status": "pass",
+      "required": true,
+      "detail": "event stream is complete"
+    },
+    {
+      "check": "existing_integrity.kv_observations",
+      "status": "pass",
+      "required": true,
+      "detail": "Physical generations and token ranges match observed inventories, scheduler work, and returned results."
+    },
+    {
+      "check": "physical_inventory",
+      "status": "pass",
+      "required": true,
+      "detail": "Every physical ID appears exactly once; reserved-null capacity is excluded from allocation availability."
+    },
+    {
+      "check": "token_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Only exact, unsharded full-attention groups qualify live token-slot claims."
+    },
+    {
+      "check": "cache_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Cache-group layer names cover all initialized Qwen3 layers."
+    },
+    {
+      "check": "kv_result_boundaries",
+      "status": "pass",
+      "required": true,
+      "detail": "774 returned KV ranges checked; 0 violations."
+    },
+    {
+      "check": "ordered_scheduler_queues",
+      "status": "pass",
+      "required": true,
+      "detail": "Before/after schedule snapshots must be actually available, not fabricated empty queues."
+    },
+    {
+      "check": "returned_output_ids",
+      "status": "pass",
+      "required": true,
+      "detail": "Accepted output sidecars match each request's separately retained engine output IDs, including zero-output cancellations."
+    },
+    {
+      "check": "final_output_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "6 sampled final output tokens assessed; 0 zero-output requests. A sampled output becomes KV only in a later scheduled computation; naturally completed final outputs stay uncomputed.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "per_request_streams",
+      "status": "pass",
+      "required": true,
+      "detail": "6 LLM input/output streams, effective sampling/limits and terminal outcomes inspected; 0 contradictions."
+    },
+    {
+      "check": "native_profile",
+      "status": "unavailable",
+      "required": false,
+      "detail": "Native eager diagnostic profiling was not captured."
+    },
+    {
+      "check": "frontend_pool",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual frontend projection includes every physical block, including final ID."
+    },
+    {
+      "check": "frontend_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual token occupancy projection is observed, not merely a fully enumerated physical grid."
+    },
+    {
+      "check": "frontend_final_outputs",
+      "status": "pass",
+      "required": true,
+      "detail": "6 sampled final output tokens projected. Historical final-token computation matches actual later writes; acceptance alone never computes KV.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "backward_seek",
+      "status": "pass",
+      "required": true,
+      "detail": "Final projection is stable after backward seeking."
+    }
+  ],
+  "facts": {
+    "architecture": {
+      "source": "loaded_model_config",
+      "dimensions": {
+        "num_layers": 36,
+        "hidden_size": 2560,
+        "intermediate_size": 9728,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 8,
+        "head_dim": 128
+      }
+    },
+    "capture_source": {
+      "recorded_sha256": "c48b0fd1c8eccdc0b0d1d1d37e08b02f854a6e8bfd13531f81bf116bc524704d",
+      "comparison_sha256": "c48b0fd1c8eccdc0b0d1d1d37e08b02f854a6e8bfd13531f81bf116bc524704d",
+      "comparison_ref": "dcab49f6ff0e194711c031f4d72399b93f300877",
+      "declared_revision": "dcab49f6ff0e194711c031f4d72399b93f300877"
+    },
+    "events": {
+      "cache_reset": 1,
+      "cache_inventory": 1,
+      "capture_ready": 1,
+      "request_dispatched": 6,
+      "request_dispatch_completed": 6,
+      "http_request_received": 6,
+      "request_model_route": 6,
+      "engine_prompt_observed": 6,
+      "engine_admitted": 6,
+      "http_engine_admission_correlated": 6,
+      "prefix_lookup": 6,
+      "block_change": 120,
+      "step_scheduled": 256,
+      "kv_block_binding": 4840,
+      "step_submitted": 256,
+      "step_result_received": 256,
+      "kv_block_written": 774,
+      "tokens_accepted": 768,
+      "text_emitted": 764,
+      "completion": 6,
+      "http_response_completed": 6
+    },
+    "initial_pool": [
+      {
+        "pool": "pool-0",
+        "capacity": 4477,
+        "reserved_null": 1,
+        "allocation_available": 4476,
+        "cached_available": 0
+      }
+    ],
+    "kv_violations": [],
+    "final_output_assessment": {
+      "sampled_final_token_count": 6,
+      "zero_output_request_count": 0,
+      "zero_output_terminal_cancellation_count": 0,
+      "applicability": "applicable",
+      "zero_outputs": []
+    },
+    "final_outputs": [
+      {
+        "request_id": "staggered-2",
+        "accepted_count": 128,
+        "final_output_position": 157,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "staggered-1",
+        "accepted_count": 128,
+        "final_output_position": 157,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "staggered-5",
+        "accepted_count": 128,
+        "final_output_position": 157,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "staggered-4",
+        "accepted_count": 128,
+        "final_output_position": 157,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "staggered-3",
+        "accepted_count": 128,
+        "final_output_position": 156,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "staggered-6",
+        "accepted_count": 128,
+        "final_output_position": 157,
+        "terminal": "completion",
+        "write_sequences": []
+      }
+    ],
+    "requests": [
+      {
+        "request_id": "staggered-1",
+        "input_mode": "prompt",
+        "prompt_token_count": 30,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 5129
+          }
+        ],
+        "prompt_text_characters": 175,
+        "prompt_text_sha256": "10e5dc5e2c9f4a23d69af6c956d9f97ff6e5340ecc101033e1787cae22d78e29",
+        "prompt_ids_sha256": "5d27a5b41f5f5b6d219b0e54b0902e90146068288396850be0a4a1104ec5d0dd",
+        "output_text_characters": 727,
+        "output_text_sha256": "bae33fe80b940e489a5385a5a6f6b401c5615e291c8563b7ad82b82ea5611f19",
+        "output_ids_sha256": "85afb57e5cae9055b565e5d71b703dcaeeb0368d4eaf22e741edfd1e1bef2f68",
+        "text_emissions": 128
+      },
+      {
+        "request_id": "staggered-2",
+        "input_mode": "prompt",
+        "prompt_token_count": 30,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 5127
+          }
+        ],
+        "prompt_text_characters": 163,
+        "prompt_text_sha256": "59942234fcc56e3dc33fbf57229358c04074ec232bf718903839efc1e6e553d3",
+        "prompt_ids_sha256": "dde4b838b5ff5dc45a6a0bf136896d1f0266f1ecce8b5c3ad9a4b0aede300c2b",
+        "output_text_characters": 595,
+        "output_text_sha256": "e42370b5ca1f61174df59c46496f9d3ef3f2a9e0c59a72cfaed8eceb0ac0d5c3",
+        "output_ids_sha256": "9eb16283a6d0190df9fc1e7cf1461778319fb4ef658bfd14440ecda5948563bf",
+        "text_emissions": 127
+      },
+      {
+        "request_id": "staggered-3",
+        "input_mode": "prompt",
+        "prompt_token_count": 29,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 8091
+          }
+        ],
+        "prompt_text_characters": 162,
+        "prompt_text_sha256": "fee3f9b52b6824fefe9e3a7588212ac898a7533ab1b6f6f4780317c780367ee4",
+        "prompt_ids_sha256": "b938b03e19ac28981acb25b19bea8995d4a3a1b0f8700238e8412b3639b787f0",
+        "output_text_characters": 550,
+        "output_text_sha256": "6f8fb81605a705f23b840f5a73f56a51c442d3cecbb3ba4d77da98efe2f178d2",
+        "output_ids_sha256": "3096209ecf673581861d365c12503518e3022c04fe6b867960132093be1c34ba",
+        "text_emissions": 127
+      },
+      {
+        "request_id": "staggered-4",
+        "input_mode": "prompt",
+        "prompt_token_count": 30,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 5361
+          }
+        ],
+        "prompt_text_characters": 166,
+        "prompt_text_sha256": "d80159bbcb2148a24f73a40ed18589f4df589c30e62b9820aa5da6614edbbb9b",
+        "prompt_ids_sha256": "fda7e212c2bd2f144641f19a971099e4ad4e536618a1b16c75a3cdd757195f57",
+        "output_text_characters": 663,
+        "output_text_sha256": "ac0542199a04bbfad7bcc633e783a3eb7bf98f946ad991684eafbd6d55de85c1",
+        "output_ids_sha256": "c010680d0f47d9779bec316b1ed73c3a9eb003ddb8a10f3647490381c2ef1bb4",
+        "text_emissions": 127
+      },
+      {
+        "request_id": "staggered-5",
+        "input_mode": "prompt",
+        "prompt_token_count": 30,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 5359
+          }
+        ],
+        "prompt_text_characters": 168,
+        "prompt_text_sha256": "e29ed113989deba71245e9c3cbe59c0230949414c5847db077ac761362756005",
+        "prompt_ids_sha256": "d8cdbeae48c6cfeee34e4c2fa1dd90802e07c6e597a787e735436fb5110d76f5",
+        "output_text_characters": 617,
+        "output_text_sha256": "cc5d1248420d5ed194a623c41322b1527744c0a24c115b3d96e641fed98100cb",
+        "output_ids_sha256": "1705a771408a8c0f143128e6f44194e7c6e67ff76fd05038b5fd78afb481c5a9",
+        "text_emissions": 128
+      },
+      {
+        "request_id": "staggered-6",
+        "input_mode": "prompt",
+        "prompt_token_count": 30,
+        "accepted_output_token_count": 128,
+        "max_output_tokens": 128,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 8093
+          }
+        ],
+        "prompt_text_characters": 170,
+        "prompt_text_sha256": "ff68a79a1806c52644b8b686a306de8685c00b7cf0450a1e76875d0f66a5cb8c",
+        "prompt_ids_sha256": "87711b30d0204695956a7fe86b5340d7ff9db84850f95f211c144d378fef1601",
+        "output_text_characters": 649,
+        "output_text_sha256": "fbbd82c1dc18aa7a1b5ac58e86952e8191e8893416421f787e6ae71ed3f60682",
+        "output_ids_sha256": "444cdae761885848fa3aad6d81301372d42dafef9d5e9c90c28d7fe5c111e374",
+        "text_emissions": 127
+      }
+    ],
+    "request_stream_errors": [],
+    "exercised_features": {
+      "prefix_reuse": 0,
+      "preemption": 0,
+      "cancellation": 0,
+      "cache_eviction": 0,
+      "cached_release": 0
+    },
+    "replay": {
+      "trust": "known",
+      "inventoryStatus": "observed",
+      "requests": [
+        {
+          "requestId": "staggered-2",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        },
+        {
+          "requestId": "staggered-1",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        },
+        {
+          "requestId": "staggered-5",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        },
+        {
+          "requestId": "staggered-3",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        },
+        {
+          "requestId": "staggered-4",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        },
+        {
+          "requestId": "staggered-6",
+          "status": "completed",
+          "acceptedTokenCount": 128
+        }
+      ],
+      "pools": [
+        {
+          "pool": "pool-0",
+          "capacity": 4477,
+          "cells": 4477,
+          "lastId": 4476,
+          "tokenOccupancyStatus": "observed"
+        }
+      ],
+      "finals": [
+        {
+          "requestId": "staggered-2",
+          "status": "completed",
+          "position": 157,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "staggered-1",
+          "status": "completed",
+          "position": 157,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "staggered-5",
+          "status": "completed",
+          "position": 157,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "staggered-3",
+          "status": "completed",
+          "position": 156,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "staggered-4",
+          "status": "completed",
+          "position": 157,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "staggered-6",
+          "status": "completed",
+          "position": 157,
+          "kvState": "not_computed",
+          "computedEver": false
+        }
+      ],
+      "boundary": {
+        "sequence": 25,
+        "scheduledPosition": 0,
+        "kvState": "reserved",
+        "computedEver": false
+      },
+      "nativeProfile": null,
+      "backwardSeekStable": true
+    }
+  },
+  "limitations": [
+    "No numerical K/V tensors are read; successful result boundaries establish logical full-attention KV writes.",
+    "Packed rows identify batch participants, never individual-token or head duration.",
+    "This script does not qualify GPU/browser performance or inspect actual UI rendering.",
+    "Manifest initialized-config provenance must be supported by the preserved runtime/deployment receipt."
+  ]
+}

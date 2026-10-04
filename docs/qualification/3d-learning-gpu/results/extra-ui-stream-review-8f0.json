@@ -1,0 +1,707 @@
+{
+  "review_kind": "independent_final_extra_and_ui_evidence_classification",
+  "source_revision": "8f0ca92d2ee2741723ba20e5637decb91982694b",
+  "distributed_source_sha256": "83df6c7bc792273eabb37d22ab76a29476b6c69a9325848505deafa1201e5056",
+  "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+  "case_count": 4,
+  "qualified_inference_cases": 3,
+  "expected_pre_capture_failures": 1,
+  "engine_admitted_request_streams": 12,
+  "observed_output_token_count": 1077,
+  "cases": [
+    {
+      "case": "pressure-preemption",
+      "run_id": "run-9ff4ff7f29ba",
+      "raw_inference_audit_report": "pressure-preemption-8f0.json",
+      "raw_inference_audit_status": "pass",
+      "capture_completion_status": "completed",
+      "host_event_count": 27837,
+      "observed_output_token_count": 1024,
+      "request_streams": [
+        {
+          "request_id": "pressure-1",
+          "input_mode": "synthetic",
+          "prompt_token_count": 192,
+          "accepted_output_token_count": 256,
+          "max_output_tokens": 256,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 21636
+            }
+          ],
+          "prompt_text_characters": 0,
+          "prompt_text_sha256": null,
+          "prompt_ids_sha256": "d5e06640269c65fe3e428db7057527653b8291f842d6be695648aafb1f450840",
+          "output_text_characters": 259,
+          "output_text_sha256": "800c7a08150f4220cf5908d462f1598991304d0da3df7ece4619292c24b3d953",
+          "output_ids_sha256": "b1be61d7f1a717dfe75529232be23f4d1c7fe5bd6dd378f085505abde1d5ad56",
+          "text_emissions": 256
+        },
+        {
+          "request_id": "pressure-2",
+          "input_mode": "synthetic",
+          "prompt_token_count": 192,
+          "accepted_output_token_count": 256,
+          "max_output_tokens": 256,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 27835
+            }
+          ],
+          "prompt_text_characters": 0,
+          "prompt_text_sha256": null,
+          "prompt_ids_sha256": "d5e06640269c65fe3e428db7057527653b8291f842d6be695648aafb1f450840",
+          "output_text_characters": 259,
+          "output_text_sha256": "800c7a08150f4220cf5908d462f1598991304d0da3df7ece4619292c24b3d953",
+          "output_ids_sha256": "b1be61d7f1a717dfe75529232be23f4d1c7fe5bd6dd378f085505abde1d5ad56",
+          "text_emissions": 256
+        },
+        {
+          "request_id": "pressure-3",
+          "input_mode": "synthetic",
+          "prompt_token_count": 192,
+          "accepted_output_token_count": 256,
+          "max_output_tokens": 256,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 14620
+            }
+          ],
+          "prompt_text_characters": 0,
+          "prompt_text_sha256": null,
+          "prompt_ids_sha256": "d5e06640269c65fe3e428db7057527653b8291f842d6be695648aafb1f450840",
+          "output_text_characters": 259,
+          "output_text_sha256": "800c7a08150f4220cf5908d462f1598991304d0da3df7ece4619292c24b3d953",
+          "output_ids_sha256": "b1be61d7f1a717dfe75529232be23f4d1c7fe5bd6dd378f085505abde1d5ad56",
+          "text_emissions": 256
+        },
+        {
+          "request_id": "pressure-4",
+          "input_mode": "synthetic",
+          "prompt_token_count": 192,
+          "accepted_output_token_count": 256,
+          "max_output_tokens": 256,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 7999
+            }
+          ],
+          "prompt_text_characters": 0,
+          "prompt_text_sha256": null,
+          "prompt_ids_sha256": "d5e06640269c65fe3e428db7057527653b8291f842d6be695648aafb1f450840",
+          "output_text_characters": 259,
+          "output_text_sha256": "800c7a08150f4220cf5908d462f1598991304d0da3df7ece4619292c24b3d953",
+          "output_ids_sha256": "b1be61d7f1a717dfe75529232be23f4d1c7fe5bd6dd378f085505abde1d5ad56",
+          "text_emissions": 256
+        }
+      ],
+      "owned_process": {
+        "kind": "spawn_per_run",
+        "status": "exited",
+        "pid": 15742,
+        "started_monotonic_ns": 26499139326381,
+        "clock_domain": "controller:time.monotonic_ns",
+        "exit_code": 0,
+        "exited_monotonic_ns": 26539337392744
+      },
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0,
+      "intake_closed": true,
+      "effective_configuration_comparison": "All supplied authored engine fields, model/tokenizer/dtype/sampling and each original or IPC-appended request limit/priority match retained configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": 75497472,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 480,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 32,
+          "reserved_null": 1,
+          "allocation_available": 31,
+          "cached_available": 0
+        }
+      ],
+      "replay_backward_seek_stable": true,
+      "classification": "qualified_actual_preemption_and_recomputation",
+      "input_meaning": "Four synthetic inputs each contain 192 repetitions of token ID 27268. Context limit 480 and output ceiling 256 allow growth beyond the small explicit 72 MiB KV allocation, which exposes 32 physical blocks including one reserved-null block.",
+      "output_meaning": "All four deterministic continuations are repetitive synthetic text, reach 256 accepted outputs and complete at the length ceiling. They qualify observed workload streams rather than instructional answer content.",
+      "observed_recomputations": [
+        {
+          "request_id": "pressure-3",
+          "preemption_sequence": 1984,
+          "computed_cursor_before": 240,
+          "computed_cursor_after": 0,
+          "accepted_outputs_preserved_before_preemption": 49,
+          "next_observed_work": {
+            "step_id": "step-257",
+            "sequence": 8019,
+            "request_range": {
+              "request_id": "pressure-3",
+              "range_start": 0,
+              "range_length": 241,
+              "prompt_tokens": 192,
+              "generation_tokens": 49,
+              "num_prompt_tokens": 192,
+              "priority": 0
+            }
+          }
+        },
+        {
+          "request_id": "pressure-1",
+          "preemption_sequence": 9335,
+          "computed_cursor_before": 222,
+          "computed_cursor_after": 0,
+          "accepted_outputs_preserved_before_preemption": 31,
+          "next_observed_work": {
+            "step_id": "step-464",
+            "sequence": 14640,
+            "request_range": {
+              "request_id": "pressure-1",
+              "range_start": 0,
+              "range_length": 223,
+              "prompt_tokens": 192,
+              "generation_tokens": 31,
+              "num_prompt_tokens": 192,
+              "priority": 0
+            }
+          }
+        },
+        {
+          "request_id": "pressure-2",
+          "preemption_sequence": 15967,
+          "computed_cursor_before": 224,
+          "computed_cursor_after": 0,
+          "accepted_outputs_preserved_before_preemption": 33,
+          "next_observed_work": {
+            "step_id": "step-689",
+            "sequence": 21653,
+            "request_range": {
+              "request_id": "pressure-2",
+              "range_start": 0,
+              "range_length": 225,
+              "prompt_tokens": 192,
+              "generation_tokens": 33,
+              "num_prompt_tokens": 192,
+              "priority": 0
+            }
+          }
+        }
+      ],
+      "preemption_count": 3,
+      "final_sampled_outputs_computed_ever": [
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    {
+      "case": "preparation-failure",
+      "run_id": "run-5cd47c5ab70a",
+      "raw_inference_audit_report": "preparation-failure-8f0.json",
+      "raw_inference_audit_status": "failed",
+      "capture_completion_status": "failed",
+      "host_event_count": 0,
+      "observed_output_token_count": 0,
+      "request_streams": [],
+      "owned_process": {
+        "kind": "spawn_per_run",
+        "status": "exited",
+        "pid": 16010,
+        "started_monotonic_ns": 26541751652952,
+        "clock_domain": "controller:time.monotonic_ns",
+        "exit_code": 0,
+        "exited_monotonic_ns": 26558338766886
+      },
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0,
+      "intake_closed": true,
+      "classification": "expected_pre_capture_preparation_failure",
+      "inference_qualification": "not_applicable",
+      "loaded_geometry_qualification": "not_applicable",
+      "token_pool_qualification": "not_applicable",
+      "input_meaning": "The authored one-word-ready chat prompt is retained as planned text only. No engine IDs, dispatch, admission, inventory, scheduled computation or output were observed.",
+      "failure_meaning": "The intentionally unusable 1-byte KV allocation fails before capture readiness with the native no-available-cache-memory error. The ordinary inference analyzer remains failed because inference never began; this expected failure is not promoted to inference success.",
+      "cleanup_qualification": "Observed finalized failure, exited owned process, closed intake and restored 3 MiB/no-compute-app baseline pass for the preparation-failure cleanup path.",
+      "source_evidence_boundary": "The empty recording has no initialized capture source fingerprint. The preserved extra source-receipt.json identifies the deployed tree; no loaded-GPU provenance is fabricated."
+    },
+    {
+      "case": "recovery-late-intake",
+      "run_id": "run-1cd5db48bd59",
+      "raw_inference_audit_report": "recovery-late-intake-8f0.json",
+      "raw_inference_audit_status": "pass",
+      "capture_completion_status": "completed",
+      "host_event_count": 60,
+      "observed_output_token_count": 5,
+      "request_streams": [
+        {
+          "request_id": "late-immediate",
+          "input_mode": "prompt",
+          "prompt_token_count": 14,
+          "accepted_output_token_count": 3,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "stop",
+              "sequence": 34
+            }
+          ],
+          "prompt_text_characters": 79,
+          "prompt_text_sha256": "31e59e7bd119e6fdc66d1312dbfc714be112e88a0629e2627c0c1488c765af0f",
+          "prompt_ids_sha256": "6c9bcef855145a202d5d84cd399f1b2fca76db551a7d19354dc848e1a374ad3c",
+          "output_text_characters": 8,
+          "output_text_sha256": "52563f898870e6ce7817b3ffbd430df2104719a74fc408cbe24eb9f481078ce4",
+          "output_ids_sha256": "3c3f3a9f8f24abe9b82017ea93b85d5fa7a82d5eacf7be0d63df6f319257938c",
+          "text_emissions": 2
+        },
+        {
+          "request_id": "planned-after-10s",
+          "input_mode": "prompt",
+          "prompt_token_count": 14,
+          "accepted_output_token_count": 2,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "stop",
+              "sequence": 59
+            }
+          ],
+          "prompt_text_characters": 80,
+          "prompt_text_sha256": "ccff6b61c796d26faac996f00ee12a7d2c6aacef9977edaa821bb9e112a2efb8",
+          "prompt_ids_sha256": "27e5b0c9757053c267d91f7a6e09844ee659b55fabdd8c78be24d54e85ebe0ce",
+          "output_text_characters": 9,
+          "output_text_sha256": "6aef76c6cb359f6ffaf9c6e9881c902b73eeba4562f186e1cd9861bb18b5c021",
+          "output_ids_sha256": "00926fc543ea331f7af4e092cea4be74b0b703e086a12b7b4c3c67db8c757113",
+          "text_emissions": 1
+        }
+      ],
+      "owned_process": {
+        "kind": "spawn_per_run",
+        "status": "exited",
+        "pid": 16225,
+        "started_monotonic_ns": 26558472743251,
+        "clock_domain": "controller:time.monotonic_ns",
+        "exit_code": 0,
+        "exited_monotonic_ns": 26591003166690
+      },
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0,
+      "intake_closed": true,
+      "effective_configuration_comparison": "All supplied authored engine fields, model/tokenizer/dtype/sampling and each original or IPC-appended request limit/priority match retained configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4477,
+          "reserved_null": 1,
+          "allocation_available": 4476,
+          "cached_available": 0
+        }
+      ],
+      "replay_backward_seek_stable": true,
+      "classification": "qualified_natural_stop_and_live_intake_recovery",
+      "input_meaning": "The planned chat request asks for scheduled at an authored 10-second offset. The actual appended IPC payload asks for admitted immediately, with output limit 8 and priority 0.",
+      "output_meaning": "The two complete one-word answers are admitted and scheduled. The three and two accepted IDs respectively include observed end token 151645; stop happens before the 8-token length ceiling.",
+      "stop_fix_qualification": "Fresh exact 8f0 evidence records both explicit native stop completion events before their successful stop HTTP terminals. This qualifies the STOP=0 correction through recapture; historical 75f missing-terminal reports remain failed.",
+      "native_stop_boundaries": [
+        {
+          "request_id": "late-immediate",
+          "decoded_text": "admitted",
+          "accepted_ids": [
+            329,
+            5483,
+            151645
+          ],
+          "accepted_fragments": [
+            "ad",
+            "mitted",
+            "<|im_end|>"
+          ],
+          "completion_sequence": 34,
+          "completion_status": "stop",
+          "completion_reason": "stop",
+          "http_sequence": 35,
+          "http_finish_reason": "stop",
+          "final_sampled_position": 16,
+          "final_sampled_id": 151645,
+          "final_sampled_computed_ever": false,
+          "final_sampled_kv_state": "not_computed",
+          "direct_history_check": "At first acceptance, the first output is uncomputed. At native completion, its preceding consumed output positions have computedEver=true while final EOS remains false."
+        },
+        {
+          "request_id": "planned-after-10s",
+          "decoded_text": "scheduled",
+          "accepted_ids": [
+            93585,
+            151645
+          ],
+          "accepted_fragments": [
+            "scheduled",
+            "<|im_end|>"
+          ],
+          "completion_sequence": 59,
+          "completion_status": "stop",
+          "completion_reason": "stop",
+          "http_sequence": 60,
+          "http_finish_reason": "stop",
+          "final_sampled_position": 15,
+          "final_sampled_id": 151645,
+          "final_sampled_computed_ever": false,
+          "final_sampled_kv_state": "not_computed",
+          "direct_history_check": "At first acceptance, the first output is uncomputed. At native completion, its preceding consumed output positions have computedEver=true while final EOS remains false."
+        }
+      ],
+      "added_ipc_payload": {
+        "request_id": "late-immediate",
+        "prompt": "<|im_start|>user\nReply with the word admitted.<|im_end|>\n<|im_start|>assistant\n",
+        "arrival_offset_ms": 0,
+        "max_output_tokens": 8,
+        "priority": 0
+      },
+      "added_ipc_receipt": {
+        "accepted": true
+      },
+      "late_dispatch_sequence": 4,
+      "planned_dispatch_sequence": 36,
+      "metadata_boundary": "The immutable initial configuration snapshot covers one planned request; final workload_plan independently records the appended late request."
+    },
+    {
+      "case": "ui-capture",
+      "run_id": "run-1021e5882f0d",
+      "raw_inference_audit_report": "ui-capture-8f0.json",
+      "raw_inference_audit_status": "pass",
+      "classification": "qualified_actual_ui_capture_with_optional_blank_revisions",
+      "host_event_count": 315,
+      "observed_output_token_count": 48,
+      "request_streams": [
+        {
+          "request_id": "sample-1",
+          "input_mode": "prompt",
+          "prompt_token_count": 5,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 155
+            }
+          ],
+          "prompt_text_characters": 21,
+          "prompt_text_sha256": "c36c853501119e67f9f94e9d3b8c4777d93652b97b11a4307399a35b62ad47db",
+          "prompt_ids_sha256": "a9d810e419e115542e53850e916d54c4d921fe983db351ee1419c5d438edb935",
+          "output_text_characters": 36,
+          "output_text_sha256": "ac59c6378c97302c160de8f8fbda7cf7038708d0ed8cd7c96200014f2223aad1",
+          "output_ids_sha256": "a743c68217e94e36601a45af3da3fee63cbcb92bf308aaa847201dd8eccca991",
+          "text_emissions": 8
+        },
+        {
+          "request_id": "sample-2",
+          "input_mode": "prompt",
+          "prompt_token_count": 5,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 153
+            }
+          ],
+          "prompt_text_characters": 24,
+          "prompt_text_sha256": "df0c566e072b2cd85196c6da6fdb83cd5f600c0c5e3e16572afd8ec106a81f5b",
+          "prompt_ids_sha256": "f3a266b2eeb49d3b1b5f0151e5a2b800f98238f8f7c13794a2327d061a568d7b",
+          "output_text_characters": 38,
+          "output_text_sha256": "e020e1b95f240f3a8cdd831f5c08ce0a20aefa4557d09302e9169cad2d87f781",
+          "output_ids_sha256": "397fe1c7171ac10bca4f119cbec9fc1a185d7a7890d518049a992ceae2426971",
+          "text_emissions": 8
+        },
+        {
+          "request_id": "sample-3",
+          "input_mode": "prompt",
+          "prompt_token_count": 4,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 279
+            }
+          ],
+          "prompt_text_characters": 15,
+          "prompt_text_sha256": "d1962ae51e0982882de118d742e5b565d1b82b86dc15cb24d6b3a6b3cf3a0260",
+          "prompt_ids_sha256": "4f1217fb682f12a3659b148701470aec6d54d2c0c7c1d62def09a7f6b6290b07",
+          "output_text_characters": 30,
+          "output_text_sha256": "aa83cc3887dfb60b96e888f3c5c0859d76eb8f47b8413ac5194d704831804014",
+          "output_ids_sha256": "4020322fea0626ed5ba10a6b38d9d7b99e02eb5746e2aef3eac80334c345fa51",
+          "text_emissions": 8
+        },
+        {
+          "request_id": "sample-4",
+          "input_mode": "prompt",
+          "prompt_token_count": 5,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 309
+            }
+          ],
+          "prompt_text_characters": 20,
+          "prompt_text_sha256": "08dbb822b9a2888477107cf2d924555a487c6b3286044b08287e663bcdb4f2ef",
+          "prompt_ids_sha256": "62d91fd3f71b57642ef38ff43168bcd3986a1428fb5a29b67fedbff5f42aace8",
+          "output_text_characters": 31,
+          "output_text_sha256": "ec9d09e6e516e8f5a90229605270f5970d2cfa9d43ff889e083e1c35a05f2a9c",
+          "output_ids_sha256": "7e12bb1a9d7608e89e9e0e58901712a998e84ba1ede083369b6de9648b29cc0d",
+          "text_emissions": 8
+        },
+        {
+          "request_id": "sample-5",
+          "input_mode": "prompt",
+          "prompt_token_count": 4,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 277
+            }
+          ],
+          "prompt_text_characters": 15,
+          "prompt_text_sha256": "e5a3c789e9be4533eaa469f8f5eeea9854c09030c681893a7658b8b3bbf83ee9",
+          "prompt_ids_sha256": "c321619461c5e0824cc36a392bff4e32121aec01b7a0e66392ab9e18ebc4c183",
+          "output_text_characters": 33,
+          "output_text_sha256": "610abd22b4d89f5d5487499d81e2b2c00a697cef68a9ed344ef2c8ec978b2e24",
+          "output_ids_sha256": "97ff945310808894a648abb92e31dd253aca883446193e5e84d7d97b0b129f4c",
+          "text_emissions": 8
+        },
+        {
+          "request_id": "sample-6",
+          "input_mode": "prompt",
+          "prompt_token_count": 4,
+          "accepted_output_token_count": 8,
+          "max_output_tokens": 8,
+          "priority": 0,
+          "sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 311
+            }
+          ],
+          "prompt_text_characters": 14,
+          "prompt_text_sha256": "c794acb445e24264af4d38f85b38b12142da8cc5cf2c1bb5d916acfbdaed1e5a",
+          "prompt_ids_sha256": "b72262e309db49549819d62d44766d011634ef77b87353510fe5b232c79a9421",
+          "output_text_characters": 32,
+          "output_text_sha256": "c9491996498ee52bc3dc0da0356405d2295bec4fbf9530544a0b2c555794e0c6",
+          "output_ids_sha256": "cf61fc28af2bc27099327ee5091e0e8a58311f2c5f8d1946edb29e94b17cdbf2",
+          "text_emissions": 8
+        }
+      ],
+      "input_meaning": "Six raw plain-text prompts ask for a color, capital, counting, fruit, weekday and season. They are recorded prompt text rather than chat-formatted turns.",
+      "output_meaning": "All six are length-truncated at 8 tokens. Paris and apple are named, while color/weekday/season continuations stop after definitions; the counting continuation does not fulfill count-to-three. These are recorded outputs rather than an answer-quality oracle.",
+      "optional_revision_evidence": {
+        "blank_optional_fields": [
+          {
+            "aria_required": null,
+            "id": "setting-model-revision",
+            "required": false,
+            "value": ""
+          },
+          {
+            "aria_required": null,
+            "id": "setting-tokenizer-revision",
+            "required": false,
+            "value": ""
+          },
+          {
+            "aria_required": null,
+            "id": "setting-tokenizer",
+            "required": false,
+            "value": ""
+          }
+        ],
+        "revision_resolution": {
+          "model": {
+            "repository": "Qwen/Qwen3-4B-Instruct-2507",
+            "requested_revision": "main",
+            "resolved_revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+          },
+          "source": "huggingface_commit_resolution",
+          "tokenizer": {
+            "repository": "Qwen/Qwen3-4B-Instruct-2507",
+            "requested_revision": "main",
+            "resolved_revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+          }
+        },
+        "resolved_model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+        "resolved_tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 5414,
+          "reserved_null": 1,
+          "allocation_available": 5413,
+          "cached_available": 0
+        }
+      ],
+      "projected_last_block_id": 5413,
+      "configuration_boundary": "The manifest reports requested dtype=auto, not a separately captured resolved tensor dtype. Geometry is independently read from loaded model configuration.",
+      "owned_process": {
+        "kind": "spawn_per_run",
+        "status": "exited",
+        "pid": 16545,
+        "started_monotonic_ns": 26707315467122,
+        "clock_domain": "controller:time.monotonic_ns",
+        "exit_code": 0,
+        "exited_monotonic_ns": 26730133905991
+      },
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0,
+      "intake_closed": true,
+      "replay_backward_seek_stable": true
+    }
+  ],
+  "limitations": [
+    "The intentionally failed preparation recording has zero host events and remains a raw failed inference audit; it qualifies observed failure cleanup only.",
+    "Historical 75f missing stop terminals are preserved as failed evidence. Only the observed 8f0 recapture qualifies the correction.",
+    "Generated outputs remain workload observations, not technical teaching ground truth.",
+    "No native profile, per-layer/head/token timing or numerical tensor readback is captured in these extra/UI cases.",
+    "No helper, implementation, browser or remote edit/action was performed by this independent audit."
+  ]
+}
