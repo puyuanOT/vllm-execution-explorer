@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import threading
 import time
 
 import pytest
@@ -63,6 +64,37 @@ def stuck_inside_transaction(state, _arguments):
 
 def unrelated_worker():
     time.sleep(30)
+
+
+def exit_when_released(state, _arguments):
+    with state.lock:
+        state.phase = "waiting_to_exit"
+    while state.phase != "permit_exit":
+        time.sleep(0.01)
+
+
+class ObservedMutex:
+    """Expose one acquisition decision without changing mutual exclusion."""
+
+    def __init__(self, observing_thread):
+        self._lock = threading.Lock()
+        self.observing_thread = observing_thread
+        self.decided = threading.Event()
+        self.blocked = None
+
+    def __enter__(self):
+        if threading.current_thread().name == self.observing_thread:
+            acquired = self._lock.acquire(blocking=False)
+            self.blocked = not acquired
+            self.decided.set()
+            if not acquired:
+                self._lock.acquire()
+        else:
+            self._lock.acquire()
+        return self
+
+    def __exit__(self, *_error):
+        self._lock.release()
 
 
 @pytest.fixture
@@ -235,6 +267,156 @@ def test_controller_shutdown_reaps_owned_worker_even_when_it_holds_state_lock(tm
     finally:
         unrelated.terminate()
         unrelated.join(timeout=2)
+        isolation.close()
+
+
+def test_previous_finalizer_cannot_clear_a_newly_admitted_owned_handle(tmp_path, monkeypatch):
+    isolation, state = ExperimentIsolation(), RunState()
+    gate_released, resume_finalizer = threading.Event(), threading.Event()
+    admitted, stop_supervisor = threading.Event(), threading.Event()
+    errors = []
+    original_lock = state.lock
+
+    class PausedGateLock:
+        def __enter__(self):
+            original_lock.acquire()
+            return self
+
+        def __exit__(self, *_error):
+            original_lock.release()
+            if threading.current_thread().name == "previous-finalizer" and not state.execution_process_alive:
+                gate_released.set()
+                assert resume_finalizer.wait(3)
+
+        def acquire(self, *args, **kwargs):
+            return original_lock.acquire(*args, **kwargs)
+
+        def release(self):
+            original_lock.release()
+
+    class OwnedHandle:
+        def __init__(self, *, alive):
+            self.pid, self.exitcode = 123, None if alive else 0
+            self.alive, self.terminated = alive, False
+
+        def is_alive(self):
+            return self.alive
+
+        def join(self, timeout=None):
+            pass
+
+        def terminate(self):
+            self.alive, self.terminated, self.exitcode = False, True, -15
+
+    arguments = prepare(state, tmp_path, "previous")
+    directory = tmp_path / "previous"
+    directory.mkdir()
+    (directory / "manifest.json").write_text("{}")
+    state.status, state.execution_process_alive = "completed", True
+    state.lock = PausedGateLock()
+    previous, new = OwnedHandle(alive=False), OwnedHandle(alive=True)
+    isolation._state, isolation._process = state, previous
+    lifecycle_lock = ObservedMutex("new-admission")
+    isolation._lock = lifecycle_lock
+    isolation._context = SimpleNamespace(Process=lambda **_kwargs: new)
+    monkeypatch.setattr(isolation, "_supervise", lambda *_args: stop_supervisor.wait(3))
+
+    def previous_finalizer():
+        try:
+            isolation._finalize_exit(state, arguments, previous, "")
+        except BaseException as error:
+            errors.append(error)
+
+    def next_admission():
+        try:
+            isolation.start(state, prepare(state, tmp_path, "next"))
+            admitted.set()
+        except BaseException as error:
+            errors.append(error)
+
+    old_thread = threading.Thread(target=previous_finalizer, name="previous-finalizer")
+    next_thread = threading.Thread(target=next_admission, name="new-admission")
+    try:
+        old_thread.start()
+        assert gate_released.wait(3)
+        next_thread.start()
+        assert lifecycle_lock.decided.wait(3)
+        if not lifecycle_lock.blocked:
+            # The original bug admits here, then clears this new handle when
+            # the previous finalizer resumes. No timing-based sleep is needed.
+            assert admitted.wait(3)
+        resume_finalizer.set()
+        old_thread.join(timeout=3)
+        next_thread.join(timeout=3)
+        assert not errors and admitted.is_set()
+        assert isolation._process is new and state.execution_process_alive
+        stop_supervisor.set()
+        isolation._thread.join(timeout=3)
+        isolation.close()
+        assert new.terminated  # The retained handle remains usable by shutdown.
+    finally:
+        resume_finalizer.set()
+        stop_supervisor.set()
+        old_thread.join(timeout=3)
+        if next_thread.ident is not None:
+            next_thread.join(timeout=3)
+        if isolation._thread is not None:
+            isolation._thread.join(timeout=3)
+        isolation.close()
+
+
+def test_shutdown_cannot_poll_between_native_waitpid_and_recorded_exit_code(tmp_path, monkeypatch):
+    isolation = ExperimentIsolation(max_lifetime_seconds=30, shutdown_grace_seconds=0.05,
+                                    termination_grace_seconds=0.5)
+    state = isolation.share(RunState())
+    lifecycle_lock = ObservedMutex("controller-shutdown")
+    isolation._lock = lifecycle_lock
+    reaped, publish_exit = threading.Event(), threading.Event()
+    errors = []
+    original_waitpid = os.waitpid
+    shutdown_thread = None
+    try:
+        isolation.start(state, prepare(state, tmp_path, "native-reap"), target=exit_when_released)
+        wait_for(lambda: state.phase == "waiting_to_exit")
+        owned = isolation._process
+
+        def paused_waitpid(pid, options):
+            result = original_waitpid(pid, options)
+            if result[0] == owned.pid and threading.current_thread().name == "vllm-experiment-supervisor":
+                # The OS has reaped the real spawned child, but CPython has
+                # not yet copied its return code into the Process handle.
+                reaped.set()
+                assert publish_exit.wait(3)
+            return result
+
+        monkeypatch.setattr(os, "waitpid", paused_waitpid)
+        with state.lock:
+            state.phase = "permit_exit"
+        assert reaped.wait(3)
+
+        def shutdown():
+            try:
+                isolation.close()
+            except BaseException as error:
+                errors.append(error)
+
+        shutdown_thread = threading.Thread(target=shutdown, name="controller-shutdown")
+        shutdown_thread.start()
+        assert lifecycle_lock.decided.wait(3)
+        assert lifecycle_lock.blocked is True
+        publish_exit.set()
+        shutdown_thread.join(timeout=3)
+        assert not shutdown_thread.is_alive() and not errors
+        assert owned.exitcode == 0 and not owned.is_alive()
+        assert isolation._manager is None and isolation._process is None
+        assert load_recording(tmp_path / "native-reap").manifest["execution_process"]["exit_code"] == 0
+    finally:
+        publish_exit.set()
+        if shutdown_thread is not None:
+            shutdown_thread.join(timeout=3)
+        if isolation._thread is not None:
+            isolation._thread.join(timeout=3)
+        monkeypatch.setattr(os, "waitpid", original_waitpid)
         isolation.close()
 
 

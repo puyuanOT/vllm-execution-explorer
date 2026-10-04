@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import multiprocessing
+from multiprocessing.connection import wait as wait_for_process_exit
 import os
 from pathlib import Path
 import tempfile
@@ -104,7 +105,6 @@ class ExperimentIsolation:
         self._arguments: dict[str, Any] | None = None
         self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
-        self._termination_lock = threading.Lock()
         self._lock_directory: Any = None
         self._closing = False
         self._max_lifetime_seconds = max_lifetime_seconds
@@ -141,42 +141,54 @@ class ExperimentIsolation:
     def _supervise(self, state: SharedRunState, arguments: dict[str, Any], process: Any) -> None:
         failure = ""
         try:
-            process.start()
-            process.join(timeout=self._max_lifetime_seconds)
-            if process.is_alive():
+            with self._lock:
+                process.start()
+                sentinel = process.sentinel
+            # Waiting on the sentinel never reaps the child. Shutdown may
+            # terminate/reap it while this wait is pending; Process operations
+            # themselves remain serialized under the lifecycle mutex.
+            if not wait_for_process_exit([sentinel], timeout=self._max_lifetime_seconds):
                 self._stop_owned_process(process)
                 failure = f"Execution process exceeded its {self._max_lifetime_seconds:g}s bounded lifetime."
+            with self._lock:
+                process.join()
+                exit_code = process.exitcode
             manifest = arguments["recordings_dir"] / arguments["run_id"] / "manifest.json"
-            if not failure and (process.exitcode != 0 or not manifest.is_file() or state.status in ACTIVE_STATUSES):
-                failure = f"Execution process exited before a finalized capture (exit code {process.exitcode})."
+            if not failure and (exit_code != 0 or not manifest.is_file() or state.status in ACTIVE_STATUSES):
+                failure = f"Execution process exited before a finalized capture (exit code {exit_code})."
         except Exception as error:
             failure = f"Execution process supervision failed ({type(error).__name__})."
         finally:
-            if process.pid is not None and process.is_alive():
+            with self._lock:
+                alive = process.pid is not None and process.is_alive()
+            if alive:
                 try:
                     self._stop_owned_process(process)
                 except Exception:
-                    with state.lock:
-                        state.status, state.phase = "failed", "execution_process_exit_unconfirmed"
-                        state.message = "The owned execution process has not exited; new captures remain blocked."
-                        state.intake_open, state.finalized = False, False
-                        state.execution_process = {**(state.execution_process or {}), "pid": process.pid,
-                                                   "status": "exit_unconfirmed", "exit_code": process.exitcode}
+                    with self._lock:
+                        with state.lock:
+                            state.status, state.phase = "failed", "execution_process_exit_unconfirmed"
+                            state.message = "The owned execution process has not exited; new captures remain blocked."
+                            state.intake_open, state.finalized = False, False
+                            state.execution_process = {**(state.execution_process or {}), "pid": process.pid,
+                                                       "status": "exit_unconfirmed", "exit_code": process.exitcode}
                     # Keep the handle and readiness gate for shutdown's retry.
                     return
-            if process.pid is not None:
-                process.join()
+            with self._lock:
+                if process.pid is not None:
+                    process.join()
             self._finalize_exit(state, arguments, process, failure)
 
     def _finalize_exit(self, state: SharedRunState, arguments: dict[str, Any], process: Any, failure: str) -> None:
         try:
-            with state.lock:
-                state.execution_process = {**(state.execution_process or {}), "pid": process.pid,
-                    "status": "failed" if failure else "exited", "exit_code": process.exitcode,
-                    "exited_monotonic_ns": time.monotonic_ns()}
-                if failure:
-                    state.status, state.phase, state.message = "failed", "failed", failure
-                    state.intake_open = False
+            with self._lock:
+                with state.lock:
+                    state.execution_process = {**(state.execution_process or {}), "pid": process.pid,
+                        "status": "failed" if failure else "exited", "exit_code": process.exitcode,
+                        "exited_monotonic_ns": time.monotonic_ns()}
+                    if failure:
+                        state.status, state.phase, state.message = "failed", "failed", failure
+                        state.intake_open = False
             if failure:
                 _finish_failed_process(state, arguments, failure)
             else:
@@ -192,12 +204,14 @@ class ExperimentIsolation:
                 state.message = f"Execution process evidence finalization failed ({type(error).__name__})."
                 state.finalized = False
         finally:
-            with state.lock:
-                state.execution_process_alive = False
-            self._process = None
+            with self._lock:
+                if self._process is process:
+                    self._process = None
+                    with state.lock:
+                        state.execution_process_alive = False
 
     def _stop_owned_process(self, process: Any) -> None:
-        with self._termination_lock:
+        with self._lock:
             if not process.is_alive():
                 process.join()
                 return
@@ -223,15 +237,20 @@ class ExperimentIsolation:
                     state.lock.release()
             if self._thread is not None:
                 self._thread.join(timeout=self._shutdown_grace_seconds)
-            process = self._process
-            if process is not None and process.is_alive():
+            with self._lock:
+                process = self._process
+                alive = process is not None and process.is_alive()
+            if alive:
                 self._stop_owned_process(process)
                 if self._thread is not None:
                     self._thread.join(timeout=self._termination_grace_seconds)
             if self._thread is not None and self._thread.is_alive():
                 raise RuntimeError("Execution supervision has not exited; state manager remains available.")
-            if state.execution_process_alive and process is not None and not process.is_alive():
-                process.join()
+            with self._lock:
+                needs_finalization = state.execution_process_alive and process is not None and not process.is_alive()
+                if needs_finalization:
+                    process.join()
+            if needs_finalization:
                 self._finalize_exit(state, self._arguments or {}, process, "Execution process was reaped during controller shutdown.")
         if self._manager is not None:
             self._manager.shutdown()
