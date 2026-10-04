@@ -33,11 +33,26 @@ export const SCENE_COLORS = {
 
 export type LabelAnchor = "center" | "above" | "below" | "left" | "right"
 
-/** DOM text that follows a 3D anchor; it stays crisp at any zoom and never blocks scene picking unless interactive. */
-export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactive = false, children }: {
+/** Top-left of the anchored box relative to its anchor point; mirrors the .scene-label transforms in styles.css. */
+function anchorOffset(anchor: LabelAnchor, width: number, height: number): [number, number] {
+  if (anchor === "above") return [-width / 2, -height - 12]
+  if (anchor === "below") return [-width / 2, 12]
+  if (anchor === "left") return [-width - 14, -height / 2]
+  if (anchor === "right") return [14, -height / 2]
+  return [-width / 2, -height / 2]
+}
+
+const CLAMP_MARGIN = 8
+
+/**
+ * DOM text that follows a 3D anchor; it stays crisp at any zoom and never blocks scene picking unless interactive.
+ * Clamped labels are nudged so the whole box stays inside the canvas.
+ */
+export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactive = false, clamp = false, children }: {
   position?: Position3
   anchor?: LabelAnchor
   interactive?: boolean
+  clamp?: boolean
   children: ReactNode
 }) {
   const group = useRef<THREE.Group>(null)
@@ -67,7 +82,8 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
 
   useLayoutEffect(() => {
     element.dataset.anchor = anchor
-  }, [element, anchor])
+    element.style.zIndex = interactive ? "20" : ""
+  }, [element, anchor, interactive])
 
   // Only the translated inner box takes pointer events; the outer box stays at the anchor and would block the scene.
   useLayoutEffect(() => {
@@ -76,6 +92,13 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
 
   useEffect(() => { invalidate() }, [position[0], position[1], position[2], invalidate])
 
+  useEffect(() => {
+    if (!clamp) return
+    const observer = new ResizeObserver(() => invalidate())
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [clamp, element, invalidate])
+
   useFrame(() => {
     const object = group.current
     if (!object) return
@@ -83,8 +106,14 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     const visible = vector.z > -1 && vector.z < 1
     element.style.display = visible ? "" : "none"
     if (!visible) return
-    const x = (vector.x * 0.5 + 0.5) * size.width
-    const y = (-vector.y * 0.5 + 0.5) * size.height
+    let x = (vector.x * 0.5 + 0.5) * size.width
+    let y = (-vector.y * 0.5 + 0.5) * size.height
+    const box = clamp ? element.firstElementChild as HTMLElement | null : null
+    if (box) {
+      const [dx, dy] = anchorOffset(anchor, box.offsetWidth, box.offsetHeight)
+      x = Math.min(Math.max(x + dx, CLAMP_MARGIN), Math.max(CLAMP_MARGIN, size.width - box.offsetWidth - CLAMP_MARGIN)) - dx
+      y = Math.min(Math.max(y + dy, CLAMP_MARGIN), Math.max(CLAMP_MARGIN, size.height - box.offsetHeight - CLAMP_MARGIN)) - dy
+    }
     element.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
   })
 

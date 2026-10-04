@@ -1,4 +1,5 @@
 import { useThree } from "@react-three/fiber"
+import { X } from "lucide-react"
 import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react"
 import * as THREE from "three"
 
@@ -125,7 +126,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     })}
     <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
-      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive>
+      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp>
         <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
@@ -149,6 +150,15 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
       <span className="min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
       <span className="flex-1" />
       <EvidenceTag kind={block.trust === "unknown" ? "unknown" : "observed"}>{block.trust === "unknown" ? "Unknown" : "Observed"}</EvidenceTag>
+      <button
+        type="button"
+        className="-mr-1 grid size-6 min-h-0 shrink-0 place-items-center rounded-none border-0 bg-transparent p-0 text-faint hover:text-ink"
+        aria-label={`Close token slots for block ${block.blockId}`}
+        title="Close token slots"
+        onClick={() => onSelect({ kind: "component", id: "kv-cache" })}
+      >
+        <X className="size-3.5" aria-hidden="true" />
+      </button>
     </div>
   )
   const shell = (body: ReactNode) => (
