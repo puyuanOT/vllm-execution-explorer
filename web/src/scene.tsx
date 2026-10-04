@@ -97,7 +97,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
     return () => { next.removeEventListener("change", onChange); next.dispose(); controls.current = null }
   }, [camera, gl, invalidate])
   useLayoutEffect(() => {
-    resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount), size.width / Math.max(1, size.height))
+    resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount), size)
     invalidate()
   }, [camera, focusKey, poolCount, size.width, size.height, invalidate])
   useEffect(() => {
@@ -105,7 +105,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
     if (!active || !command || command.id === lastCommand.current) return
     lastCommand.current = command.id
     if (command.action === "reset") {
-      resetCamera(camera, active, stageFrame(focus, architectureFocus, poolCount), size.width / Math.max(1, size.height))
+      resetCamera(camera, active, stageFrame(focus, architectureFocus, poolCount), size)
     } else if (command.action.startsWith("pan-")) {
       camera.updateMatrixWorld()
       const horizontal = command.action === "pan-left" || command.action === "pan-right"
@@ -127,13 +127,26 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
   return null
 }
 
-function resetCamera(camera: THREE.Camera, controls: OrbitControls | null, frame: StageFrame, aspect: number) {
+/** Pixel bands kept clear for the breadcrumb, hint and event ticker above and the legend and watermark below. */
+const OVERLAY_TOP = 76
+const OVERLAY_BOTTOM = 48
+
+function resetCamera(camera: THREE.Camera, controls: OrbitControls | null, frame: StageFrame, size: { width: number; height: number }) {
   const verticalFov = camera instanceof THREE.PerspectiveCamera ? camera.fov : 34
-  const distance = Math.max(frame.height, frame.width / Math.max(0.45, aspect)) / (2 * Math.tan(THREE.MathUtils.degToRad(verticalFov) / 2))
+  const height = Math.max(1, size.height)
+  const aspect = size.width / height
+  const free = Math.max(height * 0.55, height - OVERLAY_TOP - OVERLAY_BOTTOM)
+  const tangent = Math.tan(THREE.MathUtils.degToRad(verticalFov) / 2)
+  const distance = Math.max(frame.height * (height / free), frame.width / Math.max(0.45, aspect)) / (2 * tangent)
   const target = new THREE.Vector3(...frame.target)
   const offset = new THREE.Vector3(...frame.direction).normalize().multiplyScalar(distance)
   camera.position.copy(target).add(offset)
   camera.lookAt(target)
+  camera.updateMatrixWorld()
+  const lift = ((OVERLAY_TOP - OVERLAY_BOTTOM) / 2) * ((2 * distance * tangent) / height)
+  const shift = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(lift)
+  camera.position.add(shift)
+  target.add(shift)
   controls?.target.copy(target); controls?.update()
 }
 

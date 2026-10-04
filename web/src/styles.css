@@ -317,7 +317,11 @@ p { text-wrap: pretty; }
 .scene-text { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
 .scene-text[data-tone="strong"] { color: var(--text); font-size: 11.5px; }
 
-.scene-viewport { container-type: inline-size; }
+.scene-viewport { container-type: size; }
+
+@container (max-height: 440px) {
+  .scene-card-metric span { display: none; }
+}
 
 @container (max-width: 600px) {
   .scene-card { display: flex; align-items: center; gap: 6px; padding: 3px 7px 3px 4px; }
