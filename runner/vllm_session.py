@@ -456,11 +456,23 @@ def _shutdown_engine(engine: Any) -> None:
 
 
 def _release_unused_cuda_memory() -> None:
-    gc.collect()
-    cuda = getattr(sys.modules.get("torch"), "cuda", None)
+    torch = sys.modules.get("torch")
+    cuda = getattr(torch, "cuda", None)
     initialized = getattr(cuda, "is_initialized", None)
-    if callable(initialized) and initialized():
-        cuda.empty_cache()
+    cuda_initialized = callable(initialized) and initialized()
+    try:
+        if cuda_initialized:
+            # Native worker shutdown and engine finalization drop model objects,
+            # but compiled artifacts can still hold tensor references. The
+            # public reset clears process-local state and preserves disk caches;
+            # the session lease ensures no other live engine uses that state.
+            reset = getattr(getattr(torch, "compiler", None), "reset", None)
+            if callable(reset):
+                reset()
+    finally:
+        gc.collect()
+        if cuda_initialized:
+            cuda.empty_cache()
 
 
 def _expose_venv_tools() -> None:

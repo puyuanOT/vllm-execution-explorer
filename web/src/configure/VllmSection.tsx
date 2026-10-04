@@ -154,7 +154,7 @@ export function VllmSection({
               <FieldError id="setting-profiling-steps-error" message={issueFor("setting-profiling-steps")} />
             </label> : null}
           </div>
-          <FieldHint id="setting-profiling-hint">Diagnostic profiling disables CUDA graphs and adds recording overhead. It measures supported layer and batch activities on a separate profiler clock. Packed kernels do not establish individual token or attention-head durations. Initially supported for dense Qwen3.</FieldHint>
+          <FieldHint id="setting-profiling-hint">Diagnostic profiling uses the V1 GPU model runner with CUDA graphs disabled and adds recording overhead. It measures supported layer and batch activities on a separate profiler clock. Packed kernels do not establish individual token or attention-head durations. Initially supported for dense Qwen3.</FieldHint>
         </Details>
 
         <div className="rounded-lg border border-blue-900 bg-blue-950/40 p-4">

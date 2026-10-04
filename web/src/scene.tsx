@@ -8,6 +8,7 @@ import type { QueueEntry, RecordingManifest, ReplayState } from "../../replay/sr
 import { CacheStage } from "./architecture/CacheStage.tsx"
 import { activeTeachingStep, architectureLabel, type ArchitectureFocus, type MeasuredSceneProfile } from "./architecture/model.ts"
 import { LayerStack, ModelStage } from "./architecture/ModelStage.tsx"
+import { SceneProfileDiagnostics } from "./architecture/SceneProfileDiagnostics.tsx"
 import { Connector, SceneEmpty, SceneTile, SCENE_COLORS, TextSprite } from "./architecture/primitives.tsx"
 import { componentSnapshot, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
 import type { Selection } from "./execution/types.ts"
@@ -50,6 +51,7 @@ export function ExecutionScene(props: SceneProps) {
     <CameraRig focusKey={focusKey} focus={props.focus ?? null} architectureFocus={props.architectureFocus ?? null}
       selectedBlockKey={props.selection?.kind === "block" ? props.selection.key : null} poolCount={props.kvCache?.pools.length ?? 1} command={props.cameraCommand ?? null} />
     <Invalidate {...props} />
+    {import.meta.env.VITE_EXPLORER_SCENE_PROFILE === "1" ? <SceneProfileDiagnostics sceneProps={props} focusKey={focusKey} /> : null}
     {props.focus ? <FocusedStage {...props} focus={props.focus} /> : <WorkflowOverview {...props} />}
   </Canvas>
 }
