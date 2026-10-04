@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
-from enum import Enum
+from enum import Enum, IntEnum
 from types import SimpleNamespace
 
 import pytest
@@ -288,6 +288,47 @@ def test_tokenizer_fragments_remain_optional_content(tmp_path):
             assert "not original-text slices" in attachment["token_piece_semantics"]
     export_structural(tmp_path / "fragments", tmp_path / "no-fragments")
     assert not load_recording(tmp_path / "no-fragments").content
+
+
+class _NativeFinishReason(IntEnum):
+    STOP = 0
+    LENGTH = 1
+    ABORT = 2
+
+    def __str__(self):
+        return ("stop", "length", "abort")[self.value]
+
+
+@pytest.mark.parametrize("reason,event_type,label", [
+    (None, None, None),
+    (_NativeFinishReason.STOP, "completion", "stop"),
+    (_NativeFinishReason.LENGTH, "completion", "length"),
+    (_NativeFinishReason.ABORT, "cancellation", "abort"),
+])
+def test_returned_native_finish_reason_zero_is_terminal_while_none_is_unfinished(tmp_path, reason, event_type, label):
+    recording = Recording.open(tmp_path / "native-finish", run_id="native-finish")
+    engine = FixtureEngine()
+    returned = {0: SimpleNamespace(outputs=[SimpleNamespace(request_id="a", new_token_ids=[101], finish_reason=reason)])}
+    engine.scheduler.update_from_output = lambda *_args, **_kwargs: returned
+    adapter = install(engine, recording, check_sources=False)
+    engine.add_request("a", [11, 12, 13])
+    scheduler_output = engine.scheduler.schedule()
+    result = engine.model_executor.execute_model(scheduler_output).result()
+    assert engine.scheduler.update_from_output(scheduler_output, result) is returned
+    adapter.uninstall()
+    recording.close(manifest_skeleton("native-finish", execution_kind="fixture", execution_target=LOCAL_FIXTURE_TARGET))
+    events = load_recording(tmp_path / "native-finish").events
+    accepted = next(event for event in events if event["event_type"] == "tokens_accepted")
+    terminal = [event for event in events if event["event_type"] in {"completion", "cancellation"}]
+    assert accepted["token_count"] == 1
+    if event_type is None:
+        assert terminal == []
+    else:
+        assert len(terminal) == 1
+        assert terminal[0]["event_type"] == event_type
+        assert terminal[0]["reason"] == terminal[0]["status"] == label
+        assert terminal[0]["sequence"] > accepted["sequence"]
+        assert terminal[0]["step_id"] == accepted["step_id"]
 
 
 @pytest.mark.parametrize("corruption", ["absent", "missing_cell", "duplicate_cell", "nonrange_cell"])

@@ -119,7 +119,7 @@ class Instrumentation:
                 self._positions[request_id] = start + len(token_ids)
                 self._accepted_token_ids.setdefault(request_id, []).extend(token_ids)
             reason = getattr(output, "finish_reason", None)
-            if reason:
+            if reason is not None:
                 observed = str(reason)
                 event_type = "cancellation" if observed in {"abort", "cancelled"} else "completion"
                 self.recording.event(
