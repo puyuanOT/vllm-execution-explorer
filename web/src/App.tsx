@@ -175,8 +175,8 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 1100px), (max-height: 599px)")
-    const apply = () => setCompact(media.matches)
+    const media = window.matchMedia("(min-width: 1101px) and (min-height: 600px)")
+    const apply = () => setCompact(!media.matches)
     apply()
     media.addEventListener("change", apply)
     return () => media.removeEventListener("change", apply)
