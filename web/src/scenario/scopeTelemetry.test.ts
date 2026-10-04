@@ -17,11 +17,20 @@ test("the scope never draws ticks or step markers past the playhead", () => {
   const ticks = [1, 2, 3, 4, 5].map((sequence) => ({ position: sequencePosition(sequence, 5), channel: "kv" as const }))
   const markers = [{ position: sequencePosition(2, 5), label: "S1" }, { position: sequencePosition(5, 5), label: "S2" }]
   const scope = buildScope({ ticks, markers, playhead: sequencePosition(3, 5), columns: 101, currentPosition: sequencePosition(3, 5) })
-  assert.deepEqual(scope.bins.kv, [0, 25, 50])
+  assert.deepEqual(scope.bins.kv, [20, 40, 60])
   assert.deepEqual(scope.markers.map((marker) => marker.label), ["S1"])
-  assert.equal(scope.playheadColumn, 50)
-  assert.deepEqual(scope.current, { channel: "kv", column: 50 })
+  assert.equal(scope.playheadColumn, 60)
+  assert.deepEqual(scope.current, { channel: "kv", column: 60 })
   assert.equal(scope.gapColumn, null)
+})
+
+test("an event's tick shares the playhead column once the slider reaches it", () => {
+  for (const [sequence, max] of [[1, 7], [4, 7], [7, 7], [145, 289]] as const) {
+    const scope = buildScope({ ticks: [{ position: sequencePosition(sequence, max), channel: "model" }], markers: [], playhead: sequence / max, columns: 400 })
+    assert.deepEqual(scope.bins.model, [scope.playheadColumn], `${sequence}/${max}`)
+  }
+  assert.equal(sequencePosition(0, 7), 0)
+  assert.equal(sequencePosition(3, 0), 0)
 })
 
 test("a trace gap keeps its own column and collapsed positions stay in range", () => {

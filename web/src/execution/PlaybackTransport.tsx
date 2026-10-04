@@ -12,7 +12,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react"
 
 import { cn } from "../lib/cn.ts"
 import { playbackSpeeds } from "../playback.ts"
-import { Segmented } from "../ui/controls.tsx"
+import { EvidenceTag, Segmented } from "../ui/controls.tsx"
 import { buildScope, SCOPE_CHANNELS, type ScopeMarker, type ScopeTick } from "./scope.ts"
 import type { PlaybackMode } from "./types.ts"
 
@@ -101,6 +101,10 @@ export function PlaybackTransport({
       : mode === "events"
         ? "Event clock advances through recorded observations at a teaching pace."
         : "Recorded time preserves observed host intervals at the selected speed; it is not GPU kernel timing."
+  const caveat = measured ? "Profiler clock · separate from replay"
+    : mode === "teaching" ? "Explanatory · not GPU time"
+      : mode === "events" ? "Event order · not elapsed time"
+        : "Host intervals · not GPU kernel time"
   return (
     <div className="grid gap-1 border-t border-line bg-[#060a11] px-4 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2" role="group" aria-label="Recording playback">
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
@@ -170,6 +174,7 @@ export function PlaybackTransport({
           {followAvailable ? (connected ? " Live capture continues while replay is paused." : " The live trace is reconnecting.") : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <EvidenceTag kind={mode === "teaching" ? "explanatory" : "neutral"}>{caveat}</EvidenceTag>
           <span className="cp-label">Clock</span>
           <Segmented<PlaybackMode>
             label="Playback mode"

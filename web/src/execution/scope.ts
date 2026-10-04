@@ -94,9 +94,9 @@ export function buildScope({ ticks, markers, playhead, gap = null, columns, curr
   }
 }
 
+/** Same linear 0..max scale as the playback slider, so an event's tick sits under the playhead that reaches it. */
 export function sequencePosition(sequence: number, maxSequence: number): number {
-  if (maxSequence <= 1) return sequence >= maxSequence ? 1 : 0
-  return clamp((sequence - 1) / (maxSequence - 1))
+  return maxSequence > 0 ? clamp(sequence / maxSequence) : 0
 }
 
 function clamp(value: number): number {
