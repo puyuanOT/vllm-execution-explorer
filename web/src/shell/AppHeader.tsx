@@ -60,13 +60,13 @@ export function AppHeader({
       <span className="flex-1" />
 
       <div className="flex min-w-0 flex-wrap items-center gap-2">
-        {recording ? <Chip className="max-w-64" title={recording}><Disc3 className="size-3.5 shrink-0" aria-hidden="true" /><span className="text-ink">{recording}</span></Chip> : null}
+        {recording ? <Chip className="hidden max-w-64 sm:inline-flex" title={recording}><Disc3 className="size-3.5 shrink-0" aria-hidden="true" /><span className="text-ink">{recording}</span></Chip> : null}
         {evidence === "synthetic" ? <Chip tone="synthetic"><FlaskConical className="size-3.5 shrink-0" aria-hidden="true" /><span>Synthetic fixture · not GPU evidence</span></Chip> : null}
         {evidence === "gpu" ? <Chip tone="gpu"><Led /><span>Observed GPU recording</span></Chip> : null}
         {evidence === "draft" ? <Chip tone="warning"><span>Draft preview · not execution evidence</span></Chip> : null}
-        <span className="flex h-6 max-w-72 items-center gap-2 border-l border-line pl-3 font-mono text-[10.5px] text-faint" role="status" title={status}>
+        <span className="flex h-6 max-w-72 items-center gap-2 border-line font-mono text-[10.5px] text-faint sm:border-l sm:pl-3" role="status" title={status}>
           <Led tone={controller.tone} />
-          <span className="truncate"><b className="font-medium text-muted">{controller.label}</b>{status ? ` · ${status}` : ""}</span>
+          <span className="truncate"><b className="sr-only font-medium text-muted sm:not-sr-only">{controller.label}</b><span className="hidden lg:inline">{status ? ` · ${status}` : ""}</span></span>
         </span>
         <button
           type="button"

@@ -122,6 +122,7 @@ p { text-wrap: pretty; }
   border: 0;
 }
 
+@layer components {
 /* Inspector data sheet */
 .inspector-body { display: grid; gap: 10px; }
 .inspector-body h3,
@@ -315,7 +316,16 @@ p { text-wrap: pretty; }
 .scene-text { font-family: var(--mono); font-size: 10.5px; color: var(--text-dim); white-space: nowrap; }
 .scene-text[data-tone="strong"] { color: var(--text); font-size: 11.5px; }
 
-.scene-viewport { min-height: 18rem; container-type: inline-size; }
+.scene-viewport { container-type: inline-size; }
+
+@container (max-width: 600px) {
+  .scene-card { display: flex; align-items: center; gap: 6px; padding: 3px 7px 3px 4px; }
+  .scene-card-name { display: none; }
+  .scene-card-metric { margin-top: 0; }
+  .scene-card-metric b { font-size: 12px; }
+  .scene-card-metric span { display: none; }
+  .scene-tag { display: block; max-width: 86cqw; white-space: normal; text-align: center; font-size: 8.5px; }
+}
 
 /* Logic-analyzer timeline */
 .cp-scope { position: relative; flex: 1 1 320px; min-width: 0; height: 74px; }
@@ -343,6 +353,11 @@ p { text-wrap: pretty; }
 .cp-note-prefill { background: color-mix(in srgb, var(--note) 82%, #05080e); color: #04080e; }
 .cp-note-decode { background: color-mix(in srgb, var(--note) 14%, transparent); border: 1px solid color-mix(in srgb, var(--note) 75%, transparent); color: color-mix(in srgb, var(--note) 80%, white); }
 .cp-note-wait { border: 1px dashed color-mix(in srgb, var(--note) 45%, transparent); color: color-mix(in srgb, var(--note) 55%, #8494ad); }
+
+@media (max-width: 639px) {
+  .cp-scope { flex-basis: 100%; }
+}
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }

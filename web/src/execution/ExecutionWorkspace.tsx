@@ -127,9 +127,9 @@ export function ExecutionWorkspace({
   return (
     <section className="flex min-h-0 min-w-0 flex-col bg-canvas" aria-label="Execution explorer">
       <header className="flex min-h-[46px] flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[#060a11] px-3.5 py-1.5">
-        <div className="flex min-w-0 flex-1 items-baseline gap-3">
+        <div className="flex min-w-fit flex-1 items-baseline gap-3">
           <h1 className="shrink-0 text-[15px] font-semibold text-ink">{title}</h1>
-          <p className="m-0 hidden min-w-0 truncate text-xs text-faint xl:block" title={timeBasisLabel}>{timeBasisLabel}</p>
+          <p className="m-0 hidden w-0 min-w-0 flex-1 truncate text-xs text-faint xl:block" title={timeBasisLabel}>{timeBasisLabel}</p>
         </div>
         <RequestFinder samples={samples} onSelect={onSelect} />
         <Segmented<WorkspaceView>
@@ -183,7 +183,7 @@ export function ExecutionWorkspace({
             Use the component controls below the canvas for equivalent keyboard access.
           </p>
 
-          <div className="scene-viewport relative min-h-0 flex-1 overflow-hidden">
+          <div className="scene-viewport relative min-h-[62vh] flex-1 overflow-hidden sm:min-h-72">
             <div className="absolute inset-0">
               <ExecutionScene
                 state={replay}
@@ -223,12 +223,12 @@ export function ExecutionWorkspace({
                 ) : (
                   <p className="cp-hud m-0 flex h-7 items-center gap-2 px-2.5 font-mono text-[11px] text-ink"><Scan className="size-3.5 text-faint" aria-hidden="true" />Overview</p>
                 )}
-                <p className="m-0 hidden text-[11.5px] text-faint sm:block"><b className="font-medium text-muted">Click</b> to inspect · <b className="font-medium text-muted">double-click</b> to drill in · <b className="font-medium text-muted">drag</b> to orbit</p>
+                <p className="m-0 hidden text-[11.5px] text-faint md:block"><b className="font-medium text-muted">Click</b> to inspect · <b className="font-medium text-muted">double-click</b> to drill in · <b className="font-medium text-muted">drag</b> to orbit</p>
               </div>
               <EventTicker event={currentEvent} labels={labels} />
             </div>
 
-            <div className="absolute right-3 top-3 z-10 grid grid-cols-2 gap-px border border-line-strong bg-surface p-[3px]" role="group" aria-label="3D camera controls">
+            <div className="absolute right-3 top-3 z-10 grid grid-cols-5 gap-px border border-line-strong bg-surface p-[3px] sm:grid-cols-2" role="group" aria-label="3D camera controls">
               {([
                 ["orbit-left", "Orbit camera left", RotateCcw],
                 ["orbit-right", "Orbit camera right", RotateCw],
