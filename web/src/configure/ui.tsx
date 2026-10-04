@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react"
 
 import { cn } from "../lib/cn.ts"
+import { EvidenceTag, type EvidenceKind } from "../ui/controls.tsx"
 
-export const inputClass = "block mt-1.5 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-export const buttonClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-slate-200 outline-none focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:cursor-not-allowed disabled:opacity-50"
-export const primaryButtonClass = "inline-flex min-h-10 items-center justify-center rounded-md border border-blue-500 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:opacity-50"
-export const dangerButtonClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-medium text-red-300 outline-none focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+export const inputClass = "block mt-1.5 w-full rounded border border-slate-700 bg-[#060b13] px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus-visible:border-accent-400/70 focus-visible:ring-2 focus-visible:ring-accent-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+export const buttonClass = "inline-flex min-h-8 items-center justify-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-slate-100 outline-none hover:border-slate-600 focus-visible:border-accent-400 focus-visible:ring-2 focus-visible:ring-accent-400/25 disabled:cursor-not-allowed disabled:opacity-50"
+export const primaryButtonClass = "inline-flex min-h-9 items-center justify-center gap-2 border-0 bg-accent px-5 py-2 font-mono text-xs font-semibold uppercase tracking-[0.1em] text-[#021116] outline-none [clip-path:polygon(6px_0,100%_0,100%_calc(100%-6px),calc(100%-6px)_100%,0_100%,0_6px)] focus-visible:[clip-path:none] focus-visible:ring-2 focus-visible:ring-accent-200 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 disabled:cursor-not-allowed disabled:bg-[#1a2537] disabled:text-[#6f819c]"
+export const dangerButtonClass = "inline-flex min-h-8 items-center justify-center gap-2 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 font-mono text-[11px] font-medium uppercase tracking-[0.06em] text-red-300 outline-none hover:border-red-800 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
 
 export function Details({
   defaultOpen = false,
@@ -50,17 +51,17 @@ export function ConfigureSection({
 }) {
   const headingId = `configure-section-${number}-heading`
   return (
-    <section className="rounded-xl border border-slate-800 bg-slate-900 shadow-sm" aria-labelledby={headingId}>
+    <section id={`configure-section-${number}`} className="scroll-mt-4 border border-slate-800 bg-surface" aria-labelledby={headingId}>
       <h2 id={headingId} className="sr-only text-balance">{title}</h2>
       <Details
         className="group"
         defaultOpen={defaultOpen}
         forceOpen={forceOpen}
       >
-        <summary className="cursor-pointer list-none rounded-xl px-5 py-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 [&::-webkit-details-marker]:hidden">
+        <summary className="cursor-pointer list-none px-5 py-4 outline-none hover:bg-slate-900/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-400 [&::-webkit-details-marker]:hidden">
           <div className="flex items-start gap-4">
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-950 text-xs font-semibold tabular-nums text-slate-400" aria-hidden="true">
-              {number}
+            <span className="mt-0.5 shrink-0 font-mono text-xs font-medium tabular-nums text-slate-500 group-open:text-accent" aria-hidden="true">
+              {String(number).padStart(2, "0")}
             </span>
             <span className="min-w-0 flex-1">
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -69,14 +70,21 @@ export function ConfigureSection({
               </span>
               <span className="mt-1 block text-pretty text-sm text-slate-400">{summary}</span>
             </span>
-            <span className="text-sm text-slate-400 group-open:hidden" aria-hidden="true">Show</span>
-            <span className="hidden text-sm text-slate-400 group-open:inline" aria-hidden="true">Hide</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500 group-open:hidden" aria-hidden="true">Show</span>
+            <span className="hidden font-mono text-[11px] uppercase tracking-[0.08em] text-slate-500 group-open:inline" aria-hidden="true">Hide</span>
           </div>
         </summary>
         <div className="border-t border-slate-800 px-5 py-5">{children}</div>
       </Details>
     </section>
   )
+}
+
+const STATUS_KIND: Record<"neutral" | "ready" | "warning" | "error", EvidenceKind> = {
+  neutral: "neutral",
+  ready: "gpu",
+  warning: "warning",
+  error: "error",
 }
 
 export function StatusPill({
@@ -86,19 +94,7 @@ export function StatusPill({
   tone: "neutral" | "ready" | "warning" | "error"
   children: ReactNode
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex min-h-6 items-center rounded-full border px-2 py-0.5 text-xs font-medium",
-        tone === "neutral" && "border-slate-700 bg-slate-950 text-slate-400",
-        tone === "ready" && "border-emerald-900 bg-emerald-950 text-emerald-300",
-        tone === "warning" && "border-amber-900 bg-amber-950 text-amber-300",
-        tone === "error" && "border-red-900 bg-red-950 text-red-300",
-      )}
-    >
-      {children}
-    </span>
-  )
+  return <EvidenceTag kind={STATUS_KIND[tone]}>{children}</EvidenceTag>
 }
 
 export function FieldError({ id, message }: { id: string; message: string }) {
@@ -127,12 +123,12 @@ export function ChoiceCard({
 }) {
   return (
     <label className={cn(
-      "flex cursor-pointer gap-3 rounded-lg border p-3 outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-950",
-      checked ? "border-blue-500 bg-blue-950/40" : "border-slate-800 bg-slate-950",
+      "flex cursor-pointer gap-3 border p-3 outline-none focus-within:ring-2 focus-within:ring-accent-400 focus-within:ring-offset-2 focus-within:ring-offset-slate-950",
+      checked ? "border-accent-400/50 bg-accent-400/[0.06] shadow-[inset_2px_0_0_theme(colors.accent.400)]" : "border-slate-800 bg-slate-950 hover:border-slate-700",
     )}>
       <input
         type="radio"
-        className="mt-0.5 size-4 shrink-0 accent-blue-500"
+        className="mt-0.5 size-4 shrink-0 accent-accent-400"
         name={name}
         value={value}
         checked={checked}
@@ -166,7 +162,7 @@ export function CheckboxField({
       <input
         id={id}
         type="checkbox"
-        className="mt-0.5 size-4 shrink-0 accent-blue-500"
+        className="mt-0.5 size-4 shrink-0 accent-accent-400"
         checked={checked}
         disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
