@@ -66,7 +66,7 @@ export function AppHeader({
         {evidence === "draft" ? <Chip tone="warning"><span>Draft preview · not execution evidence</span></Chip> : null}
         <span className="flex h-6 max-w-72 items-center gap-2 border-line font-mono text-[10.5px] text-faint sm:border-l sm:pl-3" role="status" title={status}>
           <Led tone={controller.tone} />
-          <span className="truncate"><b className="sr-only font-medium text-muted sm:not-sr-only">{controller.label}</b><span className="hidden lg:inline">{status ? ` · ${status}` : ""}</span></span>
+          <span className="truncate"><b className="sr-only font-medium text-muted sm:not-sr-only">{controller.label}</b><span className="sr-only min-[1400px]:not-sr-only">{status ? ` · ${status}` : ""}</span></span>
         </span>
         <button
           type="button"

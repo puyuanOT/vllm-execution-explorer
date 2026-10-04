@@ -82,6 +82,7 @@ export function ExecutionWorkspace({
   const [focus, setFocus] = useState<WorkflowComponentId | null>(null)
   const [architectureFocus, setArchitectureFocus] = useState<ArchitectureFocus | null>(null)
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null)
+  const [focusControlsOpen, setFocusControlsOpen] = useState(() => typeof window === "undefined" || window.matchMedia("(min-height: 860px)").matches)
   const selectedComponent = selection?.kind === "component" ? selection.id : null
   const replay = state ?? EMPTY_REPLAY
   const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
@@ -143,7 +144,7 @@ export function ExecutionWorkspace({
         />
         {onEditAsNew ? (
           <button type="button" className="inline-flex min-h-8 items-center gap-2 border-line-strong bg-transparent px-3 font-mono text-[11px] uppercase tracking-[0.06em] text-ink" onClick={onEditAsNew}>
-            <SquarePen className="size-3.5" aria-hidden="true" />Edit as new sequence
+            <SquarePen className="size-3.5" aria-hidden="true" />Edit as new<span className="hidden min-[1400px]:inline"> sequence</span>
           </button>
         ) : null}
         {onOpenInspector ? (
@@ -266,12 +267,12 @@ export function ExecutionWorkspace({
           </div>
 
           {focus ? (
-            <div className="max-h-56 overflow-auto border-t border-line bg-[#060a11] px-3.5 py-2.5">
-              <details open className="group">
+            <div className="max-h-56 overflow-auto border-t border-line bg-[#060a11] px-3.5 py-2">
+              <details open={focusControlsOpen} onToggle={(event) => setFocusControlsOpen(event.currentTarget.open)} className="group">
                 <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted outline-none focus-visible:text-ink">
                   {focus === "model-execution" ? "Model structure controls" : focus === "kv-cache" ? "Find a physical KV block" : "Recorded objects"}
                 </summary>
-                <div className="pt-2.5">
+                <div className="pt-2">
                   {focus === "model-execution" ? <ArchitectureNavigation architecture={architecture} focus={architectureFocus} onExplore={exploreArchitecture} onSelect={onSelect} progress={teachingProgress} onProgress={onTeachingProgress} /> : focus === "kv-cache" ? <PoolNavigation cache={cache} onSelect={onSelect} /> : <FocusedObjectBar component={focus} state={state} samples={samples} selection={selection} onSelect={onSelect} />}
                 </div>
               </details>
@@ -386,7 +387,7 @@ function RequestFinder({ samples, onSelect }: { samples: SampleProjection[]; onS
         <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-faint" aria-hidden="true" />
         <input
           type="search"
-          className="h-8 w-44 rounded border-line-strong bg-surface py-0 pl-7 pr-2 font-mono text-[11px] text-ink placeholder:text-faint"
+          className="h-8 w-40 rounded border-line-strong bg-surface py-0 pl-7 pr-2 font-mono text-[11px] text-ink placeholder:text-faint"
           placeholder={`Find request (${samples.length})`}
           value={query}
           aria-expanded={open}
@@ -458,7 +459,7 @@ function Telemetry({ telemetry, selected, state, onSelect, onExplore }: {
               >
                 <span className={cn("col-span-2 mb-1 truncate text-xs", active ? "text-ink" : "text-muted")}>{component.label}</span>
                 <span className="truncate font-mono text-[20px] font-medium leading-none tracking-[-0.02em] text-ink">{item.value}</span>
-                <span className="row-span-2 self-end"><Sparkline values={state ? item.series : []} max={item.max} active={active} width={64} height={26} /></span>
+                <span className="row-span-2 self-end"><Sparkline values={state ? item.series : []} max={item.max} active={active} width={52} height={26} /></span>
                 <span className="mt-1 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">{item.unit}</span>
               </button>
               <button
