@@ -231,6 +231,8 @@ class Audit:
         self.check("returned_output_ids", actual == expected if isinstance(expected, dict) and expected else None, "Accepted output sidecars match each request's separately retained engine output IDs, including zero-output cancellations.")
         finals, final_errors = [], []
         for request, ids in accepted_ids.items():
+            if not ids:
+                continue  # An unsampled prompt position is not a final output token.
             final = len(prompt_ids.get(request, [])) + len(ids) - 1
             covering = [write for write in writes if write["request_id"] == request and write["token_range_start"] <= final < write["token_range_end"]]
             valid = all(scheduled[write["step_id"]]["sequence"] > accepted_boundaries.get(request, float("inf")) for write in covering)
@@ -240,7 +242,17 @@ class Audit:
                 final_errors.append(request)
             finals.append({"request_id": request, "accepted_count": len(ids), "final_output_position": final,
                            "terminal": terminals.get(request), "write_sequences": [write["sequence"] for write in covering]})
-        self.check("final_output_boundary", bool(finals) and not final_errors, "A sampled output becomes KV only in a later scheduled computation; naturally completed final outputs stay uncomputed.")
+        request_ids = set(prompt_ids) | set(accepted_ids) | set(expected or {})
+        zero_outputs = [{"request_id": request, "terminal": terminals.get(request)} for request in sorted(request_ids) if not accepted_ids.get(request)]
+        zero_cancelled = bool(zero_outputs) and all(request["terminal"] == "cancellation" for request in zero_outputs)
+        applicability = "applicable" if finals else "not_applicable" if zero_cancelled else "terminal_evidence_missing"
+        self.check("final_output_boundary", not final_errors if finals else zero_cancelled,
+                   f"{len(finals)} sampled final output tokens assessed; {len(zero_outputs)} zero-output requests. "
+                   + ("Not applicable: every zero-output request has an observed cancellation terminal; no sampled token needs KV assessment." if applicability == "not_applicable" else "A sampled output becomes KV only in a later scheduled computation; naturally completed final outputs stay uncomputed."))
+        self.findings[-1]["applicability"] = applicability
+        self.facts["final_output_assessment"] = {"sampled_final_token_count": len(finals), "zero_output_request_count": len(zero_outputs),
+                                                  "zero_output_terminal_cancellation_count": sum(request["terminal"] == "cancellation" for request in zero_outputs),
+                                                  "applicability": applicability, "zero_outputs": zero_outputs}
         self.facts["final_outputs"] = finals
         self.requests(events, prompt_ids, accepted_ids)
         features = {"prefix_reuse": sum(event["event_type"] == "prefix_lookup" and event.get("matched_token_count", 0) > 0 for event in events),
@@ -436,6 +448,7 @@ if(artifact&&fs.existsSync(directory+'/'+artifact.path)){
  nativeProfile={status:projected.status,clock:projected.clock,evidenceKind:projected.evidenceKind,steps:projected.steps.length,layers:projected.layers.length};
 }
 console.log(JSON.stringify({trust:state.trust,inventoryStatus:pool.status,
+ requests:Object.values(state.requests).map(r=>({requestId:r.id,status:r.status,acceptedTokenCount:r.acceptedTokenCount})),
  pools:pool.pools.map(p=>({pool:p.pool,capacity:p.capacity,cells:p.blocks.length,lastId:p.blocks.at(-1)?.blockId,tokenOccupancyStatus:p.tokenOccupancyStatus})),
  finals,boundary,nativeProfile,backwardSeekStable:JSON.stringify(attachContent(player.at(player.maxSequence),content))===digest}));
 """
@@ -452,8 +465,21 @@ console.log(JSON.stringify({trust:state.trust,inventoryStatus:pool.status,
         self.check("frontend_slot_qualification", True if known and replay["pools"] and all(pool["tokenOccupancyStatus"] == "observed" for pool in replay["pools"]) else None,
                    "Actual token occupancy projection is observed, not merely a fully enumerated physical grid.", required=not self.args.allow_incomplete)
         observed_finals = {token["request_id"]: bool(token["write_sequences"]) for token in self.facts.get("final_outputs", [])}
-        self.check("frontend_final_outputs", all(token["computedEver"] == observed_finals.get(token["requestId"]) and (observed_finals.get(token["requestId"]) or token["kvState"] in {"not_computed", "reserved"}) for token in replay["finals"]) if known and replay["finals"] else None,
-                   "Historical final-token computation matches actual later writes; acceptance alone never computes KV.", required=not self.args.allow_incomplete)
+        assessment = self.facts.get("final_output_assessment", {})
+        if known and replay["finals"]:
+            final_condition = {token["requestId"] for token in replay["finals"]} == set(observed_finals) and all(
+                token["computedEver"] == observed_finals.get(token["requestId"]) and (observed_finals.get(token["requestId"]) or token["kvState"] in {"not_computed", "reserved"}) for token in replay["finals"])
+        elif known and assessment.get("applicability") == "not_applicable":
+            zero_ids = {request["request_id"] for request in assessment["zero_outputs"]}
+            final_condition = not observed_finals and {request["requestId"] for request in replay["requests"]} == zero_ids and all(
+                request["acceptedTokenCount"] == 0 and request["status"] == "cancelled" for request in replay["requests"])
+        else:
+            final_condition = False if known and assessment.get("sampled_final_token_count", 0) > 0 else None
+        self.check("frontend_final_outputs", final_condition,
+                   f"{len(replay['finals'])} sampled final output tokens projected. "
+                   + ("Not applicable: observed zero-output cancellations project no sampled final token." if assessment.get("applicability") == "not_applicable" else "Historical final-token computation matches actual later writes; acceptance alone never computes KV."),
+                   required=not self.args.allow_incomplete)
+        self.findings[-1]["applicability"] = assessment.get("applicability", "unknown")
         self.check("backward_seek", replay["backwardSeekStable"], "Final projection is stable after backward seeking.")
 
 

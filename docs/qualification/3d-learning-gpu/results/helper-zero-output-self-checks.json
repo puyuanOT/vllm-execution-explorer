@@ -1,0 +1,35 @@
+{
+  "scope": "helper_counterfactual_checks_only",
+  "status": "pass",
+  "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+  "source_recordings": {
+    "profile": "run-c78d2dc1dcf3",
+    "cancel_profile": "run-ba5a851230fe"
+  },
+  "checks": [
+    {
+      "case": "zero_output_missing_abort_is_rejected",
+      "pass": true,
+      "report_status": "failed",
+      "scenario_cancellation": "fail",
+      "sampled_final_token_count": 0
+    },
+    {
+      "case": "zero_output_observed_abort_passes_as_not_applicable",
+      "pass": true,
+      "report_status": "pass",
+      "sampled_final_token_count": 0,
+      "zero_output_terminal_cancellation_count": 1,
+      "frontend_final_output_count": 0
+    },
+    {
+      "case": "nonzero_final_sampled_token_false_kv_claim_is_rejected",
+      "pass": true,
+      "report_status": "failed",
+      "final_output_boundary": "fail",
+      "kv_result_boundaries": "fail",
+      "sampled_final_token_count": 2
+    }
+  ],
+  "limitations": "Copies with intentionally authored mutations test acceptance behavior only; these counterfactuals are not new GPU qualification evidence. Original recordings and original helper-hash reports remain untouched."
+}

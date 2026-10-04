@@ -47,13 +47,34 @@ vLLM environment-cache reads. A process-wide session lease prevents a second
 in-process engine from inheriting another session's override. Ordinary runs
 preserve their existing runner choice, and manifests record the actual choice.
 
-Preparation failures and successful close both shut down the native engine.
-The native engine-owned finalizer also removes compile bytecode hooks that
-can retain model weights after worker shutdown. The session drops engine and
-profile references, resets process-local compiler state through the installed
-public `torch.compiler.reset()` API, collects cycles and empties unused CUDA
-allocations before releasing its lease. Compiler disk caches are preserved.
-Unit checks cover preparation and teardown failures,
-cached selection, and consecutive sessions. Actual post-close GPU memory and
-consecutive captures must be checked on the host; passing those unit checks
-does not establish leak-free live execution.
+Production captures spawn a dedicated execution process for the whole recording,
+HTTP request service, engine, tokenizer, and profiler lifetime. The controller
+retains only small control state and output previews; event and content streams
+are written directly by the worker. A POSIX file lock serializes late intake,
+cancellation, and snapshots and is released automatically if the worker dies.
+An admission mutex prevents an active fixture from being replaced during state
+migration. The child inherits the controller's Python environment and revision.
+
+Preparation failures and successful close still shut down the native engine,
+invoke its owned finalizer, drop engine and profile references, collect cycles,
+and empty unused CUDA allocations. Real repeated-capture measurements showed
+that these steps, including an attempted public compiler reset, retained about
+8 GiB after the normal compiled runner exited its session. Production therefore
+waits for the dedicated process to exit and join before exposing final readiness
+or admitting another engine. The ineffective process-wide compiler reset has
+been removed; compiler disk caches are preserved.
+
+Controller shutdown first requests cancellation and closes intake. It waits a
+bounded grace period, then terminates and, if necessary, kills only its registered
+execution process, joins it, finalizes retained evidence, and shuts down the state
+manager last. A worker that cannot be reaped keeps its handle and blocks another
+capture. An unexpected exit retains the valid event/content prefix, records an
+explicit trace gap, and labels the capture failed. Before repairing an interrupted
+last record, the original bytes are retained in `*.interrupted` files. Interior
+corruption is reported rather than rewritten as complete evidence.
+
+Local checks use real spawned fixture workers to cover repeat capture, live
+intake, cancellation, joined readiness, death inside a transaction, shutdown,
+bounded termination, crash recovery, and raw-byte preservation. Those checks
+establish controller semantics; live post-close GPU memory and consecutive
+captures must still be measured on the actual host before claiming qualification.

@@ -213,30 +213,16 @@ def test_close_failures_still_release_engine_references_and_runner_lease(monkeyp
     lease.release()
 
 
-def test_cuda_cache_release_resets_compiler_then_collects_cycles_without_initializing_cuda(monkeypatch):
+def test_cuda_cache_release_collects_cycles_without_initializing_cuda(monkeypatch):
     calls = []
     monkeypatch.setattr("runner.vllm_session.gc.collect", lambda: calls.append("gc"))
     cuda = SimpleNamespace(is_initialized=lambda: False, empty_cache=lambda: calls.append("empty_cache"))
-    compiler = SimpleNamespace(reset=lambda: calls.append("compiler_reset"))
-    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=cuda, compiler=compiler))
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=cuda))
     _release_unused_cuda_memory()
     assert calls == ["gc"]
     cuda.is_initialized = lambda: True
     _release_unused_cuda_memory()
-    assert calls == ["gc", "compiler_reset", "gc", "empty_cache"]
-
-
-def test_compiler_reset_failure_still_collects_cycles_and_empties_unused_cuda_cache(monkeypatch):
-    calls = []
-    def reset():
-        calls.append("compiler_reset")
-        raise RuntimeError("compiler reset failed")
-    monkeypatch.setattr("runner.vllm_session.gc.collect", lambda: calls.append("gc"))
-    cuda = SimpleNamespace(is_initialized=lambda: True, empty_cache=lambda: calls.append("empty_cache"))
-    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(cuda=cuda, compiler=SimpleNamespace(reset=reset)))
-    with pytest.raises(RuntimeError, match="compiler reset failed"):
-        _release_unused_cuda_memory()
-    assert calls == ["compiler_reset", "gc", "empty_cache"]
+    assert calls == ["gc", "gc", "empty_cache"]
 
 
 def test_engine_process_finds_venv_tools_even_when_python_is_a_symlink(monkeypatch, tmp_path):

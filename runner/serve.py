@@ -22,6 +22,8 @@ os.environ["VLLM_DISABLE_REQUEST_ID_RANDOMIZATION"] = "1"
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from contextlib import asynccontextmanager
+from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from runner.artifacts import ArtifactTransferManager, HTTP_UPLOAD_LIMIT_BYTES, HTTP_UPLOAD_MAX_FILES
@@ -35,7 +37,9 @@ from runner.configuration import (
 )
 from runner.controller import drive_run
 from runner.fixture_engine import FixtureSession
+from runner.isolation import ExperimentIsolation
 from runner.manifest import LOCAL_FIXTURE_TARGET, manifest_skeleton
+from runner.state import ACTIVE_STATUSES, RunState
 from runner.trace_index import RunTraceIndex
 from runner.remote_host import (
     ConnectResult,
@@ -62,7 +66,6 @@ from runner.workload import (
     require_engine_settings,
 )
 
-ACTIVE_STATUSES = {"preparing", "capturing", "finalizing"}
 _UNCHANGED = object()
 from vllm_030.collector import Recording
 
@@ -142,46 +145,6 @@ def parse_serve_args(argv: list[str]) -> ServeConfig:
     return ServeConfig(bind=bind, port=port, recordings=args.recordings)
 
 
-class RunState:
-    def __init__(self) -> None:
-        self.lock = threading.Lock()
-        self.run_id: str | None = None
-        self.status = "idle"
-        self.intake_open = False
-        self.cancelled = False
-        self.text: dict[str, str] = {}
-        self.message = ""
-        self.extra: list[WorkRequest] = []
-        self.plan: dict[str, Any] | None = None
-        self.origin: dict[str, Any] | None = None
-        self.arrivals: list[dict[str, Any]] = []
-        self.finalized = False
-        self.phase = "idle"
-        self.phase_history: list[dict[str, Any]] = []
-        self.configuration: dict[str, Any] | None = None
-
-    def snapshot(self) -> dict[str, Any]:
-        with self.lock:
-            return {
-                "run_id": self.run_id,
-                "status": self.status,
-                "active": self.status in ACTIVE_STATUSES,
-                "intake_open": self.intake_open,
-                "text": dict(self.text),
-                "message": self.message,
-                "workload_plan": self.plan,
-                "controller_origin": self.origin,
-                "finalized": self.finalized,
-                "run_configuration": copy_configuration(self.configuration) if self.configuration else None,
-                "capture": {
-                    "status": self.status,
-                    "phase": self.phase,
-                    "history": [dict(item) for item in self.phase_history],
-                    "finalized": self.finalized,
-                },
-            }
-
-
 def create_app(
     recordings_dir: Path,
     *,
@@ -199,6 +162,8 @@ def create_app(
 ) -> FastAPI:
     recordings_dir.mkdir(parents=True, exist_ok=True)
     state = RunState()
+    isolation = ExperimentIsolation()
+    launch_lock = threading.Lock()
     trace_indexes: dict[str, RunTraceIndex] = {}
     tunnel: dict[str, Any] = {"process": None, "target": None}
     target_lock = threading.Lock()
@@ -219,7 +184,14 @@ def create_app(
     connector = connect_host or connect_gpu_host
     artifacts = ArtifactTransferManager(run=artifact_runner)
     artifact_store = artifacts_dir or (Path.home() / ".vllm-execution-explorer" / "artifacts")
-    app = FastAPI(title="vLLM execution explorer")
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        try:
+            yield
+        finally:
+            await run_in_threadpool(isolation.close)
+
+    app = FastAPI(title="vLLM execution explorer", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://127.0.0.1:5173", "http://localhost:5173"],
@@ -486,6 +458,7 @@ def create_app(
 
     @app.post("/api/runs")
     def start_run(body: RunRequest) -> dict[str, Any]:
+        nonlocal state
         if body.engine not in {"vllm", "fixture"}:
             raise HTTPException(status_code=400, detail="engine must be vllm or fixture")
         if body.engine == "vllm":
@@ -518,41 +491,47 @@ def create_app(
             )["model_options"]["quantization"][quantization]
             if not quantization_capability["selectable"]:
                 raise HTTPException(status_code=409, detail=quantization_capability["message"])
-        with state.lock:
-            if state.status in ACTIVE_STATUSES:
-                raise HTTPException(status_code=409, detail="one experiment is already running")
-            run_id = f"run-{uuid.uuid4().hex[:12]}"
-            state.run_id = run_id
-            state.status = "preparing"
-            state.intake_open = True
-            state.cancelled = False
-            state.text = {item.request_id: "" for item in requests}
-            state.message = ""
-            state.extra = []
-            state.plan = plan
-            state.origin = None
-            state.arrivals = []
-            state.finalized = False
-            state.configuration = copy_configuration(configuration)
-            state.phase = "configuration_accepted"
-            state.phase_history = [_phase_record("configuration_accepted")]
-        thread = threading.Thread(
-            target=_execute,
-            kwargs={
-                "state": state,
-                "recordings_dir": recordings_dir,
-                "run_id": run_id,
-                "requests": requests,
-                "body": body,
-                "session_factory": session_factory,
-                "recording_opener": open_recording,
-                "clock": clock,
-                "clock_ns": clock_ns,
-                "sleeper": wait,
-            },
-            daemon=True,
-        )
-        thread.start()
+        with launch_lock:
+            production_process = body.engine == "vllm" and session_factory is None and recording_opener is None
+            with state.lock:
+                if state.status in ACTIVE_STATUSES or state.execution_process_alive:
+                    raise HTTPException(status_code=409, detail="one experiment is already running")
+            if production_process:
+                state = isolation.share(state)
+            with state.lock:
+                if state.status in ACTIVE_STATUSES or state.execution_process_alive:
+                    raise HTTPException(status_code=409, detail="one experiment is already running")
+                run_id = f"run-{uuid.uuid4().hex[:12]}"
+                state.run_id = run_id
+                state.status = "preparing"
+                state.intake_open = True
+                state.cancelled = False
+                state.text = {item.request_id: "" for item in requests}
+                state.message = ""
+                state.extra = []
+                state.plan = plan
+                state.origin = None
+                state.arrivals = []
+                state.finalized = False
+                state.configuration = copy_configuration(configuration)
+                state.phase = "configuration_accepted"
+                state.phase_history = [_phase_record("configuration_accepted")]
+                state.execution_process = None
+            arguments = {
+                    "recordings_dir": recordings_dir,
+                    "run_id": run_id,
+                    "requests": requests,
+                    "body": body,
+                    "session_factory": session_factory,
+                    "recording_opener": open_recording,
+                    "clock": clock,
+                    "clock_ns": clock_ns,
+                    "sleeper": wait,
+                }
+            if production_process:
+                isolation.start(state, arguments)
+            else:
+                threading.Thread(target=_execute, kwargs={"state": state, **arguments}, daemon=True).start()
         return {
             "run_id": run_id,
             "engine": body.engine,
@@ -628,9 +607,13 @@ def create_app(
                 "history": [dict(item) for item in state.phase_history],
                 "finalized": state.finalized,
             } if current else None
+            process_alive = current and state.execution_process_alive
+            if process_alive and status not in ACTIVE_STATUSES:
+                status = "finalizing"
+                capture.update(status=status, phase="reaping_execution_process", finalized=False)
         manifest_path = directory / "manifest.json"
         manifest = None
-        if manifest_path.is_file():
+        if manifest_path.is_file() and not process_alive:
             manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             status = str(manifest.get("completion_status") or status)
             plan = manifest.get("workload_plan", plan)
@@ -1026,6 +1009,8 @@ def _manifest_for(
             ),
         }
     manifest["provenance"] = provenance
+    if state.execution_process is not None:
+        manifest["execution_process"] = state.execution_process
     if origin.get("controller_started_monotonic_ns") is not None:
         manifest["controller_origin"] = origin
     if body.engine == "fixture":
@@ -1055,7 +1040,7 @@ def _flag(state: RunState, name: str) -> bool:
 def _take_extra(state: RunState) -> list[WorkRequest]:
     with state.lock:
         extra = list(state.extra)
-        state.extra.clear()
+        state.extra[:] = []
         for item in extra:
             state.text.setdefault(item.request_id, "")
             if state.plan is not None:

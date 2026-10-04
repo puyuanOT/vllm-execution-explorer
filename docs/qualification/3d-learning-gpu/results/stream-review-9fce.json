@@ -1,0 +1,69 @@
+{
+  "review_kind": "independent_retained_stream_inspection",
+  "source_revision": "9fce07043e9cd58130c9ce7b9b913f80d98a939b",
+  "cases": [
+    {
+      "case": "profile",
+      "run_id": "run-c78d2dc1dcf3",
+      "recorded_contract_report": "profile-9fce.json",
+      "recorded_contract_status": "pass",
+      "requests": [
+        {
+          "request_id": "profile-a",
+          "input_meaning": "Chat-formatted request for twelve detailed points about continuous batching; the prompt does not specify LLM serving.",
+          "output_meaning": "The generated answer discusses manufacturing and production batching. This is off-topic for vLLM teaching, but a valid retained model output for the inference workload.",
+          "output_boundary": "Length completion at 128 accepted tokens truncates the answer during point two. The final sampled token has no observed KV write.",
+          "teaching_content_qualified": false
+        },
+        {
+          "request_id": "profile-b",
+          "input_meaning": "Chat-formatted request for twelve detailed points about KV cache allocation.",
+          "output_meaning": "The generated answer concerns LLM inference and key/value caching. Its wording about reusing attention weights is imprecise; the cache stores keys and values, not attention weights.",
+          "output_boundary": "Length completion at 128 accepted tokens truncates the answer during point one. The final sampled token has no observed KV write.",
+          "teaching_content_qualified": false
+        }
+      ],
+      "batch_observation": "The first profiled batch has 37 real rows: profile-b positions 0..18 followed by profile-a positions 0..17. Subsequent retained batches have two decode-input rows in that same observed request order. This is actual packed order, not authored request-list order.",
+      "native_proof": "All 4776 normalized CUDA intervals agree with raw native timestamps, correlation IDs and enclosing explicit scopes. Each of the eight retained batches covers all 36 layers; attention and FFN CUDA mappings cover all 36 layers. No per-token or per-head duration is claimed.",
+      "padding": "All eight observed eager batches have padded count equal to unpadded count. These captures therefore do not exercise nonzero padding.",
+      "unexercised": ["prefix_reuse", "preemption", "cancellation", "eviction", "nonzero_padding"]
+    },
+    {
+      "case": "cancel-profile",
+      "run_id": "run-ba5a851230fe",
+      "recorded_contract_report": "cancel-profile-9fce.json",
+      "recorded_contract_status": "failed_strict_analyzer_requirements",
+      "request_id": "cancel-long",
+      "input_meaning": "A synthetic stress input consists of 3500 copies of token ID 27268, individually decoded as the fragment ' synthetic'. It is a prefill workload rather than a natural-language question.",
+      "output_meaning": "No output token was sampled or emitted because cancellation occurred during prompt prefill. There is no final sampled output token to test.",
+      "observed_work": "Three returned 64-token prefill chunks cover prompt positions 0..191. Twelve blocks receive logical KV write observations after their matching results. Prompt positions 192..3499 remain uncomputed.",
+      "cancellation_receipt": {
+        "request_receipt_status": "cancel_requested",
+        "receipt_after_sequence": 63,
+        "in_flight_step": "step-3",
+        "in_flight_result_sequence": 64,
+        "release_sequence_start": 69,
+        "release_sequence_end": 80,
+        "released_blocks": 12,
+        "http_response_sequence": 81,
+        "http_status_code": 200,
+        "http_finish_reason": "cancelled",
+        "explicit_request_cancellation_event": false
+      },
+      "replay_observation": "The actual replay reducer uses the successful HTTP response with finish_reason='cancelled' as a terminal fallback. Final request status is cancelled, live bindings are empty, all allocation references are released, and the 192 written token positions retain historical computation and same-generation contents.",
+      "strict_analyzer_limitations": [
+        "The unchanged helper recognizes request terminals and scenario cancellation only through separate completion/cancellation events, so it fails these checks despite the observed cancelled HTTP terminal and correct replay fallback.",
+        "The unchanged helper requires a sampled final-output projection. This zero-output cancellation has no such token, so that check is reported unavailable rather than not applicable."
+      ],
+      "native_proof": "The partial diagnostic profile retains three fully observed batches. All 1602 normalized CUDA intervals agree with raw native evidence, and all 36 layers plus attention/FFN modules are mapped in the retained observations. Partial status remains explicit; no completion of the requested 16-step profile window is claimed.",
+      "padding": "All three retained eager batches have 64 real rows and no additional padding rows.",
+      "unexercised": ["decode", "prefix_reuse", "preemption", "eviction", "nonzero_padding", "sampled_final_output"]
+    }
+  ],
+  "limitations": [
+    "Generated answer quality is distinct from instrumentation correctness; these generated explanations are not teaching ground truth.",
+    "Logical KV write observations do not read back numerical K/V tensors.",
+    "Native GPU evidence applies only to the retained diagnostic batches, not the remaining host replay steps or individual tokens/heads.",
+    "This review performs no remote action, browser rendering qualification or implementation change."
+  ]
+}

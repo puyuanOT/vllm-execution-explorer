@@ -1,0 +1,13 @@
+{
+  "phase": "checking_ssh",
+  "observed": "actual ssh_argv transport on provided host and identity",
+  "elapsed_ms": 679.582,
+  "returncode": 0,
+  "batch_mode": true,
+  "connect_timeout_seconds": 20,
+  "subprocess_timeout_seconds": 30,
+  "remote_action": "true (read-only reachability)",
+  "credential_material_retained": false,
+  "stdout_empty": true,
+  "stderr_empty": true
+}

@@ -59,7 +59,7 @@ def cases() -> dict[str, dict]:
     prefix = "Read this shared reference before answering. " + "The explorer records requests, scheduler steps and cache blocks. " * 24
     return {
         "staggered": {**base, "requests": [request(f"staggered-{i + 1}",
-            f"Write a detailed numbered explanation of {topic}, with six examples.", offset, 128)
+            f"Write a detailed numbered explanation of {topic} in large language model inference using vLLM, with six examples.", offset, 128)
             for i, (topic, offset) in enumerate([
                 ("continuous batching", 0), ("prefill", 0), ("decode", 100),
                 ("KV caching", 100), ("prefix reuse", 100), ("GPU scheduling", 120)])]},
@@ -74,11 +74,11 @@ def cases() -> dict[str, dict]:
             "kv_cache_memory_bytes": 72 * 1024 * 1024,
             "requests": [request(f"pressure-{i + 1}", "", output=32, tokens=192) for i in range(4)]},
         "priority": {**base, "max_num_seqs": 1, "scheduling_policy": "priority",
-            "requests": [{**request(f"priority-{i + 1}", "Explain GPU scheduling in twelve detailed numbered points.", output=128), "priority": priority}
+            "requests": [{**request(f"priority-{i + 1}", "Explain GPU scheduling in large language model inference using vLLM in twelve detailed numbered points.", output=128), "priority": priority}
                          for i, priority in enumerate([5, -5, 0])]},
         "profile": {**base, "profiling_configuration": {"mode": "eager_diagnostic", "max_steps": 8},
-            "requests": [request("profile-a", "Explain continuous batching in twelve detailed numbered points.", output=128),
-                         request("profile-b", "Explain KV cache allocation in twelve detailed numbered points.", output=128)]},
+            "requests": [request("profile-a", "Explain continuous batching in large language model inference using vLLM in twelve detailed numbered points.", output=128),
+                         request("profile-b", "Explain KV cache allocation in large language model inference using vLLM in twelve detailed numbered points.", output=128)]},
         "cancel-profile": {**base, "token_budget": 64, "long_prefill_token_threshold": 64,
             "profiling_configuration": {"mode": "eager_diagnostic", "max_steps": 16},
             "requests": [request("cancel-long", "", output=512, tokens=3500)]},

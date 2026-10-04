@@ -168,6 +168,7 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
     original_prefix = scheduler._get_local_prefix_cache_hit
     original_preempt = scheduler._preempt_request
     original_add = scheduler.add_request
+    original_finish = getattr(scheduler, "finish_requests", None)
 
     def schedule(*args: Any, **kwargs: Any) -> Any:
         before = queue_snapshot(scheduler)
@@ -259,11 +260,29 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
         )
         return result
 
+    def finish_requests(*args: Any, **kwargs: Any) -> Any:
+        result = original_finish(*args, **kwargs)
+        # Native aborts bypass update_from_output. The returned requests exclude
+        # unknown/already-finished IDs and have completed the scheduler cleanup.
+        for request in result:
+            if getattr(getattr(request, "status", None), "name", None) == "FINISHED_ABORTED":
+                adapter.recording.event(
+                    "cancellation",
+                    request_id=str(request.request_id),
+                    status="abort",
+                    reason="abort",
+                    request_status="FINISHED_ABORTED",
+                    observation_boundary="scheduler.finish_requests.returned",
+                )
+        return result
+
     adapter._patch(scheduler, "schedule", schedule)
     adapter._patch(scheduler, "update_from_output", update_from_output)
     adapter._patch(scheduler, "_get_local_prefix_cache_hit", _get_local_prefix_cache_hit)
     adapter._patch(scheduler, "_preempt_request", _preempt_request)
     adapter._patch(scheduler, "add_request", add_request)
+    if callable(original_finish):
+        adapter._patch(scheduler, "finish_requests", finish_requests)
 
 
 def _install_executor(adapter: Instrumentation, executor: Any) -> None:

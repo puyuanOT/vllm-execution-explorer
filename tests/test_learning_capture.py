@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from enum import Enum
 from types import SimpleNamespace
 
 import pytest
@@ -161,6 +162,80 @@ def test_local_teaching_capture_keeps_final_sample_out_of_kv_and_exports_no_cont
     structural = load_recording(tmp_path / "export")
     assert structural.events == data.events and structural.manifest["content_retained"] is False
     assert not structural.content
+
+
+class _FinishStatus(Enum):
+    FINISHED_ABORTED = "abort"
+    FINISHED_STOPPED = "stop"
+    FINISHED_LENGTH_CAPPED = "length"
+    FINISHED_ERROR = "error"
+
+
+def test_native_abort_boundary_records_zero_output_prefill_after_cleanup(tmp_path):
+    recording = Recording.open(tmp_path / "abort", run_id="abort")
+    engine = FixtureEngine(authored=True, max_num_seqs=1, max_num_scheduled_tokens=2)
+    returned = []
+
+    def finish_requests(request_ids, finished_status):
+        assert request_ids == ["a", "already-finished", "unknown"]
+        request = engine.scheduler.requests["a"]
+        request.status = finished_status
+        engine.pool.free_blocks(engine.scheduler._block_tables.pop("a"))
+        engine.scheduler.queue.remove("a")
+        returned.append(request)  # Native return excludes completed/unknown IDs.
+        return returned
+
+    engine.scheduler.finish_requests = finish_requests
+    adapter = install(engine, recording, check_sources=False)
+    engine.add_request("a", [11, 12, 13, 14, 15, 16], max_output_tokens=3)
+    assert engine.step() == []  # Partial prefill has not sampled an output.
+    assert engine.scheduler.finish_requests(
+        ["a", "already-finished", "unknown"], _FinishStatus.FINISHED_ABORTED,
+    ) is returned
+    adapter.uninstall()
+    assert engine.scheduler.finish_requests is finish_requests
+    manifest = manifest_skeleton("abort", execution_kind="fixture", execution_target=LOCAL_FIXTURE_TARGET, completion_status="cancelled")
+    manifest["engine_output_token_ids"] = {"a": []}
+    recording.close(manifest)
+    data = load_recording(tmp_path / "abort")
+    cancellations = [event for event in data.events if event["event_type"] == "cancellation"]
+    assert len(cancellations) == 1
+    event = cancellations[0]
+    assert event["request_id"] == "a" and event["status"] == event["reason"] == "abort"
+    assert event["request_status"] == "FINISHED_ABORTED"
+    assert event["observation_boundary"] == "scheduler.finish_requests.returned"
+    assert "step_id" not in event  # Abort is not a model execution/result claim.
+    assert next(item for item in data.events if item["event_type"] == "block_change" and item["operation"] == "release")["sequence"] < event["sequence"]
+    assert not any(item["event_type"] == "tokens_accepted" for item in data.events)
+    assert evaluate(data).ok, evaluate(data).text()
+
+
+@pytest.mark.parametrize("outcome", ["no_valid_requests", "exception", "stop", "length", "error"])
+def test_finish_boundary_never_infers_abort_from_requested_ids_or_other_finishes(tmp_path, outcome):
+    recording = Recording.open(tmp_path / outcome, run_id=outcome)
+    engine = FixtureEngine()
+    request = SimpleNamespace(request_id="a", status=_FinishStatus.FINISHED_ABORTED)
+    returned = [] if outcome == "no_valid_requests" else [request]
+
+    def finish_requests(request_ids, finished_status):
+        assert request_ids == ["a", "unknown"]
+        if outcome == "exception":
+            # Even a status mutation does not prove successful abort cleanup.
+            raise RuntimeError("cleanup failed")
+        request.status = finished_status
+        return returned
+
+    engine.scheduler.finish_requests = finish_requests
+    adapter = install(engine, recording, check_sources=False)
+    status = next((item for item in _FinishStatus if item.value == outcome), _FinishStatus.FINISHED_ABORTED)
+    if outcome == "exception":
+        with pytest.raises(RuntimeError, match="cleanup failed"):
+            engine.scheduler.finish_requests(["a", "unknown"], status)
+    else:
+        assert engine.scheduler.finish_requests(["a", "unknown"], finished_status=status) is returned
+    adapter.uninstall()
+    recording.close(manifest_skeleton(outcome, execution_kind="fixture", execution_target=LOCAL_FIXTURE_TARGET))
+    assert not any(event["event_type"] in {"cancellation", "completion"} for event in load_recording(tmp_path / outcome).events)
 
 
 @pytest.mark.parametrize("corruption,detail", [
