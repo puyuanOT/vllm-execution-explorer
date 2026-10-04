@@ -586,14 +586,6 @@ def create_app(
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1 or limit > 2000:
             raise HTTPException(status_code=400, detail="limit must be from 1 to 2000")
         directory = recordings_dir / run_id
-        if not directory.is_dir():
-            raise HTTPException(status_code=404, detail="recording not found")
-        index = trace_indexes.get(run_id)
-        if index is None:
-            index = RunTraceIndex(directory)
-            trace_indexes[run_id] = index
-        events, next_event, events_truncated = index.events.page(after_sequence, limit)
-        content, next_content, content_truncated = index.content.page(after_content_sequence, limit)
         with state.lock:
             current = state.run_id == run_id
             status = state.status if current else "idle"
@@ -611,6 +603,16 @@ def create_app(
             if process_alive and status not in ACTIVE_STATUSES:
                 status = "finalizing"
                 capture.update(status=status, phase="reaping_execution_process", finalized=False)
+        # Acceptance precedes spawn/import/recording initialization. A known
+        # current run already has provisional control state, even without files.
+        if not directory.is_dir() and not current:
+            raise HTTPException(status_code=404, detail="recording not found")
+        index = trace_indexes.get(run_id)
+        if index is None:
+            index = RunTraceIndex(directory)
+            trace_indexes[run_id] = index
+        events, next_event, events_truncated = index.events.page(after_sequence, limit)
+        content, next_content, content_truncated = index.content.page(after_content_sequence, limit)
         manifest_path = directory / "manifest.json"
         manifest = None
         if manifest_path.is_file() and not process_alive:

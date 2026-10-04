@@ -25,6 +25,14 @@ def delayed_exit(state, arguments):
     time.sleep(0.4)
 
 
+def delayed_initialize(state, arguments):
+    while state.phase != "permit_recording_initialization":
+        if state.cancelled:
+            return
+        time.sleep(0.01)
+    _execute_child(state, arguments)
+
+
 def unexpected_exit(state, arguments):
     directory = arguments["recordings_dir"] / arguments["run_id"]
     directory.mkdir(parents=True)
@@ -312,3 +320,53 @@ def test_rejected_production_start_cannot_replace_an_active_fixture_state(tmp_pa
         snapshot = client.get("/api/runs/current").json()
         assert snapshot["run_id"] == started.json()["run_id"]
         assert snapshot["status"] == "completed" and snapshot["text"]["original"]
+
+
+def test_accepted_spawn_returns_empty_provisional_trace_before_worker_creates_files(tmp_path, monkeypatch):
+    import runner.serve as serve
+
+    isolations = []
+
+    class DelayedFixtureIsolation(ExperimentIsolation):
+        def __init__(self):
+            super().__init__(max_lifetime_seconds=10)
+            isolations.append(self)
+
+        def start(self, state, arguments):
+            # Exercise the production spawn/API contract with an explicit
+            # fixture engine in the child; this test loads no model or GPU.
+            arguments = {**arguments, "body": arguments["body"].model_copy(update={"engine": "fixture"})}
+            super().start(state, arguments, target=delayed_initialize)
+
+    monkeypatch.setattr(serve, "ExperimentIsolation", DelayedFixtureIsolation)
+    monkeypatch.setattr(serve, "decide_target", lambda *_args, **_kwargs: SimpleNamespace(ok=True))
+    monkeypatch.setattr(serve, "_cuda_available", lambda: True)
+    monkeypatch.setattr(serve, "_vllm_version", lambda: "0.30.0")
+    monkeypatch.setattr(serve, "_cuda_compute_capability", lambda: (8, 6))
+    monkeypatch.setattr(serve, "_bitsandbytes_plugin_available", lambda: False)
+    monkeypatch.setattr(serve, "capability_report", lambda **_kwargs: {
+        "model_options": {"quantization": {"none": {"selectable": True}}}})
+    with TestClient(serve.create_app(tmp_path)) as client:
+        started = client.post("/api/runs", json={"engine": "vllm", "requests": [{
+            "request_id": "first", "prompt": "Hello", "arrival_offset_ms": 0, "max_output_tokens": 1}]})
+        assert started.status_code == 200, started.json()
+        run_id = started.json()["run_id"]
+        assert not (tmp_path / run_id).exists()
+        response = client.get(f"/api/runs/{run_id}/trace?after_sequence=5&after_content_sequence=7")
+        assert response.status_code == 200
+        trace = response.json()
+        assert trace["status"] == "preparing"
+        assert trace["capture"]["phase"] == "configuration_accepted"
+        assert trace["provisional"] is True and trace["finalized"] is False
+        assert trace["events"] == [] and trace["content"] == [] and trace["manifest"] is None
+        assert trace["next_event_sequence"] == 5 and trace["next_content_sequence"] == 7
+        assert trace["events_truncated"] is False and trace["content_truncated"] is False
+        assert trace["workload_plan"] == client.get("/api/runs/current").json()["workload_plan"]
+        assert client.get("/api/runs/unknown/trace").status_code == 404
+        with isolations[0]._state.lock:
+            isolations[0]._state.phase = "permit_recording_initialization"
+        wait_for(lambda: client.get("/api/runs/current").json()["finalized"])
+        finalized = client.get(f"/api/runs/{run_id}/trace").json()
+        assert finalized["provisional"] is False and finalized["finalized"] is True
+        assert finalized["manifest"]["execution_process"]["status"] == "exited"
+        assert finalized["events"] and finalized["content"]
