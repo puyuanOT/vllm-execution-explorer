@@ -38,6 +38,8 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   const step = tickStep(span)
   const ticks = Array.from({ length: Math.floor(span / step) + 1 }, (_, index) => index * step)
   const bottom = rowY(rows.length) + 2
+  const prepBottom = Math.max(bottom, TOP + 48)
+  const height = Math.max(HEIGHT, bottom + 20, prepBottom + 8)
   const description = scenario.batches
     .map((batch) => `batch ${batch.label || "untitled"} at ${formatTime(batch.arrivalOffsetMs, unit)} ${unit} with ${batch.samples.length} request${batch.samples.length === 1 ? "" : "s"}`)
     .join("; ")
@@ -45,13 +47,13 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   return (
     <div className="flex flex-col border border-slate-800 bg-[#060a11] md:flex-row">
       <div ref={container} className="relative min-w-0 flex-1 overflow-hidden">
-        <svg width={width} height={HEIGHT} role="img" aria-label={`Arrival sequencer: ${description}`}>
+        <svg width={width} height={height} role="img" aria-label={`Arrival sequencer: ${description}`}>
           <defs>
             <pattern id="arrival-prep" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
               <line x1="0" y1="0" x2="0" y2="6" stroke="#152640" strokeWidth="2" />
             </pattern>
           </defs>
-          <rect x={8} y={TOP - 4} width={PREP - 8} height={bottom - TOP + 4} fill="url(#arrival-prep)" stroke="#152640" />
+          <rect x={8} y={TOP - 4} width={PREP - 8} height={prepBottom - TOP + 4} fill="url(#arrival-prep)" stroke="#152640" />
           {["LOAD", "WARM", "RESET"].map((text, index) => <text key={text} x={8 + (PREP - 8) / 2} y={TOP + 16 + index * 13} textAnchor="middle" className="fill-[#6b84a8] font-mono text-[8.5px] tracking-[0.08em]">{text}</text>)}
           {ticks.map((tick) => (
             <g key={tick}>
