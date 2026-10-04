@@ -1,5 +1,29 @@
 import * as THREE from "three"
-import type { PoolGridLayout } from "./model.ts"
+import type { DieLayout, PoolGridLayout } from "./model.ts"
+
+/** Picks a flat die by intersecting its top plane, so cost does not grow with pool capacity. */
+export function createDieRaycast(layout: DieLayout, top = 0): THREE.InstancedMesh["raycast"] {
+  const inverse = new THREE.Matrix4()
+  const ray = new THREE.Ray()
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -top)
+  const hit = new THREE.Vector3()
+  const worldHit = new THREE.Vector3()
+  return function (this: THREE.InstancedMesh, raycaster, intersections) {
+    if (!layout.capacity) return
+    inverse.copy(this.matrixWorld).invert()
+    ray.copy(raycaster.ray).applyMatrix4(inverse)
+    if (!ray.intersectPlane(plane, hit)) return
+    const column = Math.floor((hit.x + layout.width / 2) / layout.pitch)
+    const row = Math.floor((layout.depth / 2 - hit.z) / layout.pitch)
+    if (column < 0 || column >= layout.columns || row < 0 || row >= layout.rows) return
+    const index = row * layout.columns + column
+    if (index >= layout.capacity) return
+    worldHit.copy(hit).applyMatrix4(this.matrixWorld)
+    const distance = raycaster.ray.origin.distanceTo(worldHit)
+    if (distance < raycaster.near || distance > raycaster.far) return
+    intersections.push({ distance, point: worldHit.clone(), object: this, instanceId: index })
+  }
+}
 
 /** Grid traversal avoids the default O(capacity) instanced-mesh raycast. */
 export function createPoolRaycast(layout: PoolGridLayout): THREE.InstancedMesh["raycast"] {
