@@ -53,8 +53,6 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     const parent = gl.domElement.parentElement
     if (!parent) return
     element.className = "scene-label"
-    element.dataset.anchor = anchor
-    element.style.pointerEvents = interactive ? "auto" : "none"
     parent.appendChild(element)
     const next = createRoot(element)
     root.current = next
@@ -64,7 +62,12 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
       window.setTimeout(() => next.unmount(), 0)
       element.remove()
     }
-  }, [gl, element, anchor, interactive, invalidate])
+  }, [gl, element, invalidate])
+
+  useLayoutEffect(() => {
+    element.dataset.anchor = anchor
+    element.style.pointerEvents = interactive ? "auto" : "none"
+  }, [element, anchor, interactive])
 
   useLayoutEffect(() => {
     root.current?.render(<div className="scene-label-inner">{children}</div>)

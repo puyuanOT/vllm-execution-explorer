@@ -1,9 +1,11 @@
+import { useThree } from "@react-three/fiber"
 import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react"
 import * as THREE from "three"
 
 import type { KvBlockProjection, KvCacheProjection, KvPoolProjection } from "../../../replay/src/learning.ts"
 import type { Selection } from "../execution/types.ts"
 import { requestLabel } from "../explore/model.ts"
+import { cn } from "../lib/cn.ts"
 import { requestColor } from "../theme.ts"
 import { EvidenceTag } from "../ui/controls.tsx"
 import { dieCellPosition, dieLayout, mappedBlockSlot } from "./model.ts"
@@ -75,12 +77,18 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     if (instance.instanceColor) instance.instanceColor.needsUpdate = true
     instance.computeBoundingSphere()
   }, [layout, byId, requestOrder, selectedRequest, selected?.key])
+  const viewportWidth = useThree((state) => state.size.width)
   const special = useMemo(() => pool.blocks.filter((block) => block.isNull || block.refCount > 0 || block.hasHash || block.key === selected?.key).slice(0, RIM_LIMIT), [pool.blocks, selected?.key])
   const rulerColumns = rulerStep(layout.columns)
   const rulerRows = rulerStep(layout.rows)
   const front = layout.depth / 2
   const left = -layout.width / 2
   const selectedPosition = selected ? dieCellPosition(selected.blockId, layout) : null
+  // A small die leaves room beside it, so the cartridge sits off the die instead of covering its other blocks.
+  const besideDie = layout.width < span * 0.75 && viewportWidth >= 700
+  const cartridgeSide = selectedPosition && selectedPosition[0] < 0 ? "left" : "right"
+  const cartridgeX = selectedPosition ? besideDie ? (cartridgeSide === "right" ? 1 : -1) * (layout.width / 2 + 0.45) : selectedPosition[0] : 0
+  const cartridgeAnchor = besideDie ? cartridgeSide : selectedPosition && selectedPosition[0] > layout.width * 0.15 ? "left" : "right"
   return <group position={[x, DIE_Y, 0]}>
     <mesh position={[0, -0.09, 0]} raycast={() => null}>
       <boxGeometry args={[layout.width + 0.5, 0.16, layout.depth + 0.5]} />
@@ -117,16 +125,16 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     })}
     <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
-      <SceneLabel position={[selectedPosition[0], heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={selectedPosition[0] > layout.width * 0.15 ? "left" : "right"} interactive>
-        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} onSelect={onSelect} />
+      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive>
+        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
   </group>
 }
 
-function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
+function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, narrow = false, onSelect }: {
   block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
-  trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
+  trackedRequestId?: string | null; trackedTokenPosition?: number | null; narrow?: boolean; onSelect: (selection: Selection) => void
 }) {
   const nameOf = (requestId: string) => requestLabel(requestLabels, requestId)
   const groups = new Set([...block.contents, ...block.bindings].map((span) => span.cacheGroup))
@@ -144,7 +152,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
     </div>
   )
   const shell = (body: ReactNode) => (
-    <div className="cp-hud w-[440px] max-w-[min(440px,70vw)] bg-[rgba(7,11,19,0.96)] p-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)]" data-active="true">
+    <div className={cn("cp-hud w-[440px] bg-[rgba(7,11,19,0.96)] p-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)]", narrow ? "max-w-[max(300px,34cqw)]" : "max-w-[min(440px,70vw)]")} data-active="true">
       {header}{body}
     </div>
   )
