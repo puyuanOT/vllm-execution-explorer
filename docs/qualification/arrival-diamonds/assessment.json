@@ -1,0 +1,150 @@
+{
+  "base_revision": "3766f6d5506d7f8d09720efe3c5f8d6448060259",
+  "browser_cases": [
+    {
+      "case": "desktop-staggered-ms",
+      "status": "passed",
+      "outcome": "Six points; 2/3/1 grouping at proportional offsets 0/100/120."
+    },
+    {
+      "case": "desktop-staggered-seconds",
+      "status": "passed",
+      "outcome": "Six points; 2/3/1 grouping at proportional offsets 0/100/120. Unit conversion leaves geometry unchanged."
+    },
+    {
+      "case": "edited-B-offset-150ms",
+      "status": "passed",
+      "outcome": "All three B requests move to 150 ms and retain that offset after reload."
+    },
+    {
+      "case": "edited-offset-persists-after-reload",
+      "status": "passed",
+      "outcome": "All three B requests move to 150 ms and retain that offset after reload."
+    },
+    {
+      "case": "320px-staggered",
+      "status": "chart passed; existing page overflow repaired later",
+      "outcome": "Readable labels and planned dispatch diamonds remain within the chart width. Existing draft action overflow discovered before its layout repair."
+    },
+    {
+      "case": "360px-staggered",
+      "status": "chart passed; existing page overflow repaired later",
+      "outcome": "Readable labels and planned dispatch diamonds remain within the chart width. Existing draft action overflow discovered before its layout repair."
+    },
+    {
+      "case": "360px-maximum-offset-ms",
+      "status": "passed",
+      "outcome": "Maximum 600000 ms offset is shown accurately; tick density adapts to the displayed unit."
+    },
+    {
+      "case": "360px-maximum-offset-seconds",
+      "status": "passed",
+      "outcome": "Maximum 600000 ms offset is shown accurately; tick density adapts to the displayed unit."
+    },
+    {
+      "case": "360px-long-labels",
+      "status": "passed",
+      "outcome": "Long labels truncate visually while retaining full native titles and accessible descriptions."
+    },
+    {
+      "case": "320px-toolbar-overflow-regression",
+      "status": "passed",
+      "outcome": "Readable labels and planned dispatch diamonds remain within the chart width. Full page has no horizontal overflow after repair."
+    },
+    {
+      "case": "duplicate-batches-same-offset",
+      "status": "passed",
+      "outcome": "B and B copy each retain their own batch annotation; six points share the 100 ms coordinate."
+    },
+    {
+      "case": "empty-batch-has-no-dispatch-marks",
+      "status": "passed",
+      "outcome": "Adding an empty batch leaves the plotted requests and scale unchanged."
+    },
+    {
+      "case": "64-readable-request-rows",
+      "status": "passed",
+      "outcome": "All 64 requests have names and separate 32 px rows in a bounded scrolling plot."
+    },
+    {
+      "case": "64-requests-keyboard-scroll-to-end",
+      "status": "passed",
+      "outcome": "Immediate observation during native scroll animation; settled outcome is checked separately."
+    },
+    {
+      "case": "64-requests-keyboard-scroll-settled",
+      "status": "passed",
+      "outcome": "Keyboard End reaches the final request; the time axis remains outside the scroller."
+    },
+    {
+      "case": "empty-scenario-unmounts-chart",
+      "status": "passed",
+      "outcome": "No chart is rendered while there are no requests."
+    },
+    {
+      "case": "all-empty-batches-no-chart",
+      "status": "passed",
+      "outcome": "No chart is rendered while there are no requests."
+    },
+    {
+      "case": "single-zero-offset-request-remounts-chart",
+      "status": "passed",
+      "outcome": "Adding the first request remounts the responsive chart with one point at zero."
+    },
+    {
+      "case": "all-zero-offset-requests",
+      "status": "passed",
+      "outcome": "Two requests at zero remain separate rows on a valid integer axis."
+    },
+    {
+      "case": "restored-staggered-final",
+      "status": "passed",
+      "outcome": "Six points; 2/3/1 grouping at proportional offsets 0/100/120."
+    },
+    {
+      "case": "post-capture-configure-diagram",
+      "status": "passed",
+      "outcome": "Six points; 2/3/1 grouping at proportional offsets 0/100/120."
+    },
+    {
+      "case": "360px-final-page-bounds",
+      "status": "passed",
+      "outcome": "Readable labels and planned dispatch diamonds remain within the chart width. Full page has no horizontal overflow after repair."
+    }
+  ],
+  "capture": {
+    "run_id": "run-3c86ec542ca0",
+    "source": "synthetic fixture",
+    "batch_offsets_and_counts": [
+      [
+        0,
+        2
+      ],
+      [
+        100,
+        3
+      ],
+      [
+        120,
+        1
+      ]
+    ],
+    "completed_request_ids": [
+      "sample-1",
+      "sample-2",
+      "sample-3",
+      "sample-4",
+      "sample-5",
+      "sample-6"
+    ],
+    "event_count": 289,
+    "event_completeness": {
+      "dropped_content_count": 0,
+      "dropped_event_count": 0,
+      "dropped_record_count": 0,
+      "gap": null,
+      "status": "complete"
+    },
+    "status": "passed"
+  }
+}

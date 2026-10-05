@@ -1,0 +1,1201 @@
+[
+  {
+    "case": "desktop-staggered-ms",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M444.40000000000003,203 L449.40000000000003,208 L444.40000000000003,213 L439.40000000000003,208 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "desktop-staggered-seconds",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 s. Arrival batch B dispatches input_3, input_4, input_5 at 0.1 s. Arrival batch C dispatches input_6 at 0.12 s.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 s, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 s, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 0.1 s, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 0.1 s, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 0.1 s, arrival batch B"
+        },
+        {
+          "path": "M444.40000000000003,203 L449.40000000000003,208 L444.40000000000003,213 L439.40000000000003,208 Z",
+          "title": "input_6: planned dispatch at 0.12 s, arrival batch C"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 s",
+        "B· 0.1 s",
+        "C· 0.12 s"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "edited-B-offset-150ms",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch C dispatches input_6 at 120 ms. Arrival batch B dispatches input_3, input_4, input_5 at 150 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M360.79999999999995,107 L365.79999999999995,112 L360.79999999999995,117 L355.79999999999995,112 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        },
+        {
+          "path": "M423.5,139 L428.5,144 L423.5,149 L418.5,144 Z",
+          "title": "input_3: planned dispatch at 150 ms, arrival batch B"
+        },
+        {
+          "path": "M423.5,171 L428.5,176 L423.5,181 L418.5,176 Z",
+          "title": "input_4: planned dispatch at 150 ms, arrival batch B"
+        },
+        {
+          "path": "M423.5,203 L428.5,208 L423.5,213 L418.5,208 Z",
+          "title": "input_5: planned dispatch at 150 ms, arrival batch B"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_6",
+        "input_3",
+        "input_4",
+        "input_5",
+        "A· 0 ms",
+        "C· 120 ms",
+        "B· 150 ms"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "edited-offset-persists-after-reload",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch C dispatches input_6 at 120 ms. Arrival batch B dispatches input_3, input_4, input_5 at 150 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M360.79999999999995,107 L365.79999999999995,112 L360.79999999999995,117 L355.79999999999995,112 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        },
+        {
+          "path": "M423.5,139 L428.5,144 L423.5,149 L418.5,144 Z",
+          "title": "input_3: planned dispatch at 150 ms, arrival batch B"
+        },
+        {
+          "path": "M423.5,171 L428.5,176 L423.5,181 L418.5,176 Z",
+          "title": "input_4: planned dispatch at 150 ms, arrival batch B"
+        },
+        {
+          "path": "M423.5,203 L428.5,208 L423.5,213 L418.5,208 Z",
+          "title": "input_5: planned dispatch at 150 ms, arrival batch B"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_6",
+        "input_3",
+        "input_4",
+        "input_5",
+        "A· 0 ms",
+        "C· 120 ms",
+        "B· 150 ms"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "320px-staggered",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M160.66666666666666,123 L165.66666666666666,128 L160.66666666666666,133 L155.66666666666666,128 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M160.66666666666666,163 L165.66666666666666,168 L160.66666666666666,173 L155.66666666666666,168 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M160.66666666666666,203 L165.66666666666666,208 L160.66666666666666,213 L155.66666666666666,208 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M174.8,243 L179.8,248 L174.8,253 L169.8,248 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 220,
+      "width": 220
+    },
+    "page": {
+      "scrollWidth": 375,
+      "width": 320
+    }
+  },
+  {
+    "case": "360px-staggered",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M187.33333333333331,123 L192.33333333333331,128 L187.33333333333331,133 L182.33333333333331,128 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M187.33333333333331,163 L192.33333333333331,168 L187.33333333333331,173 L182.33333333333331,168 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M187.33333333333331,203 L192.33333333333331,208 L187.33333333333331,213 L182.33333333333331,208 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M206.8,243 L211.8,248 L206.8,253 L201.8,248 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 260,
+      "width": 260
+    },
+    "page": {
+      "scrollWidth": 375,
+      "width": 360
+    }
+  },
+  {
+    "case": "360px-maximum-offset-ms",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch C dispatches input_6 at 120 ms. Arrival batch B dispatches input_3, input_4, input_5 at 600000 ms.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90.02336,123 L95.02336,128 L90.02336,133 L85.02336,128 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        },
+        {
+          "path": "M206.8,163 L211.8,168 L206.8,173 L201.8,168 Z",
+          "title": "input_3: planned dispatch at 600000 ms, arrival batch B"
+        },
+        {
+          "path": "M206.8,203 L211.8,208 L206.8,213 L201.8,208 Z",
+          "title": "input_4: planned dispatch at 600000 ms, arrival batch B"
+        },
+        {
+          "path": "M206.8,243 L211.8,248 L206.8,253 L201.8,248 Z",
+          "title": "input_5: planned dispatch at 600000 ms, arrival batch B"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_6",
+        "input_3",
+        "input_4",
+        "input_5",
+        "A· 0 ms",
+        "C· 120 ms",
+        "B· 600000 ms"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 260,
+      "width": 260
+    }
+  },
+  {
+    "case": "360px-maximum-offset-seconds",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 s. Arrival batch C dispatches input_6 at 0.12 s. Arrival batch B dispatches input_3, input_4, input_5 at 600 s.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 s, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 s, arrival batch A"
+        },
+        {
+          "path": "M90.02336,123 L95.02336,128 L90.02336,133 L85.02336,128 Z",
+          "title": "input_6: planned dispatch at 0.12 s, arrival batch C"
+        },
+        {
+          "path": "M206.8,163 L211.8,168 L206.8,173 L201.8,168 Z",
+          "title": "input_3: planned dispatch at 600 s, arrival batch B"
+        },
+        {
+          "path": "M206.8,203 L211.8,208 L206.8,213 L201.8,208 Z",
+          "title": "input_4: planned dispatch at 600 s, arrival batch B"
+        },
+        {
+          "path": "M206.8,243 L211.8,248 L206.8,253 L201.8,248 Z",
+          "title": "input_5: planned dispatch at 600 s, arrival batch B"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_6",
+        "input_3",
+        "input_4",
+        "input_5",
+        "A· 0 s",
+        "C· 0.12 s",
+        "B· 600 s"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 260,
+      "width": 260
+    }
+  },
+  {
+    "case": "360px-long-labels",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch Arrival group with a very long human-readable name dispatches request_with_a_label_far_longer_than_the_reserved_chart_column, input_2 at 0 s. Arrival batch C dispatches input_6 at 0.12 s. Arrival batch B dispatches input_3, input_4, input_5 at 600 s.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "request_with_a_label_far_longer_than_the_reserved_chart_column: planned dispatch at 0 s, arrival batch Arrival group with a very long human-readable name"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 s, arrival batch Arrival group with a very long human-readable name"
+        },
+        {
+          "path": "M90.02336,123 L95.02336,128 L90.02336,133 L85.02336,128 Z",
+          "title": "input_6: planned dispatch at 0.12 s, arrival batch C"
+        },
+        {
+          "path": "M206.8,163 L211.8,168 L206.8,173 L201.8,168 Z",
+          "title": "input_3: planned dispatch at 600 s, arrival batch B"
+        },
+        {
+          "path": "M206.8,203 L211.8,208 L206.8,213 L201.8,208 Z",
+          "title": "input_4: planned dispatch at 600 s, arrival batch B"
+        },
+        {
+          "path": "M206.8,243 L211.8,248 L206.8,253 L201.8,248 Z",
+          "title": "input_5: planned dispatch at 600 s, arrival batch B"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "request_with_a_label_far_longer_than_the_reserved_chart_column",
+        "input_2",
+        "input_6",
+        "input_3",
+        "input_4",
+        "input_5",
+        "Arrival group with a very long human-readable name· 0 s",
+        "C· 0.12 s",
+        "B· 600 s"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 260,
+      "width": 260
+    }
+  },
+  {
+    "case": "320px-toolbar-overflow-regression",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M160.66666666666666,123 L165.66666666666666,128 L160.66666666666666,133 L155.66666666666666,128 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M160.66666666666666,163 L165.66666666666666,168 L160.66666666666666,173 L155.66666666666666,168 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M160.66666666666666,203 L165.66666666666666,208 L160.66666666666666,213 L155.66666666666666,208 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M174.8,243 L179.8,248 L174.8,253 L169.8,248 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 220,
+      "width": 220
+    },
+    "page": {
+      "scrollWidth": 320,
+      "width": 320
+    }
+  },
+  {
+    "case": "duplicate-batches-same-offset",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch B copy dispatches input_3 copy, input_4 copy, input_5 copy at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,203 L393.66666666666663,208 L388.66666666666663,213 L383.66666666666663,208 Z",
+          "title": "input_3 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,235 L393.66666666666663,240 L388.66666666666663,245 L383.66666666666663,240 Z",
+          "title": "input_4 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,267 L393.66666666666663,272 L388.66666666666663,277 L383.66666666666663,272 Z",
+          "title": "input_5 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M444.40000000000003,299 L449.40000000000003,304 L444.40000000000003,309 L439.40000000000003,304 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 326,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_3 copy",
+        "input_4 copy",
+        "input_5 copy",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "B copy· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 326,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "empty-batch-has-no-dispatch-marks",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch B copy dispatches input_3 copy, input_4 copy, input_5 copy at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,203 L393.66666666666663,208 L388.66666666666663,213 L383.66666666666663,208 Z",
+          "title": "input_3 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,235 L393.66666666666663,240 L388.66666666666663,245 L383.66666666666663,240 Z",
+          "title": "input_4 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,267 L393.66666666666663,272 L388.66666666666663,277 L383.66666666666663,272 Z",
+          "title": "input_5 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M444.40000000000003,299 L449.40000000000003,304 L444.40000000000003,309 L439.40000000000003,304 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 326,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_3 copy",
+        "input_4 copy",
+        "input_5 copy",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "B copy· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 326,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "64-readable-request-rows",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2, input_3 at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch A copy dispatches input_1 copy, input_2 copy at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch B copy dispatches input_3 copy, input_4 copy, input_5 copy at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,107 L115,112 L110,117 L105,112 Z",
+          "title": "input_3: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,139 L115,144 L110,149 L105,144 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,171 L115,176 L110,181 L105,176 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,203 L115,208 L110,213 L105,208 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,235 L115,240 L110,245 L105,240 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,267 L115,272 L110,277 L105,272 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,299 L115,304 L110,309 L105,304 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,331 L115,336 L110,341 L105,336 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,363 L115,368 L110,373 L105,368 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,395 L115,400 L110,405 L105,400 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,427 L115,432 L110,437 L105,432 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,459 L115,464 L110,469 L105,464 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,491 L115,496 L110,501 L105,496 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,523 L115,528 L110,533 L105,528 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,555 L115,560 L110,565 L105,560 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,587 L115,592 L110,597 L105,592 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,619 L115,624 L110,629 L105,624 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,651 L115,656 L110,661 L105,656 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,683 L115,688 L110,693 L105,688 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,715 L115,720 L110,725 L105,720 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,747 L115,752 L110,757 L105,752 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,779 L115,784 L110,789 L105,784 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,811 L115,816 L110,821 L105,816 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,843 L115,848 L110,853 L105,848 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,875 L115,880 L110,885 L105,880 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,907 L115,912 L110,917 L105,912 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,939 L115,944 L110,949 L105,944 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,971 L115,976 L110,981 L105,976 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1003 L115,1008 L110,1013 L105,1008 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1035 L115,1040 L110,1045 L105,1040 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1067 L115,1072 L110,1077 L105,1072 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1099 L115,1104 L110,1109 L105,1104 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1131 L115,1136 L110,1141 L105,1136 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1163 L115,1168 L110,1173 L105,1168 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1195 L115,1200 L110,1205 L105,1200 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1227 L115,1232 L110,1237 L105,1232 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1259 L115,1264 L110,1269 L105,1264 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1291 L115,1296 L110,1301 L105,1296 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1323 L115,1328 L110,1333 L105,1328 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1355 L115,1360 L110,1365 L105,1360 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1387 L115,1392 L110,1397 L105,1392 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1419 L115,1424 L110,1429 L105,1424 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1451 L115,1456 L110,1461 L105,1456 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1483 L115,1488 L110,1493 L105,1488 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1515 L115,1520 L110,1525 L105,1520 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1547 L115,1552 L110,1557 L105,1552 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1579 L115,1584 L110,1589 L105,1584 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1611 L115,1616 L110,1621 L105,1616 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1643 L115,1648 L110,1653 L105,1648 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1675 L115,1680 L110,1685 L105,1680 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1707 L115,1712 L110,1717 L105,1712 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1739 L115,1744 L110,1749 L105,1744 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1771 L115,1776 L110,1781 L105,1776 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1803 L115,1808 L110,1813 L105,1808 Z",
+          "title": "input_1 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M110,1835 L115,1840 L110,1845 L105,1840 Z",
+          "title": "input_2 copy: planned dispatch at 0 ms, arrival batch A copy"
+        },
+        {
+          "path": "M388.66666666666663,1867 L393.66666666666663,1872 L388.66666666666663,1877 L383.66666666666663,1872 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,1899 L393.66666666666663,1904 L388.66666666666663,1909 L383.66666666666663,1904 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,1931 L393.66666666666663,1936 L388.66666666666663,1941 L383.66666666666663,1936 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,1963 L393.66666666666663,1968 L388.66666666666663,1973 L383.66666666666663,1968 Z",
+          "title": "input_3 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,1995 L393.66666666666663,2000 L388.66666666666663,2005 L383.66666666666663,2000 Z",
+          "title": "input_4 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M388.66666666666663,2027 L393.66666666666663,2032 L388.66666666666663,2037 L383.66666666666663,2032 Z",
+          "title": "input_5 copy: planned dispatch at 100 ms, arrival batch B copy"
+        },
+        {
+          "path": "M444.40000000000003,2059 L449.40000000000003,2064 L444.40000000000003,2069 L439.40000000000003,2064 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 384,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_1 copy",
+        "input_2 copy",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_3 copy",
+        "input_4 copy",
+        "input_5 copy",
+        "input_6",
+        "A· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "A copy· 0 ms",
+        "B· 100 ms",
+        "B copy· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 2086,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "64-requests-keyboard-scroll-to-end",
+    "result": {
+      "axis": {
+        "bottom": 740.796875,
+        "height": 49,
+        "left": 302,
+        "right": 854,
+        "top": 691.796875,
+        "width": 552,
+        "x": 302,
+        "y": 691.796875
+      },
+      "maxScroll": 1702,
+      "scrollTop": 22
+    }
+  },
+  {
+    "case": "64-requests-keyboard-scroll-settled",
+    "result": {
+      "maxScroll": 1702,
+      "scrollTop": 1702
+    }
+  },
+  {
+    "case": "empty-scenario-unmounts-chart",
+    "result": {
+      "regions": 0
+    }
+  },
+  {
+    "case": "all-empty-batches-no-chart",
+    "result": {
+      "regions": 0
+    }
+  },
+  {
+    "case": "single-zero-offset-request-remounts-chart",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1 at 0 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        }
+      ],
+      "height": 70,
+      "labels": [
+        "input_1",
+        "A· 0 ms"
+      ],
+      "scrollHeight": 70,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "all-zero-offset-requests",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        }
+      ],
+      "height": 102,
+      "labels": [
+        "input_1",
+        "input_2",
+        "A· 0 ms"
+      ],
+      "scrollHeight": 102,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "restored-staggered-final",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M444.40000000000003,203 L449.40000000000003,208 L444.40000000000003,213 L439.40000000000003,208 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "post-capture-configure-diagram",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M110,43 L115,48 L110,53 L105,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M110,75 L115,80 L110,85 L105,80 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M388.66666666666663,107 L393.66666666666663,112 L388.66666666666663,117 L383.66666666666663,112 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,139 L393.66666666666663,144 L388.66666666666663,149 L383.66666666666663,144 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M388.66666666666663,171 L393.66666666666663,176 L388.66666666666663,181 L383.66666666666663,176 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M444.40000000000003,203 L449.40000000000003,208 L444.40000000000003,213 L439.40000000000003,208 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 230,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 230,
+      "scrollWidth": 552,
+      "width": 552
+    }
+  },
+  {
+    "case": "360px-final-page-bounds",
+    "result": {
+      "description": "Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch A dispatches input_1, input_2 at 0 ms. Arrival batch B dispatches input_3, input_4, input_5 at 100 ms. Arrival batch C dispatches input_6 at 120 ms.",
+      "diamonds": [
+        {
+          "path": "M90,43 L95,48 L90,53 L85,48 Z",
+          "title": "input_1: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M90,83 L95,88 L90,93 L85,88 Z",
+          "title": "input_2: planned dispatch at 0 ms, arrival batch A"
+        },
+        {
+          "path": "M187.33333333333331,123 L192.33333333333331,128 L187.33333333333331,133 L182.33333333333331,128 Z",
+          "title": "input_3: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M187.33333333333331,163 L192.33333333333331,168 L187.33333333333331,173 L182.33333333333331,168 Z",
+          "title": "input_4: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M187.33333333333331,203 L192.33333333333331,208 L187.33333333333331,213 L182.33333333333331,208 Z",
+          "title": "input_5: planned dispatch at 100 ms, arrival batch B"
+        },
+        {
+          "path": "M206.8,243 L211.8,248 L206.8,253 L201.8,248 Z",
+          "title": "input_6: planned dispatch at 120 ms, arrival batch C"
+        }
+      ],
+      "height": 270,
+      "labels": [
+        "input_1",
+        "input_2",
+        "input_3",
+        "input_4",
+        "input_5",
+        "input_6",
+        "A· 0 ms",
+        "B· 100 ms",
+        "C· 120 ms"
+      ],
+      "scrollHeight": 270,
+      "scrollWidth": 260,
+      "width": 260
+    },
+    "page": {
+      "scrollWidth": 360,
+      "width": 360
+    }
+  }
+]
