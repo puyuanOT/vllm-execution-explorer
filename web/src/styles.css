@@ -365,6 +365,9 @@ p { text-wrap: pretty; }
 @container workspace (min-width: 900px) {
   .cp-telemetry { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+@container workspace (max-width: 399px) {
+  .cp-telemetry .cp-spark { display: none; }
+}
 @container workspace (min-width: 900px) and (max-width: 959px) {
   .cp-telemetry .cp-spark { display: none; }
 }

@@ -129,7 +129,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
       <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp={cartridgeInsets}>
-        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
+        <BlockCartridge key={selected.key} block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
   </group>
@@ -188,13 +188,13 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
         return <li key={slot}>
           <button
             type="button"
-            className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
+            className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left focus-visible:[outline-offset:-2px] disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
             style={{
               borderColor: status === "computed" || status === "reserved" ? `color-mix(in srgb, ${holderColor} 35%, transparent)` : "#1c2a41",
               background: status === "computed" ? `color-mix(in srgb, ${holderColor} 9%, #080d16)` : status === "unknown" ? undefined : "#080d16",
               boxShadow: status === "computed" ? `inset 3px 0 0 ${originColor}` : undefined,
               outline: isSelected ? "1.5px solid var(--accent)" : undefined,
-              outlineOffset: isSelected ? 1 : undefined,
+              outlineOffset: isSelected ? -2 : undefined,
             }}
             disabled={!known || mapped.position == null || mapped.requestId == null}
             aria-label={`Slot ${slot}: ${status}${mapped.requestId ? `, ${nameOf(mapped.requestId)} position ${mapped.position}` : ""}${mapped.sourceRequestId && mapped.sourceRequestId !== mapped.requestId ? `; content source ${nameOf(mapped.sourceRequestId)}` : ""}`}
