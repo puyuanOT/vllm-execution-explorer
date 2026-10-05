@@ -117,6 +117,31 @@ export function poolGridLayout(capacity: number, span = 7): PoolGridLayout {
   return { columns, rows, depths, capacity: count, spacing: span / Math.max(columns, rows, depths) }
 }
 
+export interface DieLayout {
+  columns: number
+  rows: number
+  capacity: number
+  pitch: number
+  width: number
+  depth: number
+}
+
+/** Physical block IDs fill a flat die row by row from the front-left corner; zoom never changes a block's cell. */
+export function dieLayout(capacity: number, span = 11, aspect = 1.12): DieLayout {
+  const count = Number.isSafeInteger(capacity) && capacity > 0 ? capacity : 0
+  const columns = Math.max(1, Math.ceil(Math.sqrt(count * aspect)))
+  const rows = Math.max(1, Math.ceil(count / columns))
+  const pitch = Math.min(2, span / Math.max(columns, rows))
+  return { columns, rows, capacity: count, pitch, width: columns * pitch, depth: rows * pitch }
+}
+
+/** Returns the [x, z] floor position of a physical block; row 0 faces the default camera. */
+export function dieCellPosition(index: number, layout: DieLayout): [number, number] {
+  const column = index % layout.columns
+  const row = Math.floor(index / layout.columns)
+  return [(column - (layout.columns - 1) / 2) * layout.pitch, ((layout.rows - 1) / 2 - row) * layout.pitch]
+}
+
 export function poolCellPosition(index: number, layout: PoolGridLayout): [number, number, number] {
   const x = index % layout.columns
   const y = Math.floor(index / layout.columns) % layout.rows

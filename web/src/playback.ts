@@ -1,5 +1,10 @@
 import type { TraceEvent } from "../../replay/src/reduce.ts"
 
+/** Events beyond the first trace gap cannot be played as observed execution. */
+export function replayableEvents(events: TraceEvent[], maxSequence: number): TraceEvent[] {
+  return events.filter((event) => event.sequence <= maxSequence)
+}
+
 export function nextSequence(events: TraceEvent[], current: number): number {
   for (const event of events) {
     if (event.sequence > current) return event.sequence

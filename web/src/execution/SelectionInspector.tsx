@@ -8,10 +8,11 @@ import {
   type SampleProjection,
   type TimelineIndex,
 } from "../../../replay/src/timeline.ts"
-import { componentSnapshot, workflowComponent } from "../explore/model.ts"
+import { arrivalGroup, componentSnapshot, workflowComponent } from "../explore/model.ts"
 import type { EvidenceKind, WorkflowComponentId } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
 import { LearningDetails } from "./LearningDetails.tsx"
+import { EvidenceTag, Readouts } from "../ui/controls.tsx"
 
 export function SelectionInspector({
   selection,
@@ -29,7 +30,9 @@ export function SelectionInspector({
   profileError = "",
   measuredMode = false,
   onProfileTime,
+  framed = true,
 }: {
+  framed?: boolean
   selection: Selection | null
   samples: SampleProjection[]
   state: ReplayState | null
@@ -52,12 +55,15 @@ export function SelectionInspector({
   const blocks = state ? describeBlocks(state) : []
   const block = selection?.kind === "block" ? blocks.find((item) => item.key === selection.key || `${item.pool}:${item.blockId}` === selection.key) ?? null : null
   const component = selection?.kind === "component" ? selection.id : null
+  const labels = new Map(samples.map((item) => [item.sample.id, item.sample.label]))
   return (
-    <aside className="inspector min-h-0 overflow-auto border-l border-line bg-surface p-4" aria-label="Inspector">
-      <header className="inspector-head flex items-center justify-between gap-2">
-        <h2 className="text-balance text-base font-semibold text-ink">
+    <aside className={framed ? "inspector grid min-h-0 content-start gap-3 overflow-auto border-l border-line bg-[#060a11] px-[18px] py-4" : "inspector grid min-h-0 content-start gap-3"} aria-label="Inspector">
+      <header className="grid gap-1 border-b border-line pb-3">
+        <p className="cp-label m-0">{inspectorKind(selection, Boolean(sample), Boolean(step), Boolean(block), component)}</p>
+        <div className="flex items-start justify-between gap-2">
+        <h2 className="text-balance text-[19px] font-semibold tracking-[-0.01em] text-ink">
           {sample
-            ? sample.sample.label
+            ? <>{sample.sample.label || sample.sample.id}{sample.sample.label && sample.sample.label !== sample.sample.id ? <span className="ml-2 font-mono text-xs font-normal tracking-normal text-faint">{sample.sample.id}</span> : null}</>
             : step
               ? step.id
               : block
@@ -72,10 +78,11 @@ export function SelectionInspector({
                   : "Inspector"}
         </h2>
         {showClose ? <button type="button" onClick={onClose}>Close inspector</button> : null}
+        </div>
       </header>
       {measuredProfile && onProfileTime ? <MeasuredProfileDetails profile={measuredProfile} activities={activeProfileActivities} error={profileError} active={measuredMode} onTime={onProfileTime} onSelect={onSelect} /> : null}
       {!selection || !state ? (
-        <p className="text-pretty text-sm text-muted">Select a workflow component, request, execution step, or KV block to inspect recorded evidence.</p>
+        <p className="m-0 text-pretty text-sm text-muted">Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.</p>
       ) : null}
       {missingSample ? <p>This sample is not in the open view.</p> : null}
       {component ? <ComponentDetails component={component} state={state} /> : null}
@@ -92,35 +99,40 @@ export function SelectionInspector({
         />
       ) : null}
       {step && state ? (
-        <section className="mt-4 grid gap-3">
-          <h3 className="text-balance text-sm font-semibold text-ink">Execution step</h3>
+        <section className="grid gap-3">
+          <h3>Execution step</h3>
           <EvidenceSection kind="observed" lines={explainStep(state, step.id).observed} />
           <div className="row-actions">
             {step.requests.map((request) => {
               const label = samples.find((item) => item.sample.id === request.requestId)?.sample.label ?? request.requestId
               return (
-                <button key={request.requestId} type="button" onClick={() => onSelect({ kind: "request", id: request.requestId })}>
+                <button key={request.requestId} type="button" className="font-mono text-xs" onClick={() => onSelect({ kind: "request", id: request.requestId })}>
                   {label}
                 </button>
               )
             })}
           </div>
-          <button type="button" onClick={() => onSeek(step.sequence, { kind: "step", id: step.id })}>
+          <button type="button" className="justify-self-start font-mono text-[11px] uppercase tracking-[0.06em]" onClick={() => onSeek(step.sequence, { kind: "step", id: step.id })}>
             Show this step
           </button>
         </section>
       ) : null}
-      <LearningDetails selection={selection} state={state} manifest={manifest} onSelect={onSelect} />
+      <LearningDetails selection={selection} state={state} manifest={manifest} labels={labels} onSelect={onSelect} />
       {block && state ? (
-        <details className="mt-4" open={!state.cacheInventory || undefined}>
-          <summary className="cursor-pointer text-sm font-medium text-ink">Block lifecycle evidence</summary>
+        <details open={!state.cacheInventory || undefined}>
+          <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted">Block lifecycle evidence</summary>
           <div className="mt-2 grid gap-3">
           <EvidenceSection kind="observed" lines={explainBlock(state, `${block.pool}:${block.blockId}`).observed} />
           <EvidenceSection kind="explanatory" lines={[block.note]} />
           </div>
         </details>
       ) : null}
-      {manifest?.lesson?.summary ? <p className="meta">{manifest.lesson.summary}</p> : null}
+      {manifest?.lesson?.summary ? (
+        <div className="grid gap-1.5 border border-dashed border-synthetic/35 bg-synthetic/[0.03] px-3 py-2.5">
+          <span className="flex items-center gap-2"><EvidenceTag kind={manifest.lesson.evidence === "fixture" || manifest.demo_fixture === true ? "synthetic" : "neutral"}>{manifest.lesson.evidence === "fixture" || manifest.demo_fixture === true ? "Synthetic" : "Lesson"}</EvidenceTag><span className="cp-label truncate">{manifest.lesson.title ?? "Lesson"}</span></span>
+          <p className="meta m-0">{manifest.lesson.summary}</p>
+        </div>
+      ) : null}
     </aside>
   )
 }
@@ -129,18 +141,12 @@ function ComponentDetails({ component, state }: { component: WorkflowComponentId
   const definition = workflowComponent(component)
   const snapshot = componentSnapshot(state, component)
   return (
-    <div className="inspector-body mt-4 grid gap-4">
+    <div className="inspector-body grid gap-4">
       <p className="m-0 text-pretty text-sm text-muted">{definition.description}</p>
-      <dl className="facts m-0 grid gap-2 rounded-lg border border-line bg-raised p-3">
-        <div>
-          <dt>Current summary</dt>
-          <dd className="mono tabular-nums">{snapshot.metric} {snapshot.metricLabel}</dd>
-        </div>
-        <div>
-          <dt>Playhead</dt>
-          <dd className="mono tabular-nums">event {state?.lastSequence ?? 0}</dd>
-        </div>
-      </dl>
+      <Readouts items={[
+        { label: snapshot.metricLabel, value: snapshot.metric },
+        { label: "Playhead event", value: String(state?.lastSequence ?? 0) },
+      ]} />
       <EvidenceSection kind="observed" lines={snapshot.evidence.observed} />
       <EvidenceSection kind="derived" lines={snapshot.evidence.derived} />
       <EvidenceSection kind="unknown" lines={snapshot.evidence.unknown} />
@@ -153,20 +159,36 @@ function EvidenceSection({ kind, lines }: { kind: EvidenceKind; lines: string[] 
   if (lines.length === 0) return null
   const labels: Record<EvidenceKind, string> = {
     observed: "Observed",
-    derived: "Derived from observations",
-    explanatory: "How to read this",
+    derived: "Derived",
+    explanatory: "Explains",
     unknown: "Unknown",
   }
   return (
-    <section className="grid gap-2" data-evidence={kind}>
-      <h3 className="text-balance text-xs font-semibold text-muted">{labels[kind]}</h3>
-      <ul className="fact-list grid list-none gap-2 p-0 text-sm text-ink">
+    <section data-evidence={kind} aria-label={kind === "derived" ? "Derived from observations" : kind === "explanatory" ? "How to read this" : labels[kind]}>
+      <ul className="cp-evlist m-0 list-none p-0">
         {lines.map((line) => (
-          <li key={line} className="rounded-md border border-line bg-raised px-3 py-2 text-pretty">{line}</li>
+          <li key={line}>
+            <span><EvidenceTag kind={kind}>{labels[kind]}</EvidenceTag></span>
+            <span className="text-pretty">{line}</span>
+          </li>
         ))}
       </ul>
     </section>
   )
+}
+
+function inspectorKind(selection: Selection | null, sample: boolean, step: boolean, block: boolean, component: WorkflowComponentId | null): string {
+  if (sample) return "Request"
+  if (step) return "Scheduler step"
+  if (block) return "Physical block"
+  if (component) return "Component"
+  if (!selection) return "Inspector"
+  if (selection.kind === "token") return "Token position"
+  if (selection.kind === "layer") return "Model layer"
+  if (selection.kind === "module") return "Layer module"
+  if (selection.kind === "head") return "Attention head"
+  if (selection.kind === "block") return "Physical block"
+  return "Selection"
 }
 
 function SampleDetails({
@@ -196,7 +218,7 @@ function SampleDetails({
       <p className="phase">{sample.phaseLabel}</p>
       <dl className="facts">
         <div><dt>Request id</dt><dd className="mono">{sample.sample.id}</dd></div>
-        <div><dt>Arrival batch</dt><dd>{sample.sample.batchLabel}</dd></div>
+        <div><dt>Arrival batch</dt><dd>{arrivalGroup(sample.sample).recorded ? sample.sample.batchLabel : "Not recorded"}</dd></div>
         <div>
           <dt>Model route</dt>
           <dd>{modelRouteLabel(request)}</dd>

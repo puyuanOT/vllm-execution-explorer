@@ -33,15 +33,18 @@ import {
 } from "./configure/index.ts"
 import { focusValidationField } from "./configure/focusValidation.ts"
 import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
+import { recordingEvidence } from "./execution/evidence.ts"
 import { projectArchitecture } from "../../replay/src/learning.ts"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
+import { scopeChannel, sequencePosition, type ScopeMarker, type ScopeTick } from "./execution/scope.ts"
+import { telemetryPoint, telemetrySeries, telemetryThrough } from "./execution/telemetry.ts"
 import { SelectionInspector } from "./execution/SelectionInspector.tsx"
 import type { PlaybackMode, Selection, WorkspaceView } from "./execution/types.ts"
 import { useAppRoute } from "./hooks/useAppRoute.ts"
 import { useLiveTrace } from "./hooks/useLiveTrace.ts"
 import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
-import { eventAt, nextSequence, previousSequence, playbackSpeeds } from "./playback.ts"
+import { eventAt, nextSequence, previousSequence, playbackSpeeds, replayableEvents } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
 import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
 import { monitorTargetConnection } from "./scenario/targetConnection.ts"
@@ -58,6 +61,7 @@ import { loadSettings, saveSettings } from "./scenario/storage.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "./scenario/types.ts"
 import { validateScenario, type FieldIssue } from "./scenario/validate.ts"
 import { AppHeader } from "./shell/AppHeader.tsx"
+import { cn } from "./lib/cn.ts"
 import { ConfirmDialog } from "./shell/ConfirmDialog.tsx"
 import { Modal } from "./shell/Modal.tsx"
 import { RecordingLibrary } from "./shell/RecordingLibrary.tsx"
@@ -172,8 +176,8 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 1100px)")
-    const apply = () => setCompact(media.matches)
+    const media = window.matchMedia("(min-width: 1101px) and (min-height: 600px)")
+    const apply = () => setCompact(!media.matches)
     apply()
     media.addEventListener("change", apply)
     return () => media.removeEventListener("change", apply)
@@ -309,7 +313,8 @@ export function App() {
     }
   }, [events, manifest])
   const viewState = useMemo(() => built.player ? attachContent(built.player.at(sequence), content) : null, [built.player, content, sequence])
-  const index = useMemo(() => buildTimeline(events, manifest), [events, manifest])
+  const playbackEvents = useMemo(() => replayableEvents(events, built.player?.maxSequence ?? 0), [events, built.player])
+  const index = useMemo(() => buildTimeline(playbackEvents, manifest), [playbackEvents, manifest])
   const samples = useMemo(() => {
     if (!viewState) return []
     return projectSamples(index, viewState, sequence, {
@@ -325,10 +330,17 @@ export function App() {
   }, [samples])
   const highlighted = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
   const maxSequence = built.player?.maxSequence ?? 0
+  const telemetrySamples = useMemo(() => telemetrySeries(built.player), [built.player])
+  const telemetry = useMemo(() => viewState ? telemetryThrough(telemetrySamples, telemetryPoint(viewState)) : [], [telemetrySamples, viewState])
   const atEnd = mode === "measured" ? Boolean(profileExtent && nativeProfileTime >= profileExtent.endUs)
     : mode === "teaching" ? teachingProgress >= 1 && index.steps.length > 0 && nextStepSequence(index.steps, sequence) == null
     : sequence >= maxSequence && maxSequence > 0
-  const currentEvent = eventAt(events, sequence)
+  const currentEvent = eventAt(playbackEvents, sequence)
+  const eventTicks = useMemo<ScopeTick[]>(() => playbackEvents.flatMap((event) => {
+    const channel = scopeChannel(event.event_type)
+    return channel ? [{ position: sequencePosition(event.sequence, maxSequence), channel }] : []
+  }), [playbackEvents, maxSequence])
+  const stepMarkers = useMemo<ScopeMarker[]>(() => index.steps.map((step, order) => ({ position: sequencePosition(step.sequence, maxSequence), label: `S${order + 1}` })), [index.steps, maxSequence])
   const elapsed = elapsedMsAt(index, sequence)
   const valueText = currentEvent
     ? `Event ${currentEvent.sequence}, ${currentEvent.event_type}${elapsed == null ? "" : `, ${elapsed} ms`}. ${index.roster.timeBasisLabel}`
@@ -339,16 +351,16 @@ export function App() {
   }, [followLive, maxSequence, runner.live?.status, showingLive])
 
   useEffect(() => {
-    if (!playing || mode !== "events" || events.length === 0 || followLive) return
+    if (!playing || mode !== "events" || playbackEvents.length === 0 || followLive) return
     const timer = window.setInterval(() => {
       setSequence((current) => {
-        const next = nextSequence(events, current)
+        const next = nextSequence(playbackEvents, current)
         if (next === current) setPlaying(false)
         return next
       })
     }, Math.max(80, 700 / speed))
     return () => window.clearInterval(timer)
-  }, [events, followLive, mode, playing, speed])
+  }, [playbackEvents, followLive, mode, playing, speed])
 
   const sequenceRef = useRef(sequence)
   sequenceRef.current = sequence
@@ -428,7 +440,7 @@ export function App() {
         }
         return
       }
-      if (events.length === 0) return
+      if (playbackEvents.length === 0) return
       if (event.code === "Space") {
         event.preventDefault()
         setFollowLive(false)
@@ -436,10 +448,10 @@ export function App() {
         else setPlaying((current) => !current)
       } else if (event.code === "ArrowRight") {
         event.preventDefault()
-        seek(nextSequence(events, sequence))
+        seek(nextSequence(playbackEvents, sequence))
       } else if (event.code === "ArrowLeft") {
         event.preventDefault()
-        seek(previousSequence(events, sequence))
+        seek(previousSequence(playbackEvents, sequence))
       } else if (event.code === "BracketRight") {
         event.preventDefault()
         const next = nextStepSequence(index.steps, sequence)
@@ -458,7 +470,7 @@ export function App() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [events, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
+  }, [playbackEvents, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
 
   function restartPlayback() {
     setFollowLive(false)
@@ -472,7 +484,7 @@ export function App() {
     setFollowLive(false)
     setPlaying(false)
     setTeachingProgress(0)
-    setSequence(Math.max(0, next))
+    setSequence(Math.min(maxSequence, Math.max(0, next)))
     if (nextSelection) {
       setSelection(nextSelection)
       if (compact && nextSelection.kind !== "component") setInspectorOpen(true)
@@ -750,7 +762,15 @@ export function App() {
     setRunError("")
   }
 
-  const evidence = evidenceText(manifest, showingDraft)
+  const { kind: evidenceKind, text: evidence } = recordingEvidence(manifest, showingDraft)
+  const profileSpan = profileExtent ? Math.max(1, profileExtent.endUs - profileExtent.startUs) : 1
+  const profileTicks = useMemo<ScopeTick[]>(() => profileExtent
+    ? measuredProfile.activities.map((activity) => ({ position: (activity.startUs - profileExtent.startUs) / profileSpan, channel: "model" as const }))
+    : [], [measuredProfile.activities, profileExtent, profileSpan])
+  const profileMarkers = useMemo<ScopeMarker[]>(() => profileExtent
+    ? profileBoundaryTimes(measuredProfile.activities, "batch").map((time, order) => ({ position: (time - profileExtent.startUs) / profileSpan, label: `B${order + 1}` }))
+    : [], [measuredProfile.activities, profileExtent, profileSpan])
+  const gapPosition = viewState?.trust === "unknown" && viewState.gap ? sequencePosition(viewState.gap.sequence, maxSequence) : null
   const warning = [
     viewState?.trust === "unknown" ? `Trace gap at event ${viewState.gap?.sequence ?? "?"}. Later state is unknown.` : "",
     manifest.content_retained === false ? "Prompt and output text were not retained." : "",
@@ -762,7 +782,7 @@ export function App() {
   const status = runnerActive
     ? `${statusLabel(runner.live?.status ?? "running")}${runner.live?.message ? ` · ${runner.live.message}` : ""}`
     : preparingRun ? preparationStatus || "Preparing capture"
-    : recording ? `Recording · ${recording.source}` : runner.health || "Runner unchecked"
+    : recording ? `Recording · ${recording.name ?? recording.source}` : runner.health || "Runner unchecked"
   const hostReadiness = hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
     ? { label: "Unchecked", message: "Choose the SSH key and check the selected remote host before capture.", tone: "neutral" as const }
     : deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message))
@@ -790,10 +810,21 @@ export function App() {
   const editableScenario = scenarioFromRecordedPlan(manifest.workload_plan, promptsFromContent(content))
 
   return (
-    <div className={route === "explore" ? "flex h-dvh min-h-0 flex-col overflow-hidden bg-slate-950 text-slate-100" : "min-h-dvh bg-slate-950 text-slate-100"}>
+    <div className={route === "explore" ? "flex min-h-dvh flex-col bg-[#05080e] text-slate-100 tall:h-dvh tall:min-h-0 tall:overflow-hidden" : "min-h-dvh bg-[#05080e] text-slate-100"}>
       <p className="sr-only" aria-live="polite">{announce}</p>
       <p className="sr-only" aria-live="assertive">{validationMessage}</p>
-      <AppHeader route={route} status={status} onNavigate={navigate} onRecordings={() => setRecordingsOpen(true)} />
+      <AppHeader
+        route={route}
+        status={runnerActive ? status : preparingRun ? preparationStatus || "Preparing capture" : runner.health || "Checking controller"}
+        recording={route === "explore" ? recording ? recording.name ?? recording.source : showingLive ? `Live · ${runner.live?.run_id ?? "capture"}` : "Draft preview" : null}
+        evidence={route === "explore" && evidenceKind !== "recorded" ? evidenceKind : null}
+        controller={{
+          label: settings.runnerUrl ? controllerLabel(settings.runnerUrl) : "Local controller",
+          tone: !runner.health ? "neutral" : runner.health === "Runner is reachable." ? "ready" : "error",
+        }}
+        onNavigate={navigate}
+        onRecordings={() => setRecordingsOpen(true)}
+      />
 
       {route === "configure" ? (
         <ConfigurePage
@@ -837,12 +868,7 @@ export function App() {
         />
       ) : (
         <>
-          <div className="flex min-h-11 flex-wrap items-center gap-2 border-b border-line bg-surface px-4 py-2 text-xs text-muted">
-            <span className="mr-auto truncate">{recording ? `Open recording: ${recording.source}` : showingLive ? "Live capture" : "Draft preview"}</span>
-            {editableScenario ? <button type="button" onClick={editAsNew}>Edit as new sequence</button> : null}
-            {compact && selection ? <button type="button" onClick={() => setInspectorOpen(true)}>Open inspector</button> : null}
-          </div>
-          <main className="explore-grid min-h-0 flex-1">
+          <main className={cn("grid min-h-0 flex-1", compact ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_372px]")}>
             <ExecutionWorkspace
               samples={samples}
               state={viewState}
@@ -864,8 +890,15 @@ export function App() {
                 ? "Draft plan. No execution evidence has been recorded."
                 : `${index.roster.timeBasisLabel}${index.roster.groupingKnown ? "" : " Arrival groups were not recorded."}`}
               evidence={evidence}
+              evidenceKind={evidenceKind}
               warning={warning}
               submittedNote={showingLive && submitted ? "Showing the immutable submitted sequence." : ""}
+              currentEvent={currentEvent}
+              telemetry={telemetry}
+              allSteps={index.steps}
+              sequence={sequence}
+              onEditAsNew={editableScenario ? editAsNew : undefined}
+              onOpenInspector={compact && selection ? () => setInspectorOpen(true) : undefined}
               onSelect={choose}
             />
             {!compact ? (
@@ -889,7 +922,7 @@ export function App() {
             ) : null}
           </main>
           <PlaybackTransport
-            disabled={mode === "measured" ? measuredProfile.status !== "observed" : events.length === 0 && samples.length === 0}
+            disabled={mode === "measured" ? measuredProfile.status !== "observed" : playbackEvents.length === 0 && samples.length === 0}
             playing={playing}
             atEnd={atEnd}
             speed={speed}
@@ -904,11 +937,15 @@ export function App() {
             followAvailable={showingLive && runIsActive(runner.live?.status)}
             connected={trace.connected}
             reduced={forceReduced}
+            ticks={mode === "measured" ? profileTicks : eventTicks}
+            markers={mode === "measured" ? profileMarkers : stepMarkers}
+            gapPosition={mode === "measured" ? null : gapPosition}
+            currentPosition={mode === "measured" || !currentEvent ? null : sequencePosition(currentEvent.sequence, maxSequence)}
             onReduced={setForceReduced}
             onTogglePlay={() => { setFollowLive(false); setPlaying((current) => !current) }}
             onReplay={restartPlayback}
-            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(events, sequence))}
-            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(events, sequence))}
+            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(playbackEvents, sequence))}
+            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(playbackEvents, sequence))}
             onPreviousStep={() => { if (mode === "measured") { jumpProfile("batch", -1); return }; const previous = previousStepSequence(index.steps, sequence); if (previous != null) seek(previous) }}
             onNextStep={() => { if (mode === "measured") { jumpProfile("batch", 1); return }; const next = nextStepSequence(index.steps, sequence); if (next != null) seek(next) }}
             onScrub={(value) => { if (mode === "measured") { setPlaying(false); setProfileTimeUs(value + (profileExtent?.startUs ?? 0)) } else seek(value) }}
@@ -948,7 +985,7 @@ export function App() {
         onOpenChange={setInspectorOpen}
         title="Execution inspector"
         description="Recorded evidence for the selected workflow object."
-        placement="right"
+        placement="sheet"
       >
         <SelectionInspector
           selection={selection}
@@ -963,6 +1000,7 @@ export function App() {
           measuredMode={mode === "measured"}
           onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
           showClose={false}
+          framed={false}
           onSeek={seek}
           onSelect={choose}
           onClose={() => setInspectorOpen(false)}
@@ -1001,13 +1039,6 @@ function highlight(selection: Selection | null, state: ReturnType<typeof attachC
 
 function promptMap(scenario: ScenarioDraft): Record<string, string> {
   return Object.fromEntries(scenario.batches.flatMap((batch) => batch.samples.map((sample) => [sample.id, sample.prompt])))
-}
-
-function evidenceText(manifest: RecordingManifest, draftPreview: boolean): string {
-  if (draftPreview) return "Draft preview. Values are planned inputs and are not execution evidence."
-  if (manifest.execution_kind === "gpu") return "Observed GPU recording. Host intervals are not GPU kernel durations."
-  if (manifest.demo_fixture === true || manifest.execution_kind === "fixture") return "Demo fixture. Teaching pace is synthetic and is not GPU evidence."
-  return "Recorded execution evidence."
 }
 
 function statusLabel(status: string): string {
@@ -1056,6 +1087,14 @@ function deriveVllmReadiness(settings: EngineSettings, capabilities: ReturnType<
   if (!mode) return { label: "Unchecked", message: "Check the selected host to resolve runtime support.", tone: "neutral" }
   if (mode.status === "blocked") return { label: "Unavailable", message: mode.message, tone: "error" }
   return { label: "Configured", message: mode.message, tone: mode.status === "available" ? "ready" : "warning" }
+}
+
+function controllerLabel(url: string): string {
+  try {
+    return new URL(url).host || url
+  } catch {
+    return url
+  }
 }
 
 function normalizeRemoteDestination(value: string, user: string, suffix: string): string {

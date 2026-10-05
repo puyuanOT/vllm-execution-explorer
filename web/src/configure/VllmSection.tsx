@@ -15,13 +15,11 @@ export function VllmSection({
   settings,
   issues,
   readiness,
-  effectiveSettings,
   onSettings,
 }: {
   settings: EngineSettings
   issues: FieldIssue[]
   readiness?: ReadinessState
-  effectiveSettings?: Record<string, string | number | boolean | null>
   onSettings: (settings: EngineSettings) => void
 }) {
   const issueFor = (id: string) => issues.find((issue) => issue.fieldId === id)?.message ?? ""
@@ -260,22 +258,6 @@ export function VllmSection({
             </label>
           </div>
         </Details>
-
-        {effectiveSettings && Object.keys(effectiveSettings).length > 0 ? (
-          <details className="rounded-lg border border-slate-800 bg-slate-950">
-            <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
-              Planned launch settings
-            </summary>
-            <dl className="grid gap-x-6 gap-y-3 border-t border-slate-800 p-4 md:grid-cols-2">
-              {Object.entries(effectiveSettings).map(([label, value]) => (
-                <div key={label} className="flex items-baseline justify-between gap-4 border-b border-slate-800 pb-2">
-                  <dt className="text-xs text-slate-400">{label}</dt>
-                  <dd className="truncate text-right text-xs tabular-nums text-slate-300">{value == null ? "Unknown" : String(value)}</dd>
-                </div>
-              ))}
-            </dl>
-          </details>
-        ) : null}
 
         {readiness?.message ? (
           <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-950 p-4" role={readiness.tone === "error" ? "alert" : "status"}>

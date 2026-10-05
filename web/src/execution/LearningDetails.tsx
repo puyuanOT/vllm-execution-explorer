@@ -2,12 +2,15 @@ import { useMemo, useState } from "react"
 import { projectArchitecture, projectKvCache, projectRequestTokens, projectScheduler } from "../../../replay/src/learning.ts"
 import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
 import { kvHeadForQuery, mappedBlockSlot } from "../architecture/model.ts"
+import { requestLabel } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
 
-export function LearningDetails({ selection, state, manifest, onSelect }: {
+export function LearningDetails({ selection, state, manifest, labels, onSelect }: {
   selection: Selection | null; state: ReplayState | null; manifest: RecordingManifest | null
+  labels?: ReadonlyMap<string, string>
   onSelect: (selection: Selection) => void
 }) {
+  const nameOf = (requestId: string) => requestLabel(labels, requestId)
   const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
   const cache = useMemo(() => state ? projectKvCache(state, manifest) : null, [state, manifest])
   const requestId = selection?.kind === "request" ? selection.id : selection?.kind === "token" ? selection.requestId : null
@@ -31,7 +34,7 @@ export function LearningDetails({ selection, state, manifest, onSelect }: {
       </dl>
       <p className="text-sm">{selection.kind === "module" && selection.module === "ffn" ? architecture.modelType === "qwen3" ? `The gated feed-forward network projects the residual stream into gate and up branches, applies ${architecture.activation ?? "the configured activation"} gating, then projects back to the hidden dimension.` : `The feed-forward network expands the hidden representation, applies ${architecture.activation ?? "the configured activation"}, then projects back to the hidden dimension.` : "Queries for the scheduled positions attend to keys and values at allowed earlier positions. Matching cached prefixes supply previously computed keys and values; the remaining scheduled positions compute new ones."}</p>
       <h3>Host replay batch {step?.id ?? "unavailable"}</h3>
-      {step?.requests.map((request) => <button className="block w-full text-left" key={request.requestId} type="button" onClick={() => onSelect({ kind: "request", id: request.requestId })}>{request.requestId}: positions {request.rangeStart}–{request.rangeStart + request.rangeLength - 1} · {request.promptTokens} prefill / {request.generationTokens} decode</button>)}
+      {step?.requests.map((request) => <button className="block w-full text-left" key={request.requestId} type="button" onClick={() => onSelect({ kind: "request", id: request.requestId })}>{nameOf(request.requestId)}: positions {request.rangeStart}–{request.rangeStart + request.rangeLength - 1} · {request.promptTokens} prefill / {request.generationTokens} decode</button>)}
     </section>
   }
   if (selection.kind === "block") {
@@ -53,11 +56,11 @@ export function LearningDetails({ selection, state, manifest, onSelect }: {
         {Array.from({ length: pool.blockSize ?? 0 }, (_, slot) => {
           const { span, binding, position, requestId, sourceRequestId, tokenId, tokenPiece } = mappedBlockSlot(block, pool.blockSize!, slot)
           const known = block.trust === "known"
-          return <li key={slot}><button className="w-full text-left" type="button" disabled={position == null || requestId == null || !known || block.isNull} aria-label={`Slot ${slot}: ${!known ? "unknown" : block.isNull ? "reserved" : span ? `computed token ${tokenId ?? "ID unavailable"}, ${requestId} position ${position}; content source ${sourceRequestId}` : binding ? `reserved for ${requestId} position ${position}, computation unobserved` : "contents unobserved"}`} onClick={() => { if (requestId && position != null) onSelect({ kind: "token", requestId, position }) }}><span className="block text-xs text-muted">Slot {slot}</span><span className="block truncate text-sm tabular-nums">{!known ? "Unknown" : tokenPiece ?? tokenId ?? (span ? "Computed" : binding ? "Reserved" : "—")}</span></button></li>
+          return <li key={slot}><button className="w-full text-left" type="button" disabled={position == null || requestId == null || !known || block.isNull} aria-label={`Slot ${slot}: ${!known ? "unknown" : block.isNull ? "reserved" : span ? `computed token ${tokenId ?? "ID unavailable"}, ${requestId ? nameOf(requestId) : "unknown request"} position ${position}; content source ${sourceRequestId ? nameOf(sourceRequestId) : "unknown"}` : binding ? `reserved for ${requestId ? nameOf(requestId) : "unknown request"} position ${position}, computation unobserved` : "contents unobserved"}`} onClick={() => { if (requestId && position != null) onSelect({ kind: "token", requestId, position }) }}><span className="block text-xs text-muted">Slot {slot}</span><span className="block truncate text-sm tabular-nums">{!known ? "Unknown" : tokenPiece ?? tokenId ?? (span ? "Computed" : binding ? "Reserved" : "—")}</span></button></li>
         })}
       </ol>}
       <h3>Request and prefix bindings</h3>
-      {block.bindings.map((binding) => <button className="block w-full text-left" type="button" key={`${binding.requestId}-${binding.cacheGroup}-${binding.tokenStart}`} onClick={() => onSelect({ kind: "request", id: binding.requestId })}>{binding.requestId} · cache group {binding.cacheGroup} · positions {binding.tokenStart}–{binding.tokenEnd - 1}</button>)}
+      {block.bindings.map((binding) => <button className="block w-full text-left" type="button" key={`${binding.requestId}-${binding.cacheGroup}-${binding.tokenStart}`} onClick={() => onSelect({ kind: "request", id: binding.requestId })}>{nameOf(binding.requestId)} · cache group {binding.cacheGroup} · positions {binding.tokenStart}–{binding.tokenEnd - 1}</button>)}
       {block.refCount === 0 && block.hasHash && block.trust === "known" ? <p className="text-sm text-muted">The prefix remains cached after release. Another request can reuse it; reassignment removes the old occupant.</p> : null}
     </section>
   }
@@ -66,7 +69,7 @@ export function LearningDetails({ selection, state, manifest, onSelect }: {
     return <section className="mt-4 space-y-3">
       <h3>Scheduler queues · {scheduler.stepId ?? "no step"}</h3>
       <p className="text-sm text-muted">{scheduler.reason ?? `Recorded policy: ${scheduler.policy ?? "unknown"}. Queue order is observed; a skipped request's decision reason remains unknown unless captured.`}</p>
-      {(["before", "after"] as const).map((boundary) => scheduler[boundary] ? <div key={boundary}><h3>{boundary === "before" ? "Before scheduling" : "After scheduling"}</h3>{(["running", "waiting", "skippedWaiting"] as const).map((queue) => <div key={queue}><p className="text-xs text-muted">{queue === "skippedWaiting" ? "Skipped waiting" : queue}</p><ol className="list-decimal space-y-1 pl-5">{scheduler[boundary]![queue].map((entry) => <li key={entry.requestId}><button type="button" onClick={() => onSelect({ kind: "request", id: entry.requestId })}>{entry.requestId} · priority {entry.priority ?? "unknown"} · scheduler cursor {entry.computedTokens ?? "unknown"}</button></li>)}</ol>{scheduler[boundary]![queue].length === 0 ? <p className="text-xs text-muted">Empty</p> : null}</div>)}</div> : null)}
+      {(["before", "after"] as const).map((boundary) => scheduler[boundary] ? <div key={boundary}><h3>{boundary === "before" ? "Before scheduling" : "After scheduling"}</h3>{(["running", "waiting", "skippedWaiting"] as const).map((queue) => <div key={queue}><p className="text-xs text-muted">{queue === "skippedWaiting" ? "Skipped waiting" : queue}</p><ol className="list-decimal space-y-1 pl-5">{scheduler[boundary]![queue].map((entry) => <li key={entry.requestId}><button type="button" onClick={() => onSelect({ kind: "request", id: entry.requestId })}>{nameOf(entry.requestId)} · priority {entry.priority ?? "unknown"} · scheduler cursor {entry.computedTokens ?? "unknown"}</button></li>)}</ol>{scheduler[boundary]![queue].length === 0 ? <p className="text-xs text-muted">Empty</p> : null}</div>)}</div> : null)}
     </section>
   }
   if (requestId) {

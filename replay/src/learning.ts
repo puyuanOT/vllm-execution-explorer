@@ -130,7 +130,9 @@ export function projectKvCache(state: ReplayState, _manifest?: RecordingManifest
   const observed = content.length ? attachContent(state, content) : state
   if (!observed.cacheInventory) return {
     status: state.trust === "unknown" ? "unknown" : "unavailable",
-    reason: "This recording does not contain a full initial KV pool inventory.",
+    reason: state.trust === "unknown"
+      ? "A trace gap ends the trusted prefix before a full KV pool inventory was observed."
+      : "No full KV pool inventory has been observed up to this playhead. Captures from the vLLM 0.30 instrumentation record it when the engine starts.",
     pools: [],
     groups: [],
   }

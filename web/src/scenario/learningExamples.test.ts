@@ -1,7 +1,8 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { defaultSettings, staggeredExample } from "./example.ts"
-import { learningExample, LEARNING_EXAMPLES } from "./learningExamples.ts"
+import { learningExample, LEARNING_EXAMPLES, matchingLearningExample } from "./learningExamples.ts"
+import { reduceScenario } from "./reducer.ts"
 import { toRunBody, scenarioFromRecordedPlan } from "./serialize.ts"
 import { validateScenario, validateSettings } from "./validate.ts"
 import { resolveWorkloadFields } from "./workloadFields.ts"
@@ -20,6 +21,32 @@ test("learning examples remain editable valid live drafts and preserve host/mode
     assert.ok(requests.every((request) => request.arrival_offset_ms >= 0))
   }
   assert.equal(original.kvCacheMemoryBytes, "")
+})
+
+test("a loaded learning example is recognized only while its workload and overrides are unchanged", () => {
+  const settings = { ...defaultSettings(), model: "custom/model" }
+  assert.equal(matchingLearningExample(staggeredExample(), defaultSettings()), "staggered")
+  assert.equal(matchingLearningExample({ ...staggeredExample(), id: "scenario-reset-copy" }, settings), "staggered")
+  for (const { id } of LEARNING_EXAMPLES) {
+    const example = learningExample(id, settings)
+    assert.equal(matchingLearningExample(example.scenario, example.settings), id)
+  }
+
+  const prefix = learningExample("prefix", settings)
+  assert.equal(matchingLearningExample(prefix.scenario, { ...prefix.settings, prefixCaching: false }), null)
+  assert.equal(matchingLearningExample(prefix.scenario, { ...prefix.settings, model: "other/model" }), "prefix")
+
+  const edited = reduceScenario(staggeredExample(), { type: "set-sample-prompt", sampleId: "sample-1", prompt: "Name a secondary color." })
+  assert.equal(matchingLearningExample(edited, defaultSettings()), null)
+  const moved = reduceScenario(staggeredExample(), { type: "commit-batch-time", batchId: "batch-c", arrivalOffsetMs: 140 })
+  assert.equal(matchingLearningExample(moved, defaultSettings()), null)
+  assert.equal(matchingLearningExample(reduceScenario(staggeredExample(), { type: "delete-batch", batchId: "batch-c" }), defaultSettings()), null)
+
+  const chunked = learningExample("chunked", settings)
+  const longer = { ...chunked.scenario, batches: chunked.scenario.batches.map((batch) => ({ ...batch, samples: batch.samples.map((sample, index) => index === 0 ? { ...sample, syntheticInputTokens: 640 } : sample) })) }
+  assert.equal(matchingLearningExample(longer, chunked.settings), null)
+  const resolved = { ...chunked.scenario, batches: chunked.scenario.batches.map((batch) => ({ ...batch, samples: batch.samples.map((sample) => ({ ...sample, resolvedInputTokens: 512 })) })) }
+  assert.equal(matchingLearningExample(resolved, chunked.settings), "chunked")
 })
 
 test("automatic revisions and explicit tokenizer overrides serialize without stale pins", () => {

@@ -16,8 +16,8 @@ export function MeasuredProfileDetails({ profile, activities, error, active, onT
   const rows = step?.packedRows ?? []
   const page = Math.min(rowPage, Math.max(0, Math.ceil(rows.length / 64) - 1))
   const layers = profile.layers.filter((layer) => layer.stepId === stepId)
-  return <details className="mt-4 border-t border-line pt-3" open={active || undefined}>
-    <summary className="cursor-pointer text-sm font-medium text-ink">Measured diagnostic profile</summary>
+  return <details className="border-b border-line pb-3" open={active || undefined}>
+    <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted">Measured diagnostic profile</summary>
     {error || profile.status !== "observed" ? <p className="text-sm text-muted" role={error ? "status" : undefined}>{error || profile.reason}</p> : <div className="space-y-3">
       <p className="text-sm text-muted">Eager execution with profiler overhead. Native profiler time is independent of the host replay playhead. Measurements apply to packed batch activities; individual token and head durations remain unknown.</p>
       <p className="text-xs text-muted">Capture: {profile.captureStatus ?? "unknown"} · coverage: {profile.completeness ?? "unknown"} · qualification: {profile.qualification ?? "unverified"}</p>

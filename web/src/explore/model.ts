@@ -66,6 +66,20 @@ export function workflowComponent(id: WorkflowComponentId): WorkflowComponentDef
   return WORKFLOW_COMPONENTS.find((item) => item.id === id) ?? WORKFLOW_COMPONENTS[0]
 }
 
+/** Requests are named by their workload label; the request id is the fallback and the secondary detail. */
+export function requestLabel(labels: ReadonlyMap<string, string> | undefined, requestId: string): string {
+  return labels?.get(requestId)?.trim() || requestId
+}
+
+const UNGROUPED_PREFIX = "ungrouped:"
+
+/** Recordings without a workload plan give every request its own synthetic batch; those share one "not recorded" group. */
+export function arrivalGroup(sample: { batchId: string; batchLabel: string }): { key: string; label: string; recorded: boolean } {
+  return sample.batchId.startsWith(UNGROUPED_PREFIX)
+    ? { key: UNGROUPED_PREFIX, label: "Arrival group not recorded", recorded: false }
+    : { key: sample.batchId, label: `Batch ${sample.batchLabel}`, recorded: true }
+}
+
 export function componentSnapshot(
   state: ReplayState | null,
   id: WorkflowComponentId,
