@@ -120,7 +120,8 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
             <div key={group.batchId} className="contents">
               <div className="cp-roll-label col-span-1 flex items-center gap-2 border-t border-line-strong bg-[#0a1220] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">
                 <b className="max-w-[70%] shrink-0 truncate font-semibold tracking-[0.06em] text-ink" title={group.batchLabel}>{group.batchLabel}</b>
-                <span className="min-w-0 truncate">{group.recorded ? `${group.arrivalOffsetMs == null ? "arrival time not planned" : `t+${group.arrivalOffsetMs} ms`} · ` : ""}{group.samples.length}</span>
+                {group.recorded ? <span className="min-w-0 truncate" title={arrivalText(group.arrivalOffsetMs)}>{arrivalText(group.arrivalOffsetMs)}</span> : null}
+                <span className="shrink-0" title={`${group.samples.length} request${group.samples.length === 1 ? "" : "s"}`}>· {group.samples.length}</span>
               </div>
               <div className="border-t border-line-strong bg-[#0a1220]" />
               {group.samples.map((item) => {
@@ -244,7 +245,7 @@ function StepDetail({ step, current, columns, labels, colors, steps, onSelect }:
   )
   const queues = step.queueBefore && step.queueAfter ? step : null
   return (
-    <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_minmax(0,1.4fr)]">
+    <div className="cp-step-detail">
       <section className="grid content-start gap-2 border border-line bg-surface px-3 py-2.5 shadow-[inset_0_2px_0_theme(colors.accent.400)]" aria-label="Scheduler step detail">
         <div className="flex items-center gap-2"><span className="cp-label text-muted">{step.id === current?.id ? "Current step" : "Selected step"}</span><span className="cp-rule" /><EvidenceTag kind="observed">Observed</EvidenceTag></div>
         <p className="m-0 flex items-baseline gap-2.5"><span className="font-mono text-2xl font-medium text-ink">S{ordinal ?? "?"}</span><span className="font-mono text-xs text-muted">{step.id}</span></p>
@@ -287,6 +288,10 @@ function StepDetail({ step, current, columns, labels, colors, steps, onSelect }:
       </section>
     </div>
   )
+}
+
+function arrivalText(offsetMs: number | null): string {
+  return offsetMs == null ? "arrival time not planned" : `t+${offsetMs} ms`
 }
 
 function groupByBatch(samples: SampleProjection[]): Array<{ batchId: string; batchLabel: string; recorded: boolean; arrivalOffsetMs: number | null; samples: SampleProjection[] }> {

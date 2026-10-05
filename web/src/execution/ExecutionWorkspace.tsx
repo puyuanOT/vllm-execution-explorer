@@ -126,7 +126,7 @@ export function ExecutionWorkspace({
   const latestStep = replay.steps.at(-1) ?? null
 
   return (
-    <section className="flex min-h-0 min-w-0 flex-col overflow-y-auto bg-canvas" aria-label="Execution explorer">
+    <section className="cp-workspace flex min-h-0 min-w-0 flex-col overflow-y-auto bg-canvas" aria-label="Execution explorer">
       <header className="flex min-h-[46px] flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[#060a11] px-3.5 py-1.5">
         <div className="flex min-w-fit flex-1 items-baseline gap-3">
           <h1 className="shrink-0 text-[15px] font-semibold text-ink">{title}</h1>
@@ -463,7 +463,7 @@ function Telemetry({ telemetry, selected, state, onSelect, onExplore }: {
     output: { value: current ? current.accepted.toLocaleString() : "—", unit: "tokens", series: telemetry.map((point) => point.accepted) },
   }
   return (
-    <ol className="grid list-none grid-cols-2 border-t border-line bg-[#060a11] p-0 sm:grid-cols-3 lg:grid-cols-5" aria-label="Workflow components">
+    <ol className="cp-telemetry list-none border-t border-line bg-[#060a11] p-0" aria-label="Workflow components">
       {WORKFLOW_COMPONENTS.map((component) => {
         const item = values[component.id]
         const active = selected === component.id
