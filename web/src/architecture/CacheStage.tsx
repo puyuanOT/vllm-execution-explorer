@@ -164,7 +164,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
     </div>
   )
   const shell = (body: ReactNode) => (
-    <div className={cn("cp-hud w-[440px] bg-[rgba(7,11,19,0.96)] p-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)]", narrow ? "max-w-[max(300px,34cqw)]" : "max-w-[min(440px,70vw)]")} data-active="true">
+    <div className={cn("cp-hud flex w-[440px] flex-col bg-[rgba(7,11,19,0.96)] p-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] [max-height:var(--label-max-height,none)]", narrow ? "max-w-[max(300px,34cqw)]" : "max-w-[min(440px,70vw)]")} data-active="true">
       {header}{body}
     </div>
   )
@@ -176,7 +176,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
   const holder = block.bindings.at(-1)?.requestId ?? null
   const origin = block.contents.at(-1)?.requestId ?? null
   return shell(<>
-    <ol className="m-0 grid list-none gap-[5px] p-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }} aria-label={`Token slots in block ${block.blockId}`}>
+    <ol className="m-0 grid min-h-0 list-none gap-[5px] overflow-y-auto p-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }} aria-label={`Token slots in block ${block.blockId}`}>
       {Array.from({ length: blockSize }, (_, slot) => {
         const mapped = mappedBlockSlot(block, blockSize, slot, activeRequestId)
         const known = block.trust === "known"
@@ -210,7 +210,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
         </li>
       })}
     </ol>
-    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] text-faint">
+    <div className="mt-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] text-faint">
       {holder ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span> : null}
       {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {nameOf(origin)}</span> : null}
       <span className="flex-1" />

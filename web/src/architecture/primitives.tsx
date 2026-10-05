@@ -115,6 +115,8 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     const box = clamp ? element.firstElementChild as HTMLElement | null : null
     if (box) {
       const insets = clamp === true ? {} : clamp as ClampInsets
+      const free = `${Math.max(96, Math.floor(size.height - (insets.top ?? CLAMP_MARGIN) - (insets.bottom ?? CLAMP_MARGIN)))}px`
+      if (element.style.getPropertyValue("--label-max-height") !== free) element.style.setProperty("--label-max-height", free)
       const [dx, dy] = anchorOffset(anchor, box.offsetWidth, box.offsetHeight)
       const maxX = size.width - (insets.right ?? CLAMP_MARGIN) - box.offsetWidth
       const maxY = size.height - (insets.bottom ?? CLAMP_MARGIN) - box.offsetHeight
