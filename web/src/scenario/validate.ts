@@ -48,6 +48,12 @@ export function validateScenario(
         issues.push({ fieldId: `sample-label-${sample.id}`, message: "Sample identities must be unique." })
       }
       ids.add(sample.id)
+      if (!Number.isSafeInteger(sample.priority ?? 0) || Math.abs(sample.priority ?? 0) > 2_147_483_647) {
+        issues.push({ fieldId: `sample-priority-${sample.id}`, message: "Priority must be a whole number between −2147483647 and 2147483647." })
+      }
+      if (settings.schedulingPolicy === "fcfs" && (sample.priority ?? 0) !== 0) {
+        issues.push({ fieldId: `sample-priority-${sample.id}`, message: "Choose priority scheduling to use nonzero request priorities, or set this priority to 0." })
+      }
       if (!sample.label.trim()) {
         issues.push({ fieldId: `sample-label-${sample.id}`, message: "Give this sample a display label." })
       }
@@ -111,12 +117,6 @@ export function validateSettings(settings: EngineSettings): FieldIssue[] {
     if (!settings.model.trim()) {
       issues.push({ fieldId: "setting-model", message: "Choose a model or enter its location." })
     }
-    if (settings.modelSource === "huggingface" && !settings.modelRevision.trim()) {
-      issues.push({ fieldId: "setting-model-revision", message: "Pin the model revision for a reproducible capture." })
-    }
-    if (settings.modelSource === "huggingface" && !settings.tokenizerRevision.trim()) {
-      issues.push({ fieldId: "setting-tokenizer-revision", message: "Pin the tokenizer revision for a reproducible capture." })
-    }
     if (settings.modelSource === "operator" && settings.hostKind === "ssh" && !settings.modelDestination.trim().startsWith("/")) {
       issues.push({ fieldId: "model-destination", message: "Use an absolute destination path on the execution host." })
     }
@@ -134,6 +134,30 @@ export function validateSettings(settings: EngineSettings): FieldIssue[] {
         issues.push({ fieldId: `adapter-location-${adapter.id}`, message: "Enter the adapter repository or path." })
       }
     }
+  }
+  if (settings.engine === "vllm" && isPositiveInteger(settings.tokenBudget, 1_000_000)) {
+    if (Number(settings.tokenBudget) < Number(settings.maxNumSeqs)) {
+      issues.push({ fieldId: "setting-token-budget", message: "Token budget must be at least the maximum concurrent sequences." })
+    }
+    if (!settings.chunkedPrefill && Number(settings.tokenBudget) < Number(settings.maxModelLen)) {
+      issues.push({ fieldId: "setting-token-budget", message: "Without chunked prefill, token budget must cover the maximum context length." })
+    }
+  }
+  if (!["fcfs", "priority"].includes(settings.schedulingPolicy)) {
+    issues.push({ fieldId: "setting-scheduling-policy", message: "Choose FCFS or priority scheduling." })
+  }
+  if (!/^\d+$/.test(settings.longPrefillTokenThreshold.trim()) || !Number.isSafeInteger(Number(settings.longPrefillTokenThreshold))) {
+    issues.push({ fieldId: "setting-long-prefill", message: "Long-prefill threshold must be a nonnegative whole number." })
+  }
+  if (settings.kvCacheMemoryBytes.trim() && !isPositiveInteger(settings.kvCacheMemoryBytes, Number.MAX_SAFE_INTEGER)) {
+    issues.push({ fieldId: "setting-kv-memory", message: "KV memory budget must be a positive whole number of bytes, or left empty." })
+  }
+  if (!["off", "eager_diagnostic"].includes(settings.profilingMode)) {
+    issues.push({ fieldId: "setting-profiling-mode", message: "Choose a supported profiling mode." })
+  }
+  if (settings.profilingMode !== "off") {
+    if (settings.engine === "fixture") issues.push({ fieldId: "setting-profiling-mode", message: "Measured profiling requires live vLLM on a GPU host." })
+    if (!isPositiveInteger(settings.profilingMaxSteps, 16)) issues.push({ fieldId: "setting-profiling-steps", message: "Profile between 1 and 16 scheduler steps." })
   }
   return issues
 }

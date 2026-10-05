@@ -8,9 +8,11 @@ Speculative decoding stays off. A fixture run never constructs this object.
 from __future__ import annotations
 
 import inspect
+import gc
 import json
 import os
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -35,6 +37,49 @@ class _LoRARoute:
     resolved_path: str
     source: dict[str, Any]
     request: Any
+
+
+_ENGINE_SESSION_LOCK = threading.Lock()
+
+
+def _clear_vllm_env_cache() -> None:
+    """Keep the installed env-cache wrapper, but invalidate stale runner selection."""
+    envs = sys.modules.get("vllm.envs")
+    clear = getattr(getattr(envs, "__getattr__", None), "cache_clear", None)
+    if callable(clear):
+        clear()
+
+
+class _EngineSessionLease:
+    """Own process-global runner selection until the in-process engine is shut down."""
+
+    def __init__(self, diagnostic: bool) -> None:
+        if not _ENGINE_SESSION_LOCK.acquire(blocking=False):
+            raise RuntimeError("Another in-process vLLM session is still preparing, running, or closing.")
+        self._held = True
+        self._diagnostic = diagnostic
+        self._previous = os.environ.get("VLLM_USE_V2_MODEL_RUNNER")
+        try:
+            if diagnostic:
+                os.environ["VLLM_USE_V2_MODEL_RUNNER"] = "0"
+                _clear_vllm_env_cache()
+        except BaseException:
+            self.release()
+            raise
+
+    def release(self) -> None:
+        if not self._held:
+            return
+        self._held = False
+        try:
+            if self._diagnostic:
+                if self._previous is None:
+                    os.environ.pop("VLLM_USE_V2_MODEL_RUNNER", None)
+                else:
+                    os.environ["VLLM_USE_V2_MODEL_RUNNER"] = self._previous
+                _clear_vllm_env_cache()
+        finally:
+            _ENGINE_SESSION_LOCK.release()
 
 
 class VllmSession:
@@ -68,56 +113,90 @@ class VllmSession:
         self.preparation_observations: dict[str, Any] | None = None
         self._sampling = canonical_sampling(None)
         self._lora_routes = dict(lora_routes or {})
+        self._profile: Any = None
+        self._engine_lease: _EngineSessionLease | None = None
+        self.profiling_record: dict[str, Any] | None = None
 
     @classmethod
     def open(cls, recording: Any, body: Any) -> VllmSession:
-        revision = getattr(body, "model_revision", None)
-        tokenizer_revision = getattr(body, "tokenizer_revision", None)
-        if getattr(body, "model_source_kind", "huggingface") == "huggingface" and (
-            not revision or not tokenizer_revision
-        ):
-            raise RuntimeError("A Hugging Face live run needs model_revision and tokenizer_revision.")
+        from runner.revisions import resolve_model_revisions
         os.environ["VLLM_ENABLE_V1_MULTIPROCESSING"] = "0"
         os.environ["VLLM_DISABLE_REQUEST_ID_RANDOMIZATION"] = "1"
         _expose_venv_tools()
         preparation_started = time.monotonic_ns()
-        lora_routes = _prepare_lora_routes(body)
-        with _huggingface_auth(getattr(body, "huggingface_token", None)):
-            engine = _build_engine(body, lora_routes)
-        engine_ready = time.monotonic_ns()
-        _warmup(engine)
-        warmup_completed = time.monotonic_ns()
-        reset_started = time.monotonic_ns()
-        if engine.reset_prefix_cache() is not True:
-            raise RuntimeError("prefix cache reset was not verified")
-        reset_completed = time.monotonic_ns()
-        core = _engine_core(engine)
-        _reject_speculative(engine)
-        version = _import_vllm_version()
-        from vllm_030.install import install
+        profiling = getattr(body, "profiling_configuration", None) or {"mode": "off", "max_steps": 8}
+        diagnostic = profiling.get("mode") == "eager_diagnostic"
+        lease = _EngineSessionLease(diagnostic)
+        engine, session = None, None
+        try:
+            lora_routes = _prepare_lora_routes(body)
+            with _huggingface_auth(getattr(body, "huggingface_token", None)):
+                resolution = resolve_model_revisions(body)
+                engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
+            session = cls(engine, None, recording, lora_routes=lora_routes)
+            session._engine_lease = lease
+            engine_ready = time.monotonic_ns()
+            if diagnostic and getattr(engine.vllm_config, "use_v2_model_runner", None) is not False:
+                raise RuntimeError("Eager diagnostic profiling requires verified V1 model-runner selection for the entire session.")
+            _warmup(engine)
+            warmup_completed = time.monotonic_ns()
+            reset_started = time.monotonic_ns()
+            if engine.reset_prefix_cache() is not True:
+                raise RuntimeError("prefix cache reset was not verified")
+            reset_completed = time.monotonic_ns()
+            recording.event("cache_reset", verified=True, observation_boundary="vllm.reset_prefix_cache.returned_true_after_warmup")
+            core = _engine_core(engine)
+            _reject_speculative(engine)
+            version = _import_vllm_version()
+            from vllm_030.install import install
 
-        adapter = install(core, recording, vllm_version=version, check_sources=True)
-        session = cls(engine, adapter, recording, lora_routes=lora_routes)
-        session._sampling = canonical_sampling(getattr(body, "sampling", None))
-        session.preparation_observations = {
-            "clock_domain": "engine_process:time.monotonic_ns",
-            "preparation_started_monotonic_ns": preparation_started,
-            "engine_ready_monotonic_ns": engine_ready,
-            "warmup_completed_monotonic_ns": warmup_completed,
-            "cache_reset_started_monotonic_ns": reset_started,
-            "cache_reset_completed_monotonic_ns": reset_completed,
-            "capture_ready_monotonic_ns": time.monotonic_ns(),
-        }
-        session._describe(body, version)
-        recording.event(
-            "capture_ready",
-            cache_reset_verified=True,
-            warmup_completed_before_reset=warmup_completed <= reset_started,
-            waiting_queue_size=_queue_size(getattr(core.scheduler, "waiting", None)),
-            running_queue_size=_queue_size(getattr(core.scheduler, "running", None)),
-            observation_boundary="after_instrumentation_install",
-        )
-        return session
+            tokenizer = _loaded_tokenizer(engine)
+            pieces = (lambda ids: _decoded_token_pieces(tokenizer, ids)) if callable(getattr(tokenizer, "decode", None)) else None
+            session.adapter = install(core, recording, vllm_version=version, check_sources=True, token_pieces=pieces)
+            session.revision_resolution = resolution
+            if getattr(body, "requests", None):
+                from runner.configuration import parse_run_configuration
+                from runner.workload import parse_run_workload
+
+                payload = body.model_dump() if hasattr(body, "model_dump") else vars(body)
+                requests, plan = parse_run_workload(payload)
+                session.resolved_configuration = parse_run_configuration(payload, requests, plan)
+            session._sampling = canonical_sampling(getattr(body, "sampling", None))
+            session.preparation_observations = {
+                "clock_domain": "engine_process:time.monotonic_ns",
+                "preparation_started_monotonic_ns": preparation_started,
+                "engine_ready_monotonic_ns": engine_ready,
+                "warmup_completed_monotonic_ns": warmup_completed,
+                "cache_reset_started_monotonic_ns": reset_started,
+                "cache_reset_completed_monotonic_ns": reset_completed,
+                "capture_ready_monotonic_ns": time.monotonic_ns(),
+            }
+            session._describe(body, version)
+            from runner.profiling import DiagnosticProfile
+
+            session._profile = DiagnosticProfile(engine, core, recording, profiling, session.architecture_record)
+            session._profile.start()
+            session.profiling_record = session._profile.record
+            recording.event(
+                "capture_ready",
+                cache_reset_verified=True,
+                warmup_completed_before_reset=warmup_completed <= reset_started,
+                waiting_queue_size=_queue_size(getattr(core.scheduler, "waiting", None)),
+                running_queue_size=_queue_size(getattr(core.scheduler, "running", None)),
+                observation_boundary="after_instrumentation_install",
+            )
+            return session
+        except BaseException as error:
+            try:
+                if session is not None:
+                    session.close()
+                elif engine is not None:
+                    _shutdown_engine(engine)
+            except BaseException as cleanup_error:
+                error.add_note(f"Preparation cleanup also failed ({type(cleanup_error).__name__}).")
+            finally:
+                lease.release()
+            raise
 
     def add_request(self, request_id: str, prompt: str, max_output_tokens: int = 16) -> None:
         from vllm.sampling_params import SamplingParams
@@ -140,7 +219,8 @@ class VllmSession:
         sampling = dict(self._sampling)
         if request.sampling:
             sampling.update(request.sampling)
-        params = SamplingParams(**_sampling_kwargs(sampling, request.max_output_tokens))
+        sampling_kwargs = _sampling_kwargs(sampling, request.max_output_tokens)
+        params = SamplingParams(**sampling_kwargs)
         if request.input_mode == "synthetic":
             if request.target_input_tokens is None:
                 raise RuntimeError("a synthetic request is missing its target input length")
@@ -173,12 +253,17 @@ class VllmSession:
             route_kind="base_model" if lora is None else "lora_adapter",
             observation_boundary="immediately_before_engine_add_request",
         )
+        if self.adapter is not None:
+            tokenizer = _loaded_tokenizer(self.engine, None if lora is None else lora.request)
+            decoder = (lambda ids: _decoded_token_pieces(tokenizer, ids)) if callable(getattr(tokenizer, "decode", None)) else None
+            self.adapter.token_pieces_by_request[request.request_id] = decoder
         _add_engine_request(
             self.engine,
             request.request_id,
             prompt,
             params,
             None if lora is None else lora.request,
+            priority=request.priority,
         )
         self._request_ids.append(request.request_id)
         self._seen_tokens[request.request_id] = []
@@ -187,10 +272,26 @@ class VllmSession:
             "resolved_input_tokens": resolved,
             "adapter_id": adapter_id,
             "lora_int_id": None if lora is None else lora.lora_int_id,
+            "input_token_ids": list(prompt["prompt_token_ids"]),
+            "request_configuration": {
+                "sampling": sampling_kwargs, "max_output_tokens": request.max_output_tokens,
+                "adapter_id": adapter_id, "route_kind": "base_model" if lora is None else "lora_adapter",
+                "lora_int_id": None if lora is None else lora.lora_int_id,
+                "lora_route": None if lora is None else {"adapter_id": adapter_id, "lora_int_id": lora.lora_int_id, "resolved_path": lora.resolved_path},
+                "priority": request.priority, "input_mode": request.input_mode,
+                "target_input_tokens": request.target_input_tokens, "resolved_input_tokens": resolved,
+            },
         }
 
     def step(self) -> list[ObservedChunk]:
-        outputs = self.engine.step()
+        try:
+            outputs = self.engine.step()
+        except Exception:
+            if self._profile is not None:
+                self._profile.finish(failed=True)
+            raise
+        if self._profile is not None:
+            self._profile.after_step()
         return _chunks(self, outputs)
 
     def has_unfinished(self) -> bool:
@@ -199,9 +300,13 @@ class VllmSession:
     def cancel(self) -> None:
         if self._request_ids:
             self.engine.abort_request(list(self._request_ids))
+        if self._profile is not None:
+            self._profile.finish(cancelled=True)
 
     def disabled_step_times(self, prompt: str, steps: int) -> list[int]:
         """Time host steps after the adapter is removed. This is not a benchmark."""
+        if self._profile is not None:
+            self._profile.finish()
         if self.adapter is not None:
             self.adapter.uninstall()
             self.adapter = None
@@ -225,13 +330,28 @@ class VllmSession:
         if self._closed:
             return
         self._closed = True
-        if self.adapter is not None:
-            self.adapter.uninstall()
-            self.adapter = None
-        client = getattr(self.engine, "engine_core", None)
-        shutdown = getattr(client, "shutdown", None)
-        if shutdown is not None:
-            shutdown()
+        try:
+            if self._profile is not None:
+                try:
+                    self._profile.finish()
+                finally:
+                    self.profiling_record = self._profile.record
+        finally:
+            self._profile = None
+            try:
+                if self.adapter is not None:
+                    self.adapter.uninstall()
+            finally:
+                self.adapter = None
+                try:
+                    _shutdown_engine(self.engine)
+                finally:
+                    self.engine = None
+                    try:
+                        _release_unused_cuda_memory()
+                    finally:
+                        if self._engine_lease is not None:
+                            self._engine_lease.release()
 
     def _describe(self, body: Any, version: str) -> None:
         decision = decide_target(
@@ -257,8 +377,13 @@ class VllmSession:
             "block_size": int(block_size),
             "num_gpu_blocks": int(num_blocks),
             "initial_free_blocks": int(free),
+            "pools": self.adapter.cache_inventory["pools"],
+            "groups": self.adapter.cache_inventory["groups"],
         }
         config = self.engine.vllm_config
+        from runner.architecture import describe_architecture
+
+        self.architecture_record = describe_architecture(config.model_config, cache_groups=self.adapter.cache_inventory["groups"])
         scheduled = getattr(config.scheduler_config, "max_num_scheduled_tokens", None)
         batched = getattr(config.scheduler_config, "max_num_batched_tokens", None)
         self.engine_settings = {
@@ -270,6 +395,13 @@ class VllmSession:
             "max_model_len": int(config.model_config.max_model_len),
             "enable_chunked_prefill": bool(getattr(config.scheduler_config, "enable_chunked_prefill", False)),
             "gpu_memory_utilization": float(getattr(config.cache_config, "gpu_memory_utilization", 0.0)),
+            "scheduling_policy": str(getattr(config.scheduler_config, "policy", "fcfs")),
+            "long_prefill_token_threshold": int(getattr(config.scheduler_config, "long_prefill_token_threshold", 0)),
+            "kv_cache_memory_bytes": getattr(config.cache_config, "kv_cache_memory_bytes", None),
+            "continuous_batching": True,
+            "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+            "enforce_eager": bool(getattr(config.model_config, "enforce_eager", False)),
+            "model_runner": ("v2" if config.use_v2_model_runner else "v1") if hasattr(config, "use_v2_model_runner") else None,
         }
         model = str(getattr(body, "model", None) or config.model_config.model)
         revision = None if body.model_revision is None else str(body.model_revision)
@@ -309,16 +441,40 @@ class VllmSession:
         }
 
 
+def _shutdown_engine(engine: Any) -> None:
+    try:
+        shutdown = getattr(getattr(engine, "engine_core", None), "shutdown", None)
+        if callable(shutdown):
+            shutdown()
+    finally:
+        # vLLM's engine finalizer removes compile bytecode hooks that keep model
+        # weights alive after worker shutdown. Closed HTTP sessions retain their
+        # recording metadata, so waiting for engine GC would retain those hooks.
+        finalizer = getattr(engine, "_finalizer", None)
+        if callable(finalizer):
+            finalizer()
+
+
+def _release_unused_cuda_memory() -> None:
+    gc.collect()
+    cuda = getattr(sys.modules.get("torch"), "cuda", None)
+    initialized = getattr(cuda, "is_initialized", None)
+    if callable(initialized) and initialized():
+        cuda.empty_cache()
+
+
 def _expose_venv_tools() -> None:
     """torch.compile looks up ninja on PATH. A venv python does not put its bin directory there."""
-    bindir = os.path.dirname(os.path.realpath(sys.executable))
+    # A venv's python is commonly a symlink to the system interpreter; resolving
+    # it would lose the directory containing the venv's ninja executable.
+    bindir = os.path.dirname(os.path.abspath(sys.executable))
     current = os.environ.get("PATH", "")
     parts = current.split(os.pathsep) if current else []
     if parts[:1] != [bindir]:
         os.environ["PATH"] = os.pathsep.join([bindir, *[part for part in parts if part != bindir]])
 
 
-def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None) -> Any:
+def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None, *, profiling_directory: Path | None = None) -> Any:
     from vllm.engine.arg_utils import EngineArgs
     from vllm.v1.engine.llm_engine import LLMEngine
 
@@ -340,13 +496,25 @@ def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None) -
         "enable_chunked_prefill": bool(getattr(body, "chunked_prefill", True)),
         "gpu_memory_utilization": float(getattr(body, "gpu_memory_utilization", 0.9)),
         "async_scheduling": False,
+        "scheduling_policy": str(getattr(body, "scheduling_policy", "fcfs")),
+        "long_prefill_token_threshold": int(getattr(body, "long_prefill_token_threshold", 0)),
         "disable_log_stats": True,
         "trust_remote_code": False,
     }
+    profiling = getattr(body, "profiling_configuration", None) or {}
+    if profiling.get("mode") == "eager_diagnostic":
+        if profiling_directory is None:
+            raise RuntimeError("Diagnostic profiling requires an isolated recording directory.")
+        from runner.profiling import engine_profiler_config
+
+        desired["enforce_eager"] = True
+        desired["profiler_config"] = engine_profiler_config(profiling_directory, int(profiling.get("max_steps", 8)))
     if getattr(body, "model_revision", None):
         desired["revision"] = str(body.model_revision)
     if getattr(body, "tokenizer_revision", None):
         desired["tokenizer_revision"] = str(body.tokenizer_revision)
+    if getattr(body, "kv_cache_memory_bytes", None) is not None:
+        desired["kv_cache_memory_bytes"] = int(body.kv_cache_memory_bytes)
     routes = lora_routes or {}
     if routes:
         desired["enable_lora"] = True
@@ -372,6 +540,15 @@ def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None) -
             raise RuntimeError(
                 "the installed vLLM EngineArgs cannot configure LoRA: " + ", ".join(missing)
             )
+    if not accepts_kwargs:
+        required_learning_args = {"scheduling_policy", "long_prefill_token_threshold"}
+        if profiling.get("mode") == "eager_diagnostic":
+            required_learning_args.update({"enforce_eager", "profiler_config"})
+        if getattr(body, "kv_cache_memory_bytes", None) is not None:
+            required_learning_args.add("kv_cache_memory_bytes")
+        missing = sorted(required_learning_args.difference(signature.parameters))
+        if missing:
+            raise RuntimeError("The installed vLLM EngineArgs cannot apply the learning configuration: " + ", ".join(missing))
     accepted = {
         key: value
         for key, value in desired.items()
@@ -515,8 +692,10 @@ def _add_engine_request(
     prompt: Any,
     sampling_params: Any,
     lora_request: Any,
+    *,
+    priority: int = 0,
 ) -> None:
-    if lora_request is None:
+    if lora_request is None and priority == 0:
         engine.add_request(request_id, prompt, sampling_params)
         return
     try:
@@ -527,12 +706,17 @@ def _add_engine_request(
         accepts_kwargs = any(
             parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in signature.parameters.values()
         )
-        if "lora_request" not in signature.parameters and not accepts_kwargs:
+        if lora_request is not None and "lora_request" not in signature.parameters and not accepts_kwargs:
             raise RuntimeError("the installed vLLM engine cannot route LoRA requests")
+        if priority != 0 and "priority" not in signature.parameters and not accepts_kwargs:
+            raise RuntimeError("the installed vLLM engine cannot apply request priorities")
     try:
-        engine.add_request(request_id, prompt, sampling_params, lora_request=lora_request)
+        options = {"lora_request": lora_request} if lora_request is not None else {}
+        if priority != 0:
+            options["priority"] = priority
+        engine.add_request(request_id, prompt, sampling_params, **options)
     except TypeError as exc:
-        raise RuntimeError("the installed vLLM engine rejected LoRA request routing") from exc
+        raise RuntimeError("the installed vLLM engine rejected the request routing or priority") from exc
 
 
 def _max_adapter_rank(routes: dict[str, _LoRARoute]) -> int | None:
@@ -717,6 +901,11 @@ def _queue_size(value: Any) -> int | None:
         return len(value)
     except (TypeError, AttributeError):
         return None
+
+
+def _decoded_token_pieces(tokenizer: Any, token_ids: list[int]) -> list[str]:
+    """Individual decoded fragments retain identity; they are not original-text slices."""
+    return [tokenizer.decode([token_id], skip_special_tokens=False, clean_up_tokenization_spaces=False) for token_id in token_ids]
 
 
 def _chunks(session: VllmSession, outputs: Any) -> list[ObservedChunk]:

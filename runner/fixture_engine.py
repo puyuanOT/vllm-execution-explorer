@@ -108,6 +108,12 @@ class _Request:
         self.num_preemptions = 0
         self.arrival_time = time.time()
         self.max_output_tokens = max_output_tokens
+        self.output_token_ids: list[int] = []
+        self.priority = 0
+
+    @property
+    def all_token_ids(self) -> list[int]:
+        return self.prompt_token_ids + self.output_token_ids
 
 
 class _NewRequest:
@@ -146,8 +152,22 @@ class FixtureScheduler:
         self.max_num_seqs = max_num_seqs
         self.max_num_scheduled_tokens = max_num_scheduled_tokens
         self.block_size = 16
-        self.kv_cache_manager = SimpleNamespace(block_pool=pool)
+        self._block_tables: dict[str, list[_Block]] = {}
+        self.kv_cache_manager = SimpleNamespace(block_pool=pool, get_blocks=self._get_blocks)
+        self.policy = "fcfs"
         self._pool = pool
+
+    @property
+    def waiting(self) -> list[_Request]:
+        return [self.requests[request_id] for request_id in self.queue if request_id not in self.seen]
+
+    @property
+    def running(self) -> list[_Request]:
+        return [self.requests[request_id] for request_id in self.queue if request_id in self.seen]
+
+    def _get_blocks(self, request_id: str) -> Any:
+        blocks = self._block_tables.get(request_id, [])
+        return SimpleNamespace(blocks=(blocks,), get_block_ids=lambda: ([block.block_id for block in blocks],))
 
     def add_request(self, request: _Request) -> None:
         self.requests[request.request_id] = request
@@ -185,6 +205,7 @@ class FixtureScheduler:
             length = remaining_prompt if remaining_prompt > 0 else 1
             if request_id not in self.seen:
                 block = self._pool.get_new_blocks(1)[0]
+                self._block_tables[request_id] = [block]
                 new_requests.append(_NewRequest(request, ((block.block_id,),)))
                 self._get_local_prefix_cache_hit(request)
                 self.seen.add(request_id)
@@ -223,7 +244,7 @@ class FixtureScheduler:
                 break
             request = self.requests[request_id]
             remaining_prompt = request.num_prompt_tokens - request.num_computed_tokens
-            generated = max(0, request.num_computed_tokens - request.num_prompt_tokens)
+            generated = len(request.output_token_ids)
             limit = request.max_output_tokens if request.max_output_tokens is not None else 0
             remaining_output = limit - generated
             if remaining_prompt <= 0 and remaining_output <= 0:
@@ -244,24 +265,28 @@ class FixtureScheduler:
         finishing: set[str] = set()
         for request_id, length in chosen:
             request = self.requests[request_id]
+            block_count = (request.num_computed_tokens + length + self.block_size - 1) // self.block_size
+            table = self._block_tables.setdefault(request_id, [])
+            needed = block_count - len(table)
+            new_blocks = self._pool.get_new_blocks(needed) if needed > 0 else []
+            table.extend(new_blocks)
             if request_id not in self.seen:
-                block = self._pool.get_new_blocks(1)[0]
-                new_requests.append(_NewRequest(request, ((block.block_id,),)))
+                new_requests.append(_NewRequest(request, (tuple(block.block_id for block in table),)))
                 self._get_local_prefix_cache_hit(request)
                 self.seen.add(request_id)
             else:
                 cached.req_ids.append(request_id)
                 cached.num_computed_tokens.append(request.num_computed_tokens)
-                cached.new_block_ids.append(None)
+                cached.new_block_ids.append(([block.block_id for block in new_blocks],) if new_blocks else None)
             start = request.num_computed_tokens
             num_scheduled[request_id] = length
-            crosses_or_decodes = start + length > request.num_prompt_tokens
+            crosses_or_decodes = start + length >= request.num_prompt_tokens
             if crosses_or_decodes:
                 tokens[request_id] = [1000 + start]
             else:
                 tokens[request_id] = []
             request.num_computed_tokens = start + length
-            generated = max(0, request.num_computed_tokens - request.num_prompt_tokens)
+            generated = len(request.output_token_ids) + len(tokens[request_id])
             limit = request.max_output_tokens if request.max_output_tokens is not None else 0
             if generated >= limit and request.num_computed_tokens >= request.num_prompt_tokens:
                 finishing.add(request_id)
@@ -282,7 +307,12 @@ class FixtureScheduler:
         del model_runner_output
         outputs = []
         for request_id, token_ids in scheduler_output.explorer_tokens.items():
+            self.requests[request_id].output_token_ids.extend(token_ids)
             finish = "stop" if request_id in scheduler_output.explorer_finishing else None
+            if self.authored and finish:
+                blocks = self._block_tables.pop(request_id, [])
+                if blocks:
+                    self._pool.free_blocks(blocks)
             if token_ids or finish:
                 outputs.append(
                     SimpleNamespace(
@@ -342,7 +372,20 @@ class FixtureSession:
             max_num_scheduled_tokens=token_budget,
         )
         self.engine.pool.enable_caching = False
+        from runner.architecture import fixture_architecture
+
+        self.architecture_record = fixture_architecture()
+        group = {"cache_group": 0, "pool": "pool-0", "block_size": self.engine.scheduler.block_size,
+                 "layer_names": self.architecture_record["layer_names"], "cache_type": "fixture_full_attention"}
+        self.engine.scheduler.kv_cache_config = SimpleNamespace(kv_cache_groups=[SimpleNamespace(
+            kv_cache_spec=SimpleNamespace(block_size=group["block_size"]), layer_names=group["layer_names"],
+        )])
+        self.architecture_record["kv_groups"] = [group]
         self.adapter = install(self.engine, recording, check_sources=False)
+        self.architecture_record["kv_groups"] = self.adapter.cache_inventory["groups"]
+        self.cache_geometry = {"block_size": self.engine.scheduler.block_size, "num_gpu_blocks": blocks,
+                               "initial_free_blocks": blocks, "pools": self.adapter.cache_inventory["pools"],
+                               "groups": self.adapter.cache_inventory["groups"]}
         self._cancelled = False
         self._sleeper = sleeper
         self._interval = step_interval_s
@@ -395,6 +438,8 @@ class FixtureSession:
 
 class FixtureEngine:
     """In-process stand-in whose scheduler methods match the adapter's hooks."""
+
+    explorer_token_slot_mapper = "authored_fixture_v1"
 
     def __init__(
         self,

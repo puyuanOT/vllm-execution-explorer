@@ -1,0 +1,2 @@
+{"python": "3.12.3 (main, Jan 22 2026, 20:57:42) [GCC 13.3.0]", "vllm": "0.30.0", "torch": "2.13.0+cu130", "revision": null}
+NVIDIA A100-SXM4-40GB, 40960 MiB, 4 MiB, GPU-8898e671-6fc2-2209-4f79-f39593c29ac6

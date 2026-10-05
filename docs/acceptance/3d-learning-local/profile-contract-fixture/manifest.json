@@ -1,0 +1,251 @@
+{
+  "adapter": {
+    "name": "vllm_030",
+    "revision": "0.3.0"
+  },
+  "arrivals": [],
+  "cache_geometry": {
+    "block_size": 16,
+    "initial_free_blocks": 8,
+    "num_gpu_blocks": 8
+  },
+  "capture": {
+    "contract_version": 1,
+    "engine_admission_boundary": "fixture_scheduler",
+    "http_boundary_observed": false,
+    "phase_history": [],
+    "status": "completed",
+    "transport": "fixture_direct"
+  },
+  "clock_domain": "time.monotonic_ns",
+  "completion_status": "completed",
+  "content_retained": true,
+  "engine": {
+    "name": "vllm",
+    "upstream_revision": null,
+    "version": "0.30.0"
+  },
+  "engine_settings": {
+    "async_scheduling": false,
+    "enable_prefix_caching": true,
+    "max_num_scheduled_tokens": 32,
+    "max_num_seqs": 4
+  },
+  "event_completeness": {
+    "dropped_content_count": 0,
+    "dropped_event_count": 0,
+    "dropped_record_count": 0,
+    "gap": null,
+    "status": "complete"
+  },
+  "execution_kind": "fixture",
+  "execution_target": {
+    "client_platform": "fixture",
+    "engine_location": "this-machine",
+    "kind": "local",
+    "remote_bind": "127.0.0.1",
+    "runner_endpoint": "http://127.0.0.1:8765"
+  },
+  "hardware": {
+    "gpu": null
+  },
+  "initial_cache_state": {
+    "capture_ready_after_reset": false,
+    "evidence": "fixture_has_no_vllm_prefix_cache",
+    "kind": "not_applicable",
+    "reset_required": false,
+    "reset_verified": false,
+    "warmup_completed_before_reset": false
+  },
+  "model": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "note": "Candidate model. A fixture recording does not load weights.",
+    "revision": null
+  },
+  "profiling": {
+    "attachment_status": "available",
+    "backend": "torch.profiler",
+    "captured_steps": 1,
+    "clock": {
+      "domain": "torch.profiler.chrome_trace",
+      "origin": "trace_local",
+      "unit": "microseconds"
+    },
+    "completeness": "bounded",
+    "contract_version": 1,
+    "enabled": true,
+    "evidence": "Diagnostic profiling changes execution to eager mode. It records batch/layer CPU scopes and CUDA activities, with no per-token or per-head duration claims.",
+    "execution_mode": "eager",
+    "max_steps": 1,
+    "mode": "eager_diagnostic",
+    "normalization": {
+      "activity_limit": 250000,
+      "correlated_gpu_activity_count": 1,
+      "gpu_activity_count": 2,
+      "source_activity_count": 6,
+      "status": "completed"
+    },
+    "normalized_artifact": {
+      "path": "profiling/activities.json",
+      "sha256": "2e1cc13bbb9b0996253e35924dcdd8716a7e89d16b1bbe866752a47c3a1220af",
+      "size_bytes": 2558
+    },
+    "qualification": "unverified",
+    "raw_artifacts": [
+      {
+        "path": "profiling/raw/synthetic.pt.trace.json.gz",
+        "sha256": "29635da56398d3118e32e640f8bbad196d2af2a6b5e731c5fd774b0dc9486114",
+        "size_bytes": 316
+      }
+    ],
+    "runtime": {},
+    "status": "completed"
+  },
+  "provenance": {
+    "claim": "Deterministic demo evidence; not a vLLM or GPU observation.",
+    "evidence_kind": "fixture",
+    "gpu_acceptance": "not_applicable",
+    "http_serving": false,
+    "real_gpu": false
+  },
+  "run_configuration": {
+    "snapshot_sha256": null,
+    "status": "not_provided",
+    "version": 1
+  },
+  "run_id": "synthetic",
+  "sampling": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "schema_version": "1.0.0",
+  "tokenizer": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": null
+  },
+  "workload_limits": {
+    "gpu_validated": false,
+    "limit_basis": "contract_safety_ceiling",
+    "max_output_tokens": 8192,
+    "max_prompt_bytes": 2000000,
+    "max_prompt_characters": 2000000,
+    "max_prompt_tokens": 131072,
+    "max_requests": 64,
+    "max_run_seconds": 600,
+    "max_stop_string_characters": 256,
+    "max_stop_strings": 8,
+    "note": "Supports tens of authored requests. Tokenizer, context, memory, and recording limits must still be validated on the selected GPU before capture."
+  },
+  "architecture": {
+    "activation": "silu",
+    "architectures": [
+      "Qwen3ForCausalLM"
+    ],
+    "evidence": "Teaching fixture uses dimensions from this pinned public Qwen3 config. It does not load weights or observe model-layer execution.",
+    "head_dim": 128,
+    "hidden_size": 2560,
+    "intermediate_size": 9728,
+    "kv_groups": [
+      {
+        "block_size": 16,
+        "cache_group": 0,
+        "cache_type": "fixture_full_attention",
+        "layer_names": [
+          "model.layers.0",
+          "model.layers.1",
+          "model.layers.2",
+          "model.layers.3",
+          "model.layers.4",
+          "model.layers.5",
+          "model.layers.6",
+          "model.layers.7",
+          "model.layers.8",
+          "model.layers.9",
+          "model.layers.10",
+          "model.layers.11",
+          "model.layers.12",
+          "model.layers.13",
+          "model.layers.14",
+          "model.layers.15",
+          "model.layers.16",
+          "model.layers.17",
+          "model.layers.18",
+          "model.layers.19",
+          "model.layers.20",
+          "model.layers.21",
+          "model.layers.22",
+          "model.layers.23",
+          "model.layers.24",
+          "model.layers.25",
+          "model.layers.26",
+          "model.layers.27",
+          "model.layers.28",
+          "model.layers.29",
+          "model.layers.30",
+          "model.layers.31",
+          "model.layers.32",
+          "model.layers.33",
+          "model.layers.34",
+          "model.layers.35"
+        ],
+        "pool": "pool-0"
+      }
+    ],
+    "layer_names": [
+      "model.layers.0",
+      "model.layers.1",
+      "model.layers.2",
+      "model.layers.3",
+      "model.layers.4",
+      "model.layers.5",
+      "model.layers.6",
+      "model.layers.7",
+      "model.layers.8",
+      "model.layers.9",
+      "model.layers.10",
+      "model.layers.11",
+      "model.layers.12",
+      "model.layers.13",
+      "model.layers.14",
+      "model.layers.15",
+      "model.layers.16",
+      "model.layers.17",
+      "model.layers.18",
+      "model.layers.19",
+      "model.layers.20",
+      "model.layers.21",
+      "model.layers.22",
+      "model.layers.23",
+      "model.layers.24",
+      "model.layers.25",
+      "model.layers.26",
+      "model.layers.27",
+      "model.layers.28",
+      "model.layers.29",
+      "model.layers.30",
+      "model.layers.31",
+      "model.layers.32",
+      "model.layers.33",
+      "model.layers.34",
+      "model.layers.35"
+    ],
+    "model_type": "qwen3",
+    "norm": "RMSNorm",
+    "norm_epsilon": 1e-06,
+    "num_attention_heads": 32,
+    "num_key_value_heads": 8,
+    "num_layers": 36,
+    "position_encoding": "RoPE",
+    "reference_repository": "Qwen/Qwen3-4B-Instruct-2507",
+    "reference_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "reference_url": "https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507/resolve/cdbee75f17c01a7cc42f958dc650907174af0554/config.json",
+    "rope_theta": 5000000,
+    "source": "pinned_model_config_reference",
+    "supported": true,
+    "vocab_size": 151936
+  },
+  "fixture_lesson": {
+    "title": "Authored profile contract example",
+    "claim": "Authored CPU/CUDA-shaped intervals for local UI contract tests only. No GPU, vLLM layer execution, or weights were measured."
+  }
+}

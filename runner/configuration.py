@@ -37,12 +37,15 @@ def parse_run_configuration(
         vllm = _parse_vllm(payload)
         model = _parse_model(payload)
         sampling = canonical_sampling(payload.get("sampling"), field="sampling")
+        profiling = _parse_profiling(payload)
     except WorkloadError as exc:
         raise ConfigurationError(str(exc), field=exc.field) from exc
 
     known_adapters = {"base", *(item["id"] for item in model["lora_adapters"])}
     for request in requests:
         adapter_id = request.adapter_id or "base"
+        if vllm["scheduling_policy"] != "priority" and request.priority != 0:
+            raise ConfigurationError("Nonzero request priorities require the priority scheduling policy.", field=f"requests.{request.request_id}.priority")
         if adapter_id not in known_adapters:
             raise ConfigurationError(
                 f"{request.request_id} selects unattached adapter {adapter_id!r}",
@@ -61,6 +64,7 @@ def parse_run_configuration(
         "model": model,
         "vllm": vllm,
         "sampling": sampling,
+        "profiling": profiling,
         "workload": {
             "request_count": len(requests),
             "batch_count": len(workload_plan.get("batches") or []),
@@ -95,6 +99,10 @@ def apply_legacy_fields(body: Any, configuration: dict[str, Any]) -> None:
     body.max_model_len = vllm["max_model_len"]
     body.chunked_prefill = vllm["enable_chunked_prefill"]
     body.gpu_memory_utilization = vllm["gpu_memory_utilization"]
+    body.scheduling_policy = vllm["scheduling_policy"]
+    body.long_prefill_token_threshold = vllm["long_prefill_token_threshold"]
+    body.kv_cache_memory_bytes = vllm["kv_cache_memory_bytes"]
+    body.profiling_configuration = copy_configuration(configuration.get("profiling") or {"mode": "off", "max_steps": 8})
     body.dtype = model["dtype"]
     body.quantization = model["quantization"]["kind"]
     body.lora_adapters = copy_configuration(model["lora_adapters"])
@@ -107,6 +115,11 @@ def launch_blockers(configuration: dict[str, Any], requests: list[WorkRequest], 
     model = configuration["model"]
     sampling = configuration["sampling"]
     if engine == "fixture":
+        if (configuration.get("profiling") or {}).get("mode", "off") != "off":
+            blockers.append("Measured profiling requires a live dense Qwen3 vLLM host; the teaching fixture has no GPU activities.")
+        vllm = configuration["vllm"]
+        if vllm["scheduling_policy"] != "fcfs" or vllm["long_prefill_token_threshold"] or vllm["kv_cache_memory_bytes"] is not None:
+            blockers.append("The demo fixture does not apply priority scheduling, a long-prefill cap, or an explicit KV memory budget. Use a live vLLM host for these controls.")
         if any(request.input_mode == "synthetic" for request in requests):
             blockers.append("The demo fixture cannot verify synthetic token lengths with the selected tokenizer.")
         if sampling != canonical_sampling(None):
@@ -151,6 +164,19 @@ def _parse_vllm(payload: dict[str, Any]) -> dict[str, Any]:
         raise ConfigurationError("enable_prefix_caching must be true or false", field="vllm_configuration.enable_prefix_caching")
     if not isinstance(chunked, bool):
         raise ConfigurationError("enable_chunked_prefill must be true or false", field="vllm_configuration.enable_chunked_prefill")
+    if budget < seqs:
+        raise ConfigurationError("Tokens per iteration must be at least the maximum concurrent sequences.", field="vllm_configuration.max_num_scheduled_tokens")
+    if not chunked and budget < context:
+        raise ConfigurationError("With chunked prefill disabled, tokens per iteration must be at least the maximum context length.", field="vllm_configuration.max_num_scheduled_tokens")
+    policy = raw.get("scheduling_policy", payload.get("scheduling_policy", "fcfs"))
+    if policy not in {"fcfs", "priority"}:
+        raise ConfigurationError("Scheduling policy must be fcfs or priority.", field="vllm_configuration.scheduling_policy")
+    threshold = require_int(raw.get("long_prefill_token_threshold", payload.get("long_prefill_token_threshold", 0)), "long-prefill token threshold", field="vllm_configuration.long_prefill_token_threshold", minimum=0, maximum=context)
+    if threshold and not chunked:
+        raise ConfigurationError("A long-prefill token cap requires chunked prefill.", field="vllm_configuration.long_prefill_token_threshold")
+    cache_bytes = raw.get("kv_cache_memory_bytes", payload.get("kv_cache_memory_bytes"))
+    if cache_bytes is not None:
+        cache_bytes = require_int(cache_bytes, "KV memory bytes", field="vllm_configuration.kv_cache_memory_bytes", minimum=1, maximum=2**53-1)
     utilization = raw.get("gpu_memory_utilization", payload.get("gpu_memory_utilization", 0.9))
     if isinstance(utilization, bool) or not isinstance(utilization, (int, float)) or not 0 < float(utilization) <= 1:
         raise ConfigurationError(
@@ -170,8 +196,24 @@ def _parse_vllm(payload: dict[str, Any]) -> dict[str, Any]:
         "enable_chunked_prefill": chunked,
         "enable_prefix_caching": prefix,
         "gpu_memory_utilization": float(utilization),
+        "scheduling_policy": policy,
+        "long_prefill_token_threshold": threshold,
+        "kv_cache_memory_bytes": cache_bytes,
         "fresh_prefix_cache": True,
     }
+
+
+def _parse_profiling(payload: dict[str, Any]) -> dict[str, Any]:
+    raw = payload.get("profiling_configuration")
+    if raw is None:
+        raw = {}
+    if not isinstance(raw, dict):
+        raise ConfigurationError("profiling_configuration must be an object", field="profiling_configuration")
+    mode = raw.get("mode", "off")
+    if mode not in {"off", "eager_diagnostic"}:
+        raise ConfigurationError("Profiling mode must be off or eager_diagnostic.", field="profiling_configuration.mode")
+    steps = require_int(raw.get("max_steps", 8), "profile step limit", field="profiling_configuration.max_steps", minimum=1, maximum=16)
+    return {"mode": mode, "max_steps": steps}
 
 
 def _parse_model(payload: dict[str, Any]) -> dict[str, Any]:
@@ -233,8 +275,8 @@ def _parse_model(payload: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(tokenizer_raw, dict):
         raise ConfigurationError("tokenizer must be an object", field="model_configuration.tokenizer")
     tokenizer = {
-        "locator": str(tokenizer_raw.get("locator") or source["locator"]),
-        "revision": tokenizer_raw.get("revision", payload.get("tokenizer_revision")),
+        "locator": str(tokenizer_raw.get("locator") or payload.get("tokenizer") or source["locator"]).strip(),
+        "revision": tokenizer_raw.get("revision") or payload.get("tokenizer_revision") or None,
     }
     return {
         "source": source,

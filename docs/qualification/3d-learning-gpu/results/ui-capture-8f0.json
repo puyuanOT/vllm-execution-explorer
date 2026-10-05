@@ -1,0 +1,602 @@
+{
+  "run_id": "run-1021e5882f0d",
+  "scope": "recorded_gpu_contracts",
+  "analysis": {
+    "contract_version": 1,
+    "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+    "replay_projection_sha256": "39def8c4080455226e1ba2bbac1de6ff5b3c4fa5dc976aef9eedcd37ba7ee90b"
+  },
+  "status": "pass",
+  "findings": [
+    {
+      "check": "gpu_provenance",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU execution kind and reported CUDA hardware are required; fixture evidence never qualifies a GPU."
+    },
+    {
+      "check": "vllm_version",
+      "status": "pass",
+      "required": true,
+      "detail": "Exact vLLM 0.30.0 engine metadata."
+    },
+    {
+      "check": "model_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Expected Qwen/Qwen3-4B-Instruct-2507."
+    },
+    {
+      "check": "immutable_revisions",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical model and tokenizer must both use the pinned SHA."
+    },
+    {
+      "check": "qwen3_geometry",
+      "status": "pass",
+      "required": true,
+      "detail": "Explicit head_dim=128 is required; hidden/query-head division would incorrectly give 80."
+    },
+    {
+      "check": "qwen3_operator_metadata",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical dense Qwen3 operator metadata and complete ordered layer identities."
+    },
+    {
+      "check": "loaded_architecture",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU geometry must come from initialized model configuration; fixture reference geometry is separately labeled."
+    },
+    {
+      "check": "warmup_reset_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "Capture readiness follows successful warmup and verified prefix-cache reset."
+    },
+    {
+      "check": "capture_source_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Distributed runner/instrumentation fingerprint matches the specified audited source; docs do not affect it."
+    },
+    {
+      "check": "retained_content",
+      "status": "pass",
+      "required": true,
+      "detail": "Token content sidecars are necessary for ID/provenance checks."
+    },
+    {
+      "check": "event_chain",
+      "status": "pass",
+      "required": true,
+      "detail": "Contiguous per-run event identities."
+    },
+    {
+      "check": "complete_host_capture",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-gap suffixes are never used to claim current state."
+    },
+    {
+      "check": "existing_integrity.sequences",
+      "status": "pass",
+      "required": true,
+      "detail": "315 recorded events are ordered"
+    },
+    {
+      "check": "existing_integrity.event_types",
+      "status": "pass",
+      "required": true,
+      "detail": "every event type is in the v1 contract"
+    },
+    {
+      "check": "existing_integrity.content_separated",
+      "status": "pass",
+      "required": true,
+      "detail": "prompt text, token ids, and text deltas stay in the content attachment"
+    },
+    {
+      "check": "existing_integrity.step_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "16 steps keep their own result association"
+    },
+    {
+      "check": "existing_integrity.cursors",
+      "status": "pass",
+      "required": true,
+      "detail": "scheduled ranges meet the previous cursor, including after preemption"
+    },
+    {
+      "check": "existing_integrity.blocks",
+      "status": "pass",
+      "required": true,
+      "detail": "12 block transitions follow reference counts and allocation generations"
+    },
+    {
+      "check": "existing_integrity.arrivals",
+      "status": "pass",
+      "required": true,
+      "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations"
+    },
+    {
+      "check": "existing_integrity.completeness",
+      "status": "pass",
+      "required": true,
+      "detail": "event stream is complete"
+    },
+    {
+      "check": "existing_integrity.kv_observations",
+      "status": "pass",
+      "required": true,
+      "detail": "Physical generations and token ranges match observed inventories, scheduler work, and returned results."
+    },
+    {
+      "check": "physical_inventory",
+      "status": "pass",
+      "required": true,
+      "detail": "Every physical ID appears exactly once; reserved-null capacity is excluded from allocation availability."
+    },
+    {
+      "check": "token_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Only exact, unsharded full-attention groups qualify live token-slot claims."
+    },
+    {
+      "check": "cache_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Cache-group layer names cover all initialized Qwen3 layers."
+    },
+    {
+      "check": "kv_result_boundaries",
+      "status": "pass",
+      "required": true,
+      "detail": "48 returned KV ranges checked; 0 violations."
+    },
+    {
+      "check": "ordered_scheduler_queues",
+      "status": "pass",
+      "required": true,
+      "detail": "Before/after schedule snapshots must be actually available, not fabricated empty queues."
+    },
+    {
+      "check": "returned_output_ids",
+      "status": "pass",
+      "required": true,
+      "detail": "Accepted output sidecars match each request's separately retained engine output IDs, including zero-output cancellations."
+    },
+    {
+      "check": "final_output_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "6 sampled final output tokens assessed; 0 zero-output requests. A sampled output becomes KV only in a later scheduled computation; naturally completed final outputs stay uncomputed.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "per_request_streams",
+      "status": "pass",
+      "required": true,
+      "detail": "6 LLM input/output streams, effective sampling/limits and terminal outcomes inspected; 0 contradictions."
+    },
+    {
+      "check": "native_profile",
+      "status": "unavailable",
+      "required": false,
+      "detail": "Native eager diagnostic profiling was not captured."
+    },
+    {
+      "check": "frontend_pool",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual frontend projection includes every physical block, including final ID."
+    },
+    {
+      "check": "frontend_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual token occupancy projection is observed, not merely a fully enumerated physical grid."
+    },
+    {
+      "check": "frontend_final_outputs",
+      "status": "pass",
+      "required": true,
+      "detail": "6 sampled final output tokens projected. Historical final-token computation matches actual later writes; acceptance alone never computes KV.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "backward_seek",
+      "status": "pass",
+      "required": true,
+      "detail": "Final projection is stable after backward seeking."
+    }
+  ],
+  "facts": {
+    "architecture": {
+      "source": "loaded_model_config",
+      "dimensions": {
+        "num_layers": 36,
+        "hidden_size": 2560,
+        "intermediate_size": 9728,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 8,
+        "head_dim": 128
+      }
+    },
+    "capture_source": {
+      "recorded_sha256": "83df6c7bc792273eabb37d22ab76a29476b6c69a9325848505deafa1201e5056",
+      "comparison_sha256": "83df6c7bc792273eabb37d22ab76a29476b6c69a9325848505deafa1201e5056",
+      "comparison_ref": "8f0ca92d2ee2741723ba20e5637decb91982694b",
+      "declared_revision": "8f0ca92d2ee2741723ba20e5637decb91982694b"
+    },
+    "events": {
+      "cache_reset": 1,
+      "cache_inventory": 1,
+      "capture_ready": 1,
+      "request_dispatched": 6,
+      "request_dispatch_completed": 6,
+      "http_request_received": 6,
+      "request_model_route": 6,
+      "engine_prompt_observed": 6,
+      "engine_admitted": 6,
+      "http_engine_admission_correlated": 6,
+      "prefix_lookup": 6,
+      "block_change": 12,
+      "step_scheduled": 16,
+      "kv_block_binding": 48,
+      "step_submitted": 16,
+      "step_result_received": 16,
+      "kv_block_written": 48,
+      "tokens_accepted": 48,
+      "text_emitted": 48,
+      "completion": 6,
+      "http_response_completed": 6
+    },
+    "initial_pool": [
+      {
+        "pool": "pool-0",
+        "capacity": 5414,
+        "reserved_null": 1,
+        "allocation_available": 5413,
+        "cached_available": 0
+      }
+    ],
+    "kv_violations": [],
+    "final_output_assessment": {
+      "sampled_final_token_count": 6,
+      "zero_output_request_count": 0,
+      "zero_output_terminal_cancellation_count": 0,
+      "applicability": "applicable",
+      "zero_outputs": []
+    },
+    "final_outputs": [
+      {
+        "request_id": "sample-2",
+        "accepted_count": 8,
+        "final_output_position": 12,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "sample-1",
+        "accepted_count": 8,
+        "final_output_position": 12,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "sample-5",
+        "accepted_count": 8,
+        "final_output_position": 11,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "sample-3",
+        "accepted_count": 8,
+        "final_output_position": 11,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "sample-4",
+        "accepted_count": 8,
+        "final_output_position": 12,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "sample-6",
+        "accepted_count": 8,
+        "final_output_position": 11,
+        "terminal": "completion",
+        "write_sequences": []
+      }
+    ],
+    "requests": [
+      {
+        "request_id": "sample-1",
+        "input_mode": "prompt",
+        "prompt_token_count": 5,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 155
+          }
+        ],
+        "prompt_text_characters": 21,
+        "prompt_text_sha256": "c36c853501119e67f9f94e9d3b8c4777d93652b97b11a4307399a35b62ad47db",
+        "prompt_ids_sha256": "a9d810e419e115542e53850e916d54c4d921fe983db351ee1419c5d438edb935",
+        "output_text_characters": 36,
+        "output_text_sha256": "ac59c6378c97302c160de8f8fbda7cf7038708d0ed8cd7c96200014f2223aad1",
+        "output_ids_sha256": "a743c68217e94e36601a45af3da3fee63cbcb92bf308aaa847201dd8eccca991",
+        "text_emissions": 8
+      },
+      {
+        "request_id": "sample-2",
+        "input_mode": "prompt",
+        "prompt_token_count": 5,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 153
+          }
+        ],
+        "prompt_text_characters": 24,
+        "prompt_text_sha256": "df0c566e072b2cd85196c6da6fdb83cd5f600c0c5e3e16572afd8ec106a81f5b",
+        "prompt_ids_sha256": "f3a266b2eeb49d3b1b5f0151e5a2b800f98238f8f7c13794a2327d061a568d7b",
+        "output_text_characters": 38,
+        "output_text_sha256": "e020e1b95f240f3a8cdd831f5c08ce0a20aefa4557d09302e9169cad2d87f781",
+        "output_ids_sha256": "397fe1c7171ac10bca4f119cbec9fc1a185d7a7890d518049a992ceae2426971",
+        "text_emissions": 8
+      },
+      {
+        "request_id": "sample-3",
+        "input_mode": "prompt",
+        "prompt_token_count": 4,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 279
+          }
+        ],
+        "prompt_text_characters": 15,
+        "prompt_text_sha256": "d1962ae51e0982882de118d742e5b565d1b82b86dc15cb24d6b3a6b3cf3a0260",
+        "prompt_ids_sha256": "4f1217fb682f12a3659b148701470aec6d54d2c0c7c1d62def09a7f6b6290b07",
+        "output_text_characters": 30,
+        "output_text_sha256": "aa83cc3887dfb60b96e888f3c5c0859d76eb8f47b8413ac5194d704831804014",
+        "output_ids_sha256": "4020322fea0626ed5ba10a6b38d9d7b99e02eb5746e2aef3eac80334c345fa51",
+        "text_emissions": 8
+      },
+      {
+        "request_id": "sample-4",
+        "input_mode": "prompt",
+        "prompt_token_count": 5,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 309
+          }
+        ],
+        "prompt_text_characters": 20,
+        "prompt_text_sha256": "08dbb822b9a2888477107cf2d924555a487c6b3286044b08287e663bcdb4f2ef",
+        "prompt_ids_sha256": "62d91fd3f71b57642ef38ff43168bcd3986a1428fb5a29b67fedbff5f42aace8",
+        "output_text_characters": 31,
+        "output_text_sha256": "ec9d09e6e516e8f5a90229605270f5970d2cfa9d43ff889e083e1c35a05f2a9c",
+        "output_ids_sha256": "7e12bb1a9d7608e89e9e0e58901712a998e84ba1ede083369b6de9648b29cc0d",
+        "text_emissions": 8
+      },
+      {
+        "request_id": "sample-5",
+        "input_mode": "prompt",
+        "prompt_token_count": 4,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 277
+          }
+        ],
+        "prompt_text_characters": 15,
+        "prompt_text_sha256": "e5a3c789e9be4533eaa469f8f5eeea9854c09030c681893a7658b8b3bbf83ee9",
+        "prompt_ids_sha256": "c321619461c5e0824cc36a392bff4e32121aec01b7a0e66392ab9e18ebc4c183",
+        "output_text_characters": 33,
+        "output_text_sha256": "610abd22b4d89f5d5487499d81e2b2c00a697cef68a9ed344ef2c8ec978b2e24",
+        "output_ids_sha256": "97ff945310808894a648abb92e31dd253aca883446193e5e84d7d97b0b129f4c",
+        "text_emissions": 8
+      },
+      {
+        "request_id": "sample-6",
+        "input_mode": "prompt",
+        "prompt_token_count": 4,
+        "accepted_output_token_count": 8,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "length",
+            "sequence": 311
+          }
+        ],
+        "prompt_text_characters": 14,
+        "prompt_text_sha256": "c794acb445e24264af4d38f85b38b12142da8cc5cf2c1bb5d916acfbdaed1e5a",
+        "prompt_ids_sha256": "b72262e309db49549819d62d44766d011634ef77b87353510fe5b232c79a9421",
+        "output_text_characters": 32,
+        "output_text_sha256": "c9491996498ee52bc3dc0da0356405d2295bec4fbf9530544a0b2c555794e0c6",
+        "output_ids_sha256": "cf61fc28af2bc27099327ee5091e0e8a58311f2c5f8d1946edb29e94b17cdbf2",
+        "text_emissions": 8
+      }
+    ],
+    "request_stream_errors": [],
+    "exercised_features": {
+      "prefix_reuse": 0,
+      "preemption": 0,
+      "cancellation": 0,
+      "cache_eviction": 0,
+      "cached_release": 0
+    },
+    "replay": {
+      "trust": "known",
+      "inventoryStatus": "observed",
+      "requests": [
+        {
+          "requestId": "sample-2",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        },
+        {
+          "requestId": "sample-1",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        },
+        {
+          "requestId": "sample-5",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        },
+        {
+          "requestId": "sample-4",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        },
+        {
+          "requestId": "sample-3",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        },
+        {
+          "requestId": "sample-6",
+          "status": "completed",
+          "acceptedTokenCount": 8
+        }
+      ],
+      "pools": [
+        {
+          "pool": "pool-0",
+          "capacity": 5414,
+          "cells": 5414,
+          "lastId": 5413,
+          "tokenOccupancyStatus": "observed"
+        }
+      ],
+      "finals": [
+        {
+          "requestId": "sample-2",
+          "status": "completed",
+          "position": 12,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "sample-1",
+          "status": "completed",
+          "position": 12,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "sample-5",
+          "status": "completed",
+          "position": 11,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "sample-4",
+          "status": "completed",
+          "position": 12,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "sample-3",
+          "status": "completed",
+          "position": 11,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "sample-6",
+          "status": "completed",
+          "position": 11,
+          "kvState": "not_computed",
+          "computedEver": false
+        }
+      ],
+      "boundary": {
+        "sequence": 23,
+        "scheduledPosition": 0,
+        "kvState": "reserved",
+        "computedEver": false
+      },
+      "nativeProfile": null,
+      "backwardSeekStable": true
+    }
+  },
+  "limitations": [
+    "No numerical K/V tensors are read; successful result boundaries establish logical full-attention KV writes.",
+    "Packed rows identify batch participants, never individual-token or head duration.",
+    "This script does not qualify GPU/browser performance or inspect actual UI rendering.",
+    "Manifest initialized-config provenance must be supported by the preserved runtime/deployment receipt."
+  ]
+}

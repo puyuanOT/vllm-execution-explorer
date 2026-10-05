@@ -611,6 +611,24 @@ def test_operator_local_http_upload_is_streamed_to_retryable_staging(tmp_path: P
 
 
 def test_loopback_http_session_keeps_engine_calls_on_one_owner_thread(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    trace_inputs = {}
+    class SpyTrace:
+        def __init__(self, *_args):
+            pass
+
+        def metadata(self):
+            return {"status": "test_only", "verification": "Synthetic transport test; no SDK or network call."}
+
+        def start_request(self, request_id, prompt, token_ids=None, *, request_configuration=None):
+            trace_inputs[request_id] = {"prompt": prompt, "token_ids": token_ids, "request_configuration": request_configuration}
+
+        def finish_request(self, *_args):
+            pass
+
+        def finish(self, *_args):
+            pass
+
+    monkeypatch.setattr("runner.observability.ExperimentTrace", SpyTrace)
     class FakeEngineSession:
         execution_target = LOCAL_FIXTURE_TARGET
         cache_geometry = {"block_size": 16, "num_gpu_blocks": 8, "initial_free_blocks": 8}
@@ -627,9 +645,11 @@ def test_loopback_http_session_keeps_engine_calls_on_one_owner_thread(tmp_path: 
             self.owner_threads: set[int] = set()
             self.queued: list[str] = []
 
-        def add_work_request(self, request) -> None:
+        def add_work_request(self, request) -> dict:
             self.owner_threads.add(threading.get_ident())
             self.queued.append(request.request_id)
+            return {"input_token_ids": [11], "request_configuration": {"sampling": request.sampling, "priority": request.priority,
+                                                                      "max_output_tokens": request.max_output_tokens, "adapter_id": request.adapter_id or "base"}}
 
         def has_unfinished(self) -> bool:
             self.owner_threads.add(threading.get_ident())
@@ -654,8 +674,8 @@ def test_loopback_http_session_keeps_engine_calls_on_one_owner_thread(tmp_path: 
     requests, _plan = parse_run_workload(
         {
             "requests": [
-                {"request_id": "a", "prompt": "one", "arrival_offset_ms": 0, "max_output_tokens": 1},
-                {"request_id": "b", "prompt": "two", "arrival_offset_ms": 0, "max_output_tokens": 1},
+                {"request_id": "a", "prompt": "one", "arrival_offset_ms": 0, "max_output_tokens": 1, "priority": -2, "sampling": {"temperature": 0.2}},
+                {"request_id": "b", "prompt": "two", "arrival_offset_ms": 0, "max_output_tokens": 1, "priority": 7, "sampling": {"temperature": 0.8}},
             ]
         }
     )
@@ -669,6 +689,10 @@ def test_loopback_http_session_keeps_engine_calls_on_one_owner_thread(tmp_path: 
     assert all(item["http_receipt_observed"] for item in arrivals)
     assert all(item["engine_admission_observed"] for item in arrivals)
     assert len(fake.owner_threads) == 1
+    assert trace_inputs["a"]["token_ids"] == [11]
+    assert trace_inputs["a"]["request_configuration"]["sampling"]["temperature"] == 0.2
+    assert trace_inputs["b"]["request_configuration"]["sampling"]["temperature"] == 0.8
+    assert [trace_inputs[request_id]["request_configuration"]["priority"] for request_id in ("a", "b")] == [-2, 7]
     events = [json.loads(line) for line in (tmp_path / "http" / "events.jsonl").read_text().splitlines()]
     event_types = {event["event_type"] for event in events}
     assert {"http_request_received", "http_engine_admission_correlated", "http_response_completed"} <= event_types

@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from vllm_030.constants import EVENT_TYPES, STRUCTURAL_FORBIDDEN_FIELDS
+from vllm_030.compatibility import CompatibilityError
+from vllm_030.inventory import validate_cache_inventory
 
 from runner.load import RecordingData
 
@@ -75,7 +77,62 @@ def _integrity(data: RecordingData) -> list[Finding]:
         _arrivals(manifest),
         _completeness_agreement(manifest, events),
     ]
+    if any(event.get("event_type") == "cache_inventory" for event in events):
+        findings.append(_kv_observations(events))
     return findings
+
+
+def _kv_observations(events: tuple[dict, ...]) -> Finding:
+    slots: dict[tuple[str, int], tuple[int, bool]] = {}
+    results: dict[str, int] = {}
+    groups: dict[int, dict] = {}
+    scheduled: dict[str, dict] = {}
+    for event in events:
+        kind = event.get("event_type")
+        if kind == "trace_gap":
+            break  # The authoritative prefix ends here; never validate inferred future state.
+        if kind == "cache_inventory":
+            try:
+                validate_cache_inventory(event)
+            except CompatibilityError as exc:
+                return Finding("kv_observations", False, str(exc))
+            groups = {int(group["cache_group"]): group for group in event.get("groups", [])}
+            for pool in event.get("pools", []):
+                blocks = pool.get("blocks", [])
+                for block in blocks:
+                    slots[(str(pool["pool"]), int(block["block_id"]))] = (int(block["allocation_generation"]), bool(block.get("is_null")))
+        elif kind == "block_change" and event.get("operation") == "allocate":
+            key = (str(event["pool"]), int(event["block_id"]))
+            if key not in slots:
+                return Finding("kv_observations", False, "Allocation refers to a block absent from the initial inventory.")
+            slots[key] = (int(event["allocation_generation"]), slots[key][1])
+        elif kind == "step_scheduled":
+            scheduled[str(event["step_id"])] = event
+        elif kind == "step_result_received":
+            results[str(event["step_id"])] = int(event["sequence"])
+        elif kind in {"kv_block_binding", "kv_block_written"}:
+            key = (str(event["pool"]), int(event["block_id"]))
+            if key not in slots or slots[key] != (int(event["allocation_generation"]), False):
+                return Finding("kv_observations", False, "KV range refers to an unknown, reserved-null, or stale block occupant.")
+            start, end = int(event["token_range_start"]), int(event["token_range_end"])
+            group = groups.get(int(event["cache_group"]))
+            if group is None or start < 0 or end <= start:
+                return Finding("kv_observations", False, "KV range has invalid token positions or an unobserved cache group.")
+            if "token_slot_mapping" in group and group.get("token_slot_mapping") not in {"qualified_full_attention", "authored_fixture"}:
+                return Finding("kv_observations", False, "KV token range claims a cache group whose token-slot mapping is unavailable.")
+            size = group.get("block_size")
+            if isinstance(size, int) and start // size != (end - 1) // size:
+                return Finding("kv_observations", False, "KV range crosses a physical block boundary.")
+            step = str(event["step_id"])
+            if step not in scheduled:
+                return Finding("kv_observations", False, "KV range has no corresponding scheduled step.")
+            if kind == "kv_block_written":
+                if step not in results or event.get("causal_event_sequence") != results[step]:
+                    return Finding("kv_observations", False, "KV computation has no preceding observed result for its step.")
+                request = next((item for item in scheduled[step]["requests"] if item["request_id"] == event["request_id"]), None)
+                if request is None or start < request["range_start"] or end > request["range_start"] + request["range_length"]:
+                    return Finding("kv_observations", False, "Computed KV range was not scheduled for this request.")
+    return Finding("kv_observations", True, "Physical generations and token ranges match observed inventories, scheduler work, and returned results.")
 
 
 def _feasibility(data: RecordingData) -> list[Finding]:
@@ -246,6 +303,9 @@ def _blocks(events: tuple[dict, ...]) -> Finding:
         elif operation == "evict":
             if after != before or has_hash_after:
                 return Finding("blocks", False, f"eviction of block {block_id} still has a hash or changed references")
+        elif operation == "cache":
+            if after != before or generation != generations.get(key, 0) or not has_hash_after:
+                return Finding("blocks", False, f"cache publication of block {block_id} changed references or occupant")
         else:
             return Finding("blocks", False, f"unsupported block operation {operation}")
         if after == 0 and has_hash_after:

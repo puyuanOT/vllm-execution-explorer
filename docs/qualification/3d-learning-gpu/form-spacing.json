@@ -1,0 +1,31 @@
+[
+  {
+    "aria_required": "true",
+    "control_margin_top": "6px",
+    "id": "setting-model",
+    "label_text_to_control_gap_px": 7
+  },
+  {
+    "aria_required": null,
+    "control_margin_top": "6px",
+    "id": "model-dtype",
+    "label_text_to_control_gap_px": 7
+  },
+  {
+    "aria_required": null,
+    "control_margin_top": "6px",
+    "id": "setting-model-revision",
+    "label_text_to_control_gap_px": 7
+  },
+  {
+    "aria_required": null,
+    "control_margin_top": "6px",
+    "id": "setting-tokenizer-revision",
+    "label_text_to_control_gap_px": 7
+  },
+  {
+    "control_margin_top": "6px",
+    "id": "ssh-port",
+    "label_text_to_control_gap_px": 7
+  }
+]

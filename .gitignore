@@ -4,12 +4,13 @@ __pycache__/
 .ruff_cache/
 .tox/
 *.py[cod]
-.venv/
-node_modules/
+.venv
+node_modules
 dist/
 build/
 .vite/
 recordings/runs/
+recordings/qualification-3d-live/
 recordings/keys/
 *.egg-info/
 .coverage
@@ -22,3 +23,4 @@ htmlcov/
 .env.*
 *.pem
 *.key
+recordings/qualification-control-plane-a100/

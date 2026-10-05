@@ -1,0 +1,414 @@
+{
+  "run_id": "run-0b38dea71a00",
+  "scope": "recorded_gpu_contracts",
+  "analysis": {
+    "contract_version": 1,
+    "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+    "replay_projection_sha256": "39def8c4080455226e1ba2bbac1de6ff5b3c4fa5dc976aef9eedcd37ba7ee90b"
+  },
+  "status": "pass",
+  "findings": [
+    {
+      "check": "gpu_provenance",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU execution kind and reported CUDA hardware are required; fixture evidence never qualifies a GPU."
+    },
+    {
+      "check": "vllm_version",
+      "status": "pass",
+      "required": true,
+      "detail": "Exact vLLM 0.30.0 engine metadata."
+    },
+    {
+      "check": "model_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Expected Qwen/Qwen3-4B-Instruct-2507."
+    },
+    {
+      "check": "immutable_revisions",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical model and tokenizer must both use the pinned SHA."
+    },
+    {
+      "check": "qwen3_geometry",
+      "status": "pass",
+      "required": true,
+      "detail": "Explicit head_dim=128 is required; hidden/query-head division would incorrectly give 80."
+    },
+    {
+      "check": "qwen3_operator_metadata",
+      "status": "pass",
+      "required": true,
+      "detail": "Canonical dense Qwen3 operator metadata and complete ordered layer identities."
+    },
+    {
+      "check": "loaded_architecture",
+      "status": "pass",
+      "required": true,
+      "detail": "GPU geometry must come from initialized model configuration; fixture reference geometry is separately labeled."
+    },
+    {
+      "check": "warmup_reset_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "Capture readiness follows successful warmup and verified prefix-cache reset."
+    },
+    {
+      "check": "capture_source_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Distributed runner/instrumentation fingerprint matches the specified audited source; docs do not affect it."
+    },
+    {
+      "check": "retained_content",
+      "status": "pass",
+      "required": true,
+      "detail": "Token content sidecars are necessary for ID/provenance checks."
+    },
+    {
+      "check": "event_chain",
+      "status": "pass",
+      "required": true,
+      "detail": "Contiguous per-run event identities."
+    },
+    {
+      "check": "complete_host_capture",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-gap suffixes are never used to claim current state."
+    },
+    {
+      "check": "existing_integrity.sequences",
+      "status": "pass",
+      "required": true,
+      "detail": "60 recorded events are ordered"
+    },
+    {
+      "check": "existing_integrity.event_types",
+      "status": "pass",
+      "required": true,
+      "detail": "every event type is in the v1 contract"
+    },
+    {
+      "check": "existing_integrity.content_separated",
+      "status": "pass",
+      "required": true,
+      "detail": "prompt text, token ids, and text deltas stay in the content attachment"
+    },
+    {
+      "check": "existing_integrity.step_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "5 steps keep their own result association"
+    },
+    {
+      "check": "existing_integrity.cursors",
+      "status": "pass",
+      "required": true,
+      "detail": "scheduled ranges meet the previous cursor, including after preemption"
+    },
+    {
+      "check": "existing_integrity.blocks",
+      "status": "pass",
+      "required": true,
+      "detail": "4 block transitions follow reference counts and allocation generations"
+    },
+    {
+      "check": "existing_integrity.arrivals",
+      "status": "pass",
+      "required": true,
+      "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations"
+    },
+    {
+      "check": "existing_integrity.completeness",
+      "status": "pass",
+      "required": true,
+      "detail": "event stream is complete"
+    },
+    {
+      "check": "existing_integrity.kv_observations",
+      "status": "pass",
+      "required": true,
+      "detail": "Physical generations and token ranges match observed inventories, scheduler work, and returned results."
+    },
+    {
+      "check": "physical_inventory",
+      "status": "pass",
+      "required": true,
+      "detail": "Every physical ID appears exactly once; reserved-null capacity is excluded from allocation availability."
+    },
+    {
+      "check": "token_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Only exact, unsharded full-attention groups qualify live token-slot claims."
+    },
+    {
+      "check": "cache_layer_coverage",
+      "status": "pass",
+      "required": true,
+      "detail": "Cache-group layer names cover all initialized Qwen3 layers."
+    },
+    {
+      "check": "kv_result_boundaries",
+      "status": "pass",
+      "required": true,
+      "detail": "5 returned KV ranges checked; 0 violations."
+    },
+    {
+      "check": "ordered_scheduler_queues",
+      "status": "pass",
+      "required": true,
+      "detail": "Before/after schedule snapshots must be actually available, not fabricated empty queues."
+    },
+    {
+      "check": "returned_output_ids",
+      "status": "pass",
+      "required": true,
+      "detail": "Accepted output sidecars match each request's separately retained engine output IDs, including zero-output cancellations."
+    },
+    {
+      "check": "final_output_boundary",
+      "status": "pass",
+      "required": true,
+      "detail": "2 sampled final output tokens assessed; 0 zero-output requests. A sampled output becomes KV only in a later scheduled computation; naturally completed final outputs stay uncomputed.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "per_request_streams",
+      "status": "pass",
+      "required": true,
+      "detail": "2 LLM input/output streams, effective sampling/limits and terminal outcomes inspected; 0 contradictions."
+    },
+    {
+      "check": "native_profile",
+      "status": "unavailable",
+      "required": false,
+      "detail": "Native eager diagnostic profiling was not captured."
+    },
+    {
+      "check": "frontend_pool",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual frontend projection includes every physical block, including final ID."
+    },
+    {
+      "check": "frontend_slot_qualification",
+      "status": "pass",
+      "required": true,
+      "detail": "Actual token occupancy projection is observed, not merely a fully enumerated physical grid."
+    },
+    {
+      "check": "frontend_final_outputs",
+      "status": "pass",
+      "required": true,
+      "detail": "2 sampled final output tokens projected. Historical final-token computation matches actual later writes; acceptance alone never computes KV.",
+      "applicability": "applicable"
+    },
+    {
+      "check": "backward_seek",
+      "status": "pass",
+      "required": true,
+      "detail": "Final projection is stable after backward seeking."
+    }
+  ],
+  "facts": {
+    "architecture": {
+      "source": "loaded_model_config",
+      "dimensions": {
+        "num_layers": 36,
+        "hidden_size": 2560,
+        "intermediate_size": 9728,
+        "num_attention_heads": 32,
+        "num_key_value_heads": 8,
+        "head_dim": 128
+      }
+    },
+    "capture_source": {
+      "recorded_sha256": "c48b0fd1c8eccdc0b0d1d1d37e08b02f854a6e8bfd13531f81bf116bc524704d",
+      "comparison_sha256": "c48b0fd1c8eccdc0b0d1d1d37e08b02f854a6e8bfd13531f81bf116bc524704d",
+      "comparison_ref": "dcab49f6ff0e194711c031f4d72399b93f300877",
+      "declared_revision": "dcab49f6ff0e194711c031f4d72399b93f300877"
+    },
+    "events": {
+      "cache_reset": 1,
+      "cache_inventory": 1,
+      "capture_ready": 1,
+      "request_dispatched": 2,
+      "request_dispatch_completed": 2,
+      "http_request_received": 2,
+      "request_model_route": 2,
+      "engine_prompt_observed": 2,
+      "engine_admitted": 2,
+      "http_engine_admission_correlated": 2,
+      "prefix_lookup": 2,
+      "block_change": 4,
+      "step_scheduled": 5,
+      "kv_block_binding": 5,
+      "step_submitted": 5,
+      "step_result_received": 5,
+      "kv_block_written": 5,
+      "tokens_accepted": 5,
+      "text_emitted": 3,
+      "completion": 2,
+      "http_response_completed": 2
+    },
+    "initial_pool": [
+      {
+        "pool": "pool-0",
+        "capacity": 4477,
+        "reserved_null": 1,
+        "allocation_available": 4476,
+        "cached_available": 0
+      }
+    ],
+    "kv_violations": [],
+    "final_output_assessment": {
+      "sampled_final_token_count": 2,
+      "zero_output_request_count": 0,
+      "zero_output_terminal_cancellation_count": 0,
+      "applicability": "applicable",
+      "zero_outputs": []
+    },
+    "final_outputs": [
+      {
+        "request_id": "late-immediate",
+        "accepted_count": 3,
+        "final_output_position": 16,
+        "terminal": "completion",
+        "write_sequences": []
+      },
+      {
+        "request_id": "planned-after-10s",
+        "accepted_count": 2,
+        "final_output_position": 15,
+        "terminal": "completion",
+        "write_sequences": []
+      }
+    ],
+    "requests": [
+      {
+        "request_id": "late-immediate",
+        "input_mode": "prompt",
+        "prompt_token_count": 14,
+        "accepted_output_token_count": 3,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "stop",
+            "sequence": 34
+          }
+        ],
+        "prompt_text_characters": 79,
+        "prompt_text_sha256": "31e59e7bd119e6fdc66d1312dbfc714be112e88a0629e2627c0c1488c765af0f",
+        "prompt_ids_sha256": "6c9bcef855145a202d5d84cd399f1b2fca76db551a7d19354dc848e1a374ad3c",
+        "output_text_characters": 8,
+        "output_text_sha256": "52563f898870e6ce7817b3ffbd430df2104719a74fc408cbe24eb9f481078ce4",
+        "output_ids_sha256": "3c3f3a9f8f24abe9b82017ea93b85d5fa7a82d5eacf7be0d63df6f319257938c",
+        "text_emissions": 2
+      },
+      {
+        "request_id": "planned-after-10s",
+        "input_mode": "prompt",
+        "prompt_token_count": 14,
+        "accepted_output_token_count": 2,
+        "max_output_tokens": 8,
+        "priority": 0,
+        "sampling": {
+          "seed": 0,
+          "stop": [],
+          "temperature": 0.0,
+          "top_p": 1.0
+        },
+        "terminal": [
+          {
+            "event": "completion",
+            "reason": "stop",
+            "sequence": 59
+          }
+        ],
+        "prompt_text_characters": 80,
+        "prompt_text_sha256": "ccff6b61c796d26faac996f00ee12a7d2c6aacef9977edaa821bb9e112a2efb8",
+        "prompt_ids_sha256": "27e5b0c9757053c267d91f7a6e09844ee659b55fabdd8c78be24d54e85ebe0ce",
+        "output_text_characters": 9,
+        "output_text_sha256": "6aef76c6cb359f6ffaf9c6e9881c902b73eeba4562f186e1cd9861bb18b5c021",
+        "output_ids_sha256": "00926fc543ea331f7af4e092cea4be74b0b703e086a12b7b4c3c67db8c757113",
+        "text_emissions": 1
+      }
+    ],
+    "request_stream_errors": [],
+    "exercised_features": {
+      "prefix_reuse": 0,
+      "preemption": 0,
+      "cancellation": 0,
+      "cache_eviction": 0,
+      "cached_release": 0
+    },
+    "replay": {
+      "trust": "known",
+      "inventoryStatus": "observed",
+      "requests": [
+        {
+          "requestId": "late-immediate",
+          "status": "completed",
+          "acceptedTokenCount": 3
+        },
+        {
+          "requestId": "planned-after-10s",
+          "status": "completed",
+          "acceptedTokenCount": 2
+        }
+      ],
+      "pools": [
+        {
+          "pool": "pool-0",
+          "capacity": 4477,
+          "cells": 4477,
+          "lastId": 4476,
+          "tokenOccupancyStatus": "observed"
+        }
+      ],
+      "finals": [
+        {
+          "requestId": "late-immediate",
+          "status": "completed",
+          "position": 16,
+          "kvState": "not_computed",
+          "computedEver": false
+        },
+        {
+          "requestId": "planned-after-10s",
+          "status": "completed",
+          "position": 15,
+          "kvState": "not_computed",
+          "computedEver": false
+        }
+      ],
+      "boundary": {
+        "sequence": 14,
+        "scheduledPosition": 0,
+        "kvState": "reserved",
+        "computedEver": false
+      },
+      "nativeProfile": null,
+      "backwardSeekStable": true
+    }
+  },
+  "limitations": [
+    "No numerical K/V tensors are read; successful result boundaries establish logical full-attention KV writes.",
+    "Packed rows identify batch participants, never individual-token or head duration.",
+    "This script does not qualify GPU/browser performance or inspect actual UI rendering.",
+    "Manifest initialized-config provenance must be supported by the preserved runtime/deployment receipt."
+  ]
+}

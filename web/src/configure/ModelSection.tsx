@@ -52,7 +52,7 @@ export function ModelSection({
   }
 
   function chooseSource(source: EngineSettings["modelSource"]) {
-    onSettings({ ...settings, modelSource: source, model: "", modelRevision: "", tokenizerRevision: "" })
+    onSettings({ ...settings, modelSource: source, model: "", modelRevision: "", tokenizer: "", tokenizerRevision: "" })
   }
 
   return (
@@ -114,7 +114,7 @@ export function ModelSection({
                 aria-required="true"
                 aria-invalid={Boolean(issueFor("setting-model"))}
                 aria-describedby={issueFor("setting-model") ? "setting-model-error" : undefined}
-                onChange={(event) => onSettings({ ...settings, model: event.target.value })}
+                onChange={(event) => onSettings({ ...settings, model: event.target.value, modelRevision: "", tokenizerRevision: "" })}
               />
               <FieldError id="setting-model-error" message={issueFor("setting-model")} />
             </label>
@@ -234,34 +234,40 @@ export function ModelSection({
           forceOpen={Boolean(issueFor("setting-model-revision") || issueFor("setting-tokenizer-revision"))}
         >
           <summary className="cursor-pointer rounded-lg px-4 py-3 text-sm font-medium text-slate-300 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
-            Model revisions
+            Revision and tokenizer overrides
           </summary>
           <div className="grid items-start gap-4 border-t border-slate-800 p-4 md:grid-cols-2">
             <label className="block text-xs font-medium text-slate-400" htmlFor="setting-model-revision">
-              Model revision {settings.modelSource === "huggingface" ? null : <span className="font-normal text-slate-400">optional</span>}
+              Model revision <span className="font-normal text-slate-400">optional</span>
               <input
                 id="setting-model-revision"
                 className={inputClass}
                 value={settings.modelRevision}
-                aria-required={settings.modelSource === "huggingface"}
+                placeholder="Automatic: resolve main to a commit"
                 aria-invalid={Boolean(issueFor("setting-model-revision"))}
-                aria-describedby={issueFor("setting-model-revision") ? "setting-model-revision-error" : undefined}
+                aria-describedby="model-revision-hint setting-model-revision-error"
                 onChange={(event) => onSettings({ ...settings, modelRevision: event.target.value })}
               />
               <FieldError id="setting-model-revision-error" message={issueFor("setting-model-revision")} />
+              <FieldHint id="model-revision-hint">A revision identifies the model weights and configuration. Preparation resolves the chosen branch, tag or commit to an immutable commit for this recording.</FieldHint>
             </label>
             <label className="block text-xs font-medium text-slate-400" htmlFor="setting-tokenizer-revision">
-              Tokenizer revision {settings.modelSource === "huggingface" ? null : <span className="font-normal text-slate-400">optional</span>}
+              Tokenizer revision <span className="font-normal text-slate-400">optional</span>
               <input
                 id="setting-tokenizer-revision"
                 className={inputClass}
                 value={settings.tokenizerRevision}
-                aria-required={settings.modelSource === "huggingface"}
+                placeholder="Automatic: use the model revision"
                 aria-invalid={Boolean(issueFor("setting-tokenizer-revision"))}
-                aria-describedby={issueFor("setting-tokenizer-revision") ? "setting-tokenizer-revision-error" : undefined}
+                aria-describedby="tokenizer-revision-hint setting-tokenizer-revision-error"
                 onChange={(event) => onSettings({ ...settings, tokenizerRevision: event.target.value })}
               />
               <FieldError id="setting-tokenizer-revision-error" message={issueFor("setting-tokenizer-revision")} />
+              <FieldHint id="tokenizer-revision-hint">The tokenizer converts text to token IDs. By default it uses the same repository and resolved revision as the model.</FieldHint>
+            </label>
+            <label className="block text-xs font-medium text-slate-400" htmlFor="setting-tokenizer">
+              Tokenizer repository or path <span className="font-normal text-slate-400">optional</span>
+              <input id="setting-tokenizer" className={inputClass} value={settings.tokenizer} placeholder="Use the model repository or path" onChange={(event) => onSettings({ ...settings, tokenizer: event.target.value, tokenizerRevision: "" })} />
             </label>
           </div>
         </Details>

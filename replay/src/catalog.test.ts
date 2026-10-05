@@ -5,6 +5,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 import { explainRequest } from "./explain.ts"
+import { projectArchitecture, projectKvCache, projectRequestTokens } from "./learning.ts"
 import {
   attachContent,
   createPlayer,
@@ -21,7 +22,9 @@ test("bundled fixture lessons replay without inventing a GPU trace", () => {
     recordings: Array<{ id: string; evidence: string }>
   }
   const ids = new Set(index.recordings.map((item) => item.id))
+  assert.equal(index.recordings[0].id, "model-kv-walkthrough")
   for (const required of [
+    "model-kv-walkthrough",
     "continuous-batching",
     "single-request",
     "chunked-prefill",
@@ -46,6 +49,31 @@ test("bundled fixture lessons replay without inventing a GPU trace", () => {
       assert.equal(state.incomplete, true)
     } else {
       assert.equal(state.trust, "known")
+    }
+    if (item.id === "model-kv-walkthrough") {
+      const architecture = projectArchitecture(manifest)
+      assert.equal(architecture.supported, true)
+      assert.equal(architecture.modelType, "qwen3")
+      assert.equal(architecture.source, "pinned_model_config_reference")
+      assert.equal(architecture.layerCount, 36)
+      assert.equal(architecture.queryHeads, 32)
+      assert.equal(architecture.kvHeads, 8)
+      const cache = projectKvCache(state, manifest, content)
+      assert.equal(cache.status, "observed")
+      assert.equal(cache.pools.length, 1)
+      assert.equal(cache.pools[0].capacity, 8)
+      assert.deepEqual(cache.pools[0].blocks.map((block) => block.blockId), [0, 1, 2, 3, 4, 5, 6, 7])
+      assert.equal(cache.groups.length, 1)
+      assert.equal(cache.groups[0].tokenSlotMapping, "authored_fixture")
+      assert.equal(Object.keys(state.requests).length, 6)
+      for (const requestId of Object.keys(state.requests)) {
+        const tokens = projectRequestTokens(state, requestId, content)
+        const finalSample = tokens.at(-1)
+        assert.ok(finalSample, requestId)
+        assert.equal(finalSample.kind, "output", requestId)
+        assert.equal(finalSample.kvState, "not_computed", requestId)
+        assert.equal(finalSample.computedEver, false, requestId)
+      }
     }
     if (item.id === "continuous-batching") {
       assert.ok(player.steps.some((step) => step.requests.length >= 2))

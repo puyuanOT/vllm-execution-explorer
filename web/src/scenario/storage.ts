@@ -104,6 +104,8 @@ function isSettings(value: unknown): value is EngineSettings {
     modelSource: ["huggingface", "host", "operator"],
     dtype: ["auto", "float16", "bfloat16", "float32"],
     quantization: ["none", "awq", "gptq", "bitsandbytes", "fp8"],
+    schedulingPolicy: ["fcfs", "priority"],
+    profilingMode: ["off", "eager_diagnostic"],
   }
   for (const [key, options] of Object.entries(choices)) {
     if (key in value && !options.includes(value[key] as string)) return false
@@ -135,6 +137,7 @@ export function normalizeScenario(scenario: ScenarioDraft): ScenarioDraft {
           : 128,
         resolvedInputTokens: Number.isSafeInteger(sample.resolvedInputTokens) ? sample.resolvedInputTokens : null,
         adapterId: typeof sample.adapterId === "string" ? sample.adapterId : null,
+        priority: Number.isSafeInteger(sample.priority) ? sample.priority : 0,
       })),
     })),
   }

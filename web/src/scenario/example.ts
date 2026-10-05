@@ -10,6 +10,7 @@ function sample(id: string, label: string, prompt: string, maxOutputTokens = 8):
     resolvedInputTokens: null,
     maxOutputTokens,
     adapterId: null,
+    priority: 0,
   }
 }
 
@@ -73,9 +74,15 @@ export function defaultSettings(): EngineSettings {
     maxNumSeqs: "4",
     tokenBudget: "2048",
     gpuMemoryUtilization: "0.9",
+    schedulingPolicy: "fcfs",
+    longPrefillTokenThreshold: "0",
+    kvCacheMemoryBytes: "",
+    profilingMode: "off",
+    profilingMaxSteps: "8",
     model: "Qwen/Qwen3-4B-Instruct-2507",
-    modelRevision: "cdbee75f17c01a7cc42f958dc650907174af0554",
-    tokenizerRevision: "cdbee75f17c01a7cc42f958dc650907174af0554",
+    modelRevision: "",
+    tokenizerRevision: "",
+    tokenizer: "",
     dtype: "auto",
     quantization: "none",
     loraAdapters: [],

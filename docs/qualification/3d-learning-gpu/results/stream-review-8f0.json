@@ -1,0 +1,1311 @@
+{
+  "review_kind": "independent_retained_stream_and_effective_configuration_inspection",
+  "source_revision": "8f0ca92d2ee2741723ba20e5637decb91982694b",
+  "distributed_source_sha256": "83df6c7bc792273eabb37d22ab76a29476b6c69a9325848505deafa1201e5056",
+  "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+  "case_count": 7,
+  "request_stream_count": 20,
+  "accepted_output_token_count": 1568,
+  "cases": [
+    {
+      "case": "staggered",
+      "run_id": "run-a85fc19d413b",
+      "recorded_contract_report": "staggered-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "staggered-1",
+          "input_mode": "prompt",
+          "prompt_tokens": 30,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 5101
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "staggered-2",
+          "input_mode": "prompt",
+          "prompt_tokens": 30,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 5103
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "staggered-3",
+          "input_mode": "prompt",
+          "prompt_tokens": 29,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 8091
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "staggered-4",
+          "input_mode": "prompt",
+          "prompt_tokens": 30,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 5376
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "staggered-5",
+          "input_mode": "prompt",
+          "prompt_tokens": 30,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 5374
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "staggered-6",
+          "input_mode": "prompt",
+          "prompt_tokens": 30,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 8093
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Six chat-formatted prompts explicitly ask about vLLM/LLM continuous batching, prefill, decode, KV caching, prefix reuse and GPU scheduling. Authored offsets are 0,0,100,100,100,120ms; admission order and processing overlap are observed separately.",
+        "output_meaning": "All six answers remain on the requested LLM topics, but each stops at the 128-token length ceiling before providing the requested full numbered explanation and examples. Generated statements are workload output, not verified teaching material.",
+        "scheduling_observation": "256 scheduler steps reach four running requests and two waiting requests. This exercises continuous admission and bounded concurrent work, not preemption or prefix caching."
+      },
+      "observed_scheduler": {
+        "step_count": 256,
+        "max_running": 4,
+        "max_waiting": 2,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "staggered-1",
+            "range_start": 0,
+            "range_length": 30,
+            "prompt_tokens": 30,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 30,
+            "priority": 0
+          },
+          {
+            "request_id": "staggered-2",
+            "range_start": 0,
+            "range_length": 30,
+            "prompt_tokens": 30,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 30,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "staggered-1",
+            "priority": 0,
+            "sequence": 12
+          },
+          {
+            "request_id": "staggered-2",
+            "priority": 0,
+            "sequence": 16
+          },
+          {
+            "request_id": "staggered-5",
+            "priority": 0,
+            "sequence": 121
+          },
+          {
+            "request_id": "staggered-4",
+            "priority": 0,
+            "sequence": 125
+          },
+          {
+            "request_id": "staggered-3",
+            "priority": 0,
+            "sequence": 129
+          },
+          {
+            "request_id": "staggered-6",
+            "priority": 0,
+            "sequence": 167
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "staggered-1",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          },
+          {
+            "request_id": "staggered-2",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          },
+          {
+            "request_id": "staggered-5",
+            "priority": 0,
+            "step_id": "step-7",
+            "sequence": 137
+          },
+          {
+            "request_id": "staggered-4",
+            "priority": 0,
+            "step_id": "step-7",
+            "sequence": 137
+          },
+          {
+            "request_id": "staggered-3",
+            "priority": 0,
+            "step_id": "step-129",
+            "sequence": 5112
+          },
+          {
+            "request_id": "staggered-6",
+            "priority": 0,
+            "step_id": "step-129",
+            "sequence": 5112
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4477,
+          "reserved_null": 1,
+          "allocation_available": 4476,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "prefix",
+      "run_id": "run-7a7d6779e405",
+      "recorded_contract_report": "prefix-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": true,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 2048,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "prefix-prime",
+          "input_mode": "prompt",
+          "prompt_tokens": 285,
+          "accepted_outputs": 8,
+          "effective_max_output_tokens": 8,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 280
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "prefix-reuse",
+          "input_mode": "prompt",
+          "prompt_tokens": 286,
+          "accepted_outputs": 8,
+          "effective_max_output_tokens": 8,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 526
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Two natural-language prompts share a repeated reference sentence about requests, scheduler steps and cache blocks, then ask different questions. The second is authored 1500ms after the first.",
+        "output_meaning": "Both eight-token answers are visibly incomplete: the first begins a list and the second ends mid-sentence. The short ceiling is intentional workload shaping, not a completed explanation.",
+        "scheduling_observation": "The second request reuses 272 prompt tokens from 17 blocks and starts newly scheduled work at position 272 with length 14.",
+        "provenance_observation": "At the second request\u2019s live binding, block 1 generation 1 retains contents from prefix-prime while its current binding belongs to prefix-reuse. Reused positions 0..271 report sourceRequestId=prefix-prime. The uncached suffix at position 272 is observed in block 19 generation 2 with sourceRequestId=prefix-reuse, demonstrating cleared provenance on reassignment."
+      },
+      "observed_scheduler": {
+        "step_count": 16,
+        "max_running": 1,
+        "max_waiting": 0,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "prefix-prime",
+            "range_start": 0,
+            "range_length": 285,
+            "prompt_tokens": 285,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 285,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "prefix-prime",
+            "priority": 0,
+            "sequence": 9
+          },
+          {
+            "request_id": "prefix-reuse",
+            "priority": 0,
+            "sequence": 288
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "prefix-prime",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 47
+          },
+          {
+            "request_id": "prefix-reuse",
+            "priority": 0,
+            "step_id": "step-9",
+            "sequence": 309
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4410,
+          "reserved_null": 1,
+          "allocation_available": 4409,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "chunked",
+      "run_id": "run-48c392b24643",
+      "recorded_contract_report": "chunked-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 64,
+        "max_model_len": 1024,
+        "max_num_scheduled_tokens": 64,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "chunked-long",
+          "input_mode": "synthetic",
+          "prompt_tokens": 512,
+          "accepted_outputs": 8,
+          "effective_max_output_tokens": 8,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 639
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "chunked-short",
+          "input_mode": "synthetic",
+          "prompt_tokens": 16,
+          "accepted_outputs": 8,
+          "effective_max_output_tokens": 8,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 290
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Two synthetic inputs contain 512 and16 repetitions of token 27268 (individual fragment: space followed by synthetic). They are token-load cases, not natural-language questions.",
+        "output_meaning": "Both eight-token synthetic continuations are short fragments without an instructional meaning; they remain valid recorded output IDs/text for the workload.",
+        "scheduling_observation": "Actual first admission/scheduling order is short then long. Step 1 schedules16 short-prompt tokens plus 48 long-prompt tokens; subsequent mixed steps schedule 1 short decode-input token plus 63 long prefill tokens. The budget is 64 and the short request completes before the long prefill finishes."
+      },
+      "observed_scheduler": {
+        "step_count": 16,
+        "max_running": 2,
+        "max_waiting": 0,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "chunked-short",
+            "range_start": 0,
+            "range_length": 16,
+            "prompt_tokens": 16,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 16,
+            "priority": 0
+          },
+          {
+            "request_id": "chunked-long",
+            "range_start": 0,
+            "range_length": 48,
+            "prompt_tokens": 48,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 512,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "chunked-short",
+            "priority": 0,
+            "sequence": 12
+          },
+          {
+            "request_id": "chunked-long",
+            "priority": 0,
+            "sequence": 16
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "chunked-short",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          },
+          {
+            "request_id": "chunked-long",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4484,
+          "reserved_null": 1,
+          "allocation_available": 4483,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "pressure",
+      "run_id": "run-6d1ce4f328a0",
+      "recorded_contract_report": "pressure-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": 75497472,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 256,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 4,
+        "model_runner": "v2",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "pressure-1",
+          "input_mode": "synthetic",
+          "prompt_tokens": 192,
+          "accepted_outputs": 32,
+          "effective_max_output_tokens": 32,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 1337
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "pressure-2",
+          "input_mode": "synthetic",
+          "prompt_tokens": 192,
+          "accepted_outputs": 32,
+          "effective_max_output_tokens": 32,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 2532
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "pressure-3",
+          "input_mode": "synthetic",
+          "prompt_tokens": 192,
+          "accepted_outputs": 32,
+          "effective_max_output_tokens": 32,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 2494
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "pressure-4",
+          "input_mode": "synthetic",
+          "prompt_tokens": 192,
+          "accepted_outputs": 32,
+          "effective_max_output_tokens": 32,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 1261
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Four identical synthetic inputs each contain 192 repeated token 27268 positions and permit 32 output tokens.",
+        "output_meaning": "All four deterministic continuations are identical repetitive text fragments. These outputs measure stream preservation and workload growth, not answer quality.",
+        "scheduling_observation": "An explicit 72 MiB KV allocation produces 32 physical blocks, including 1 reserved-null block. At most 2 requests run while 2 wait; later requests start after earlier releases. No preemption or eviction event is recorded, so this case qualifies cache admission/backpressure only.",
+        "preemption_qualified": false
+      },
+      "observed_scheduler": {
+        "step_count": 65,
+        "max_running": 2,
+        "max_waiting": 2,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "pressure-4",
+            "range_start": 0,
+            "range_length": 192,
+            "prompt_tokens": 192,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 192,
+            "priority": 0
+          },
+          {
+            "request_id": "pressure-1",
+            "range_start": 0,
+            "range_length": 64,
+            "prompt_tokens": 64,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 192,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "pressure-4",
+            "priority": 0,
+            "sequence": 18
+          },
+          {
+            "request_id": "pressure-1",
+            "priority": 0,
+            "sequence": 22
+          },
+          {
+            "request_id": "pressure-3",
+            "priority": 0,
+            "sequence": 26
+          },
+          {
+            "request_id": "pressure-2",
+            "priority": 0,
+            "sequence": 30
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "pressure-4",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 50
+          },
+          {
+            "request_id": "pressure-1",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 50
+          },
+          {
+            "request_id": "pressure-3",
+            "priority": 0,
+            "step_id": "step-33",
+            "sequence": 1277
+          },
+          {
+            "request_id": "pressure-2",
+            "priority": 0,
+            "step_id": "step-34",
+            "sequence": 1353
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 32,
+          "reserved_null": 1,
+          "allocation_available": 31,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "profile",
+      "run_id": "run-b57709a84086",
+      "recorded_contract_report": "profile-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": true,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 4,
+        "model_runner": "v1",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "profile-a",
+          "input_mode": "prompt",
+          "prompt_tokens": 27,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 2789
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "profile-b",
+          "input_mode": "prompt",
+          "prompt_tokens": 28,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 2787
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Two chat-formatted prompts explicitly ask about vLLM/LLM continuous batching and KV cache allocation, correcting the prior ambiguous continuous-batching prompt.",
+        "output_meaning": "Both answers concern LLM inference and truncate at128 tokens, during the second numbered point/heading. They are retained generated answers and are not independently validated technical explanations.",
+        "native_observation": "The eager v1 diagnostic runner retains 8 observed batches. Actual first packed order is profile-b positions 0..27, then profile-a positions 0..26 (55 real rows). Later batches contain one decode-input row per request in the same observed order. All 4,776 normalized CUDA intervals match raw native timestamps and IDs; every batch covers all 36 layers and attention/FFN mappings, and no CUDA interval is unmapped. No per-token/head duration or production v2 benchmark is claimed.",
+        "padding_observation": "Observed padded count equals unpadded count in every retained batch:55/55 followed by seven 2/2 batches. Nonzero padding is unexercised.",
+        "native_evidence_counts": {
+          "captured_steps": 8,
+          "observed_row_steps": 8,
+          "cuda_activities": 4776,
+          "correlated_cuda_activities": 4776,
+          "unmapped_cuda_activities": 0,
+          "profile_status": "completed",
+          "packed_batches": [
+            {
+              "step_id": "step-1",
+              "real_rows": 55,
+              "total_rows": 55,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-2",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-3",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-4",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-5",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-6",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-7",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            },
+            {
+              "step_id": "step-8",
+              "real_rows": 2,
+              "total_rows": 2,
+              "request_order": [
+                "profile-b",
+                "profile-a"
+              ]
+            }
+          ]
+        }
+      },
+      "observed_scheduler": {
+        "step_count": 128,
+        "max_running": 2,
+        "max_waiting": 0,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "profile-b",
+            "range_start": 0,
+            "range_length": 28,
+            "prompt_tokens": 28,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 28,
+            "priority": 0
+          },
+          {
+            "request_id": "profile-a",
+            "range_start": 0,
+            "range_length": 27,
+            "prompt_tokens": 27,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 27,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "profile-b",
+            "priority": 0,
+            "sequence": 12
+          },
+          {
+            "request_id": "profile-a",
+            "priority": 0,
+            "sequence": 16
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "profile-b",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          },
+          {
+            "request_id": "profile-a",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 24
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4513,
+          "reserved_null": 1,
+          "allocation_available": 4512,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "cancel-profile",
+      "run_id": "run-76018939e6b0",
+      "recorded_contract_report": "cancel-profile-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": true,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 64,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 64,
+        "max_num_seqs": 4,
+        "model_runner": "v1",
+        "scheduling_policy": "fcfs"
+      },
+      "request_streams": [
+        {
+          "request_id": "cancel-long",
+          "input_mode": "synthetic",
+          "prompt_tokens": 3500,
+          "accepted_outputs": 0,
+          "effective_max_output_tokens": 512,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "cancellation",
+              "reason": "abort",
+              "sequence": 81
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "One synthetic input has 3,500 repeated token 27268 positions and a 512-output ceiling. It is cancelled during prefill, before output sampling.",
+        "output_meaning": "Zero output tokens and zero text emissions are expected for this observed prefill cancellation. There is no sampled final output token, and both final-token checks explicitly pass as not applicable with count 0.",
+        "cancellation_observation": "Cancellation receipt follows submission sequence 63. Step 3 returns at 64, its final KV write is 68, and twelve blocks release at 69..80. Actual returned FINISHED_ABORTED state emits cancellation at 81; HTTP response at 82 also says cancelled. Exactly 192 prompt positions are computed; remaining prompt positions are uncomputed.",
+        "native_observation": "The explicitly partial eager diagnostic profile retains 3 complete 64-row prefill batches covering all 36 layers and attention/FFN mappings. All 1,602 CUDA intervals match raw native evidence. A completed 16-step diagnostic window is not claimed.",
+        "padding_observation": "All three observed batches have 64/64 real/total rows, so nonzero padding remains unexercised.",
+        "native_evidence_counts": {
+          "captured_steps": 3,
+          "observed_row_steps": 3,
+          "cuda_activities": 1602,
+          "correlated_cuda_activities": 1602,
+          "unmapped_cuda_activities": 0,
+          "profile_status": "partial",
+          "packed_batches": [
+            {
+              "step_id": "step-1",
+              "real_rows": 64,
+              "total_rows": 64,
+              "request_order": [
+                "cancel-long"
+              ]
+            },
+            {
+              "step_id": "step-2",
+              "real_rows": 64,
+              "total_rows": 64,
+              "request_order": [
+                "cancel-long"
+              ]
+            },
+            {
+              "step_id": "step-3",
+              "real_rows": 64,
+              "total_rows": 64,
+              "request_order": [
+                "cancel-long"
+              ]
+            }
+          ]
+        }
+      },
+      "observed_scheduler": {
+        "step_count": 3,
+        "max_running": 1,
+        "max_waiting": 0,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "cancel-long",
+            "range_start": 0,
+            "range_length": 64,
+            "prompt_tokens": 64,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 3500,
+            "priority": 0
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "cancel-long",
+            "priority": 0,
+            "sequence": 9
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "cancel-long",
+            "priority": 0,
+            "step_id": "step-1",
+            "sequence": 16
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4516,
+          "reserved_null": 1,
+          "allocation_available": 4515,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    },
+    {
+      "case": "priority",
+      "run_id": "run-0282822a273f",
+      "recorded_contract_report": "priority-8f0.json",
+      "recorded_contract_status": "pass",
+      "effective_config_comparison": "All supplied authored engine fields, immutable model/tokenizer, dtype/sampling and per-request limits/priorities match observed configuration.",
+      "engine_settings": {
+        "async_scheduling": false,
+        "continuous_batching": true,
+        "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
+        "enable_chunked_prefill": true,
+        "enable_lora": false,
+        "enable_prefix_caching": false,
+        "enforce_eager": false,
+        "gpu_memory_utilization": 0.8,
+        "kv_cache_memory_bytes": null,
+        "long_prefill_token_threshold": 0,
+        "max_model_len": 4096,
+        "max_num_scheduled_tokens": 256,
+        "max_num_seqs": 1,
+        "model_runner": "v2",
+        "scheduling_policy": "priority"
+      },
+      "request_streams": [
+        {
+          "request_id": "priority-1",
+          "input_mode": "prompt",
+          "prompt_tokens": 27,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 5,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 4750
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "priority-2",
+          "input_mode": "prompt",
+          "prompt_tokens": 27,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": -5,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 1598
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        },
+        {
+          "request_id": "priority-3",
+          "input_mode": "prompt",
+          "prompt_tokens": 27,
+          "accepted_outputs": 128,
+          "effective_max_output_tokens": 128,
+          "effective_priority": 0,
+          "effective_sampling": {
+            "seed": 0,
+            "stop": [],
+            "temperature": 0.0,
+            "top_p": 1.0
+          },
+          "terminal": [
+            {
+              "event": "completion",
+              "reason": "length",
+              "sequence": 3174
+            }
+          ],
+          "text_reviewed": true,
+          "input_output_hashes_equal_retrospective75f": true
+        }
+      ],
+      "review": {
+        "input_meaning": "Three identical vLLM GPU-scheduling questions differ only in priorities 5,-5,0; all have authored offset 0 and output limit 128.",
+        "output_meaning": "All deterministic answers are identical and length-truncated. Their wording about scheduling requests to GPU blocks is imprecise and must not be treated as a trustworthy explanation of GPU execution or KV allocation.",
+        "scheduling_observation": "Observed admission order is priority-3(0), priority-1(5), priority-2(-5). With max_num_seqs=1, actual execution starts in priority order -5,0,5: priority-2, priority-3, priority-1. This qualifies priority ordering without priority preemption."
+      },
+      "observed_scheduler": {
+        "step_count": 384,
+        "max_running": 1,
+        "max_waiting": 2,
+        "first_actual_scheduled_ranges": [
+          {
+            "request_id": "priority-2",
+            "range_start": 0,
+            "range_length": 27,
+            "prompt_tokens": 27,
+            "generation_tokens": 0,
+            "num_prompt_tokens": 27,
+            "priority": -5
+          }
+        ],
+        "admission_order": [
+          {
+            "request_id": "priority-3",
+            "priority": 0,
+            "sequence": 15
+          },
+          {
+            "request_id": "priority-1",
+            "priority": 5,
+            "sequence": 19
+          },
+          {
+            "request_id": "priority-2",
+            "priority": -5,
+            "sequence": 23
+          }
+        ],
+        "request_start_order": [
+          {
+            "request_id": "priority-2",
+            "priority": -5,
+            "step_id": "step-1",
+            "sequence": 28
+          },
+          {
+            "request_id": "priority-3",
+            "priority": 0,
+            "step_id": "step-129",
+            "sequence": 1602
+          },
+          {
+            "request_id": "priority-1",
+            "priority": 5,
+            "step_id": "step-257",
+            "sequence": 3178
+          }
+        ]
+      },
+      "full_physical_pool": [
+        {
+          "pool": "pool-0",
+          "capacity": 4486,
+          "reserved_null": 1,
+          "allocation_available": 4485,
+          "cached_available": 0
+        }
+      ],
+      "backward_seek_stable": true,
+      "post_close_gpu_memory_mib": [
+        3
+      ],
+      "post_close_compute_application_count": 0
+    }
+  ],
+  "limitations": [
+    "Generated text is retained model output, never verified technical teaching ground truth.",
+    "Every noncancelled request in these seven cases reaches its configured length ceiling. They do not independently demonstrate the STOP=0 fix; that requires the later-source EOS/stop recapture.",
+    "The original pressure case qualifies admission/backpressure rather than preemption or eviction.",
+    "Native eager evidence covers retained batches only: no per-token/head timing, nonzero padding, production-runner performance or numerical tensor readback is claimed.",
+    "Historical 75f failed reports remain retrospective failures, not corrected evidence.",
+    "No helper, implementation, remote or browser action was performed by this audit."
+  ]
+}

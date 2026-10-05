@@ -65,6 +65,9 @@ class VllmHttpSession:
         self._owner_ready = threading.Event()
         self._owner_error: BaseException | None = None
         self._base: VllmSession | None = None
+        self._trace: Any = None
+        self._experiment_status = "completed"
+        self.observability_record: dict[str, Any] = {"provider": "langsmith", "status": "not_started", "verification": "No experiment trace has been inspected."}
         self._stop = threading.Event()
         self._cancelled = threading.Event()
         self._clients = ThreadPoolExecutor(max_workers=int(PROVISIONAL_LIMITS["max_requests"]))
@@ -189,6 +192,10 @@ class VllmHttpSession:
         try:
             self._base = VllmSession.open(self.recording, self.body)
             self._copy_records()
+            from runner.observability import ExperimentTrace
+
+            self._trace = ExperimentTrace(self.recording.directory, str(getattr(self.body, "model", "unreported")), getattr(self._base, "resolved_configuration", None) or {})
+            self.observability_record = self._trace.metadata()
         except BaseException as exc:  # noqa: BLE001 - returned to the preparing caller
             self._owner_error = exc
             self._owner_ready.set()
@@ -197,6 +204,7 @@ class VllmHttpSession:
         try:
             while not self._stop.is_set():
                 if self._cancelled.is_set():
+                    self._experiment_status = "cancelled"
                     self._base.cancel()
                     self._finish_open_tickets("cancelled")
                     self._cancelled.clear()
@@ -209,6 +217,9 @@ class VllmHttpSession:
                     admitted = True
                     try:
                         resolution = self._base.add_work_request(ticket.request)
+                        self._trace.start_request(ticket.request.request_id, ticket.request.prompt,
+                                                  resolution.get("input_token_ids") if isinstance(resolution, dict) else None,
+                                                  request_configuration=resolution.get("request_configuration") if isinstance(resolution, dict) else None)
                         if isinstance(resolution, dict):
                             value = resolution.get("resolved_input_tokens")
                             ticket.resolved_input_tokens = None if value is None else int(value)
@@ -228,7 +239,10 @@ class VllmHttpSession:
                             clock_domain="host:time.monotonic_ns",
                         )
                     except Exception as exc:  # noqa: BLE001 - handler returns the exact failure
+                        self._experiment_status = "failed"
                         ticket.error = str(exc)
+                        self._trace.start_request(ticket.request.request_id, ticket.request.prompt)
+                        self._trace.finish_request(ticket.request.request_id, "", None, self._trace_error(ticket.error))
                         ticket.completed.set()
                     finally:
                         ticket.admitted.set()
@@ -240,14 +254,24 @@ class VllmHttpSession:
                     self._stop.wait(0.005)
         except BaseException as exc:  # noqa: BLE001 - propagate engine-owner failures to the run
             self._owner_error = exc
+            self._experiment_status = "failed"
             self._finish_open_tickets("failed", error=str(exc))
         finally:
             self._finish_open_tickets("cancelled")
             try:
                 self._base.close()
+                self._copy_records()
             except BaseException as exc:  # noqa: BLE001 - close failures are part of capture status
                 if self._owner_error is None:
                     self._owner_error = exc
+                    self._experiment_status = "failed"
+            if self._trace is not None:
+                self._trace.finish(self._experiment_status, self._trace_error(str(self._owner_error)) if self._owner_error else None)
+                self.observability_record = self._trace.metadata()
+
+    def _trace_error(self, value: str) -> str:
+        token = getattr(self.body, "huggingface_token", None)
+        return value.replace(str(token), "[credential omitted]") if token else value
 
     def _observe_chunk(self, chunk: ObservedChunk) -> None:
         with self._tickets_lock:
@@ -258,6 +282,8 @@ class VllmHttpSession:
             if chunk.finish_reason is not None:
                 ticket.finish_reason = chunk.finish_reason
                 ticket.completed.set()
+                if self._trace is not None:
+                    self._trace.finish_request(chunk.request_id, ticket.text, ticket.token_ids)
         self._chunks.put(chunk)
 
     def _finish_open_tickets(self, reason: str, *, error: str | None = None) -> None:
@@ -269,6 +295,9 @@ class VllmHttpSession:
                 if error:
                     ticket.error = error
                 ticket.completed.set()
+                if self._trace is not None:
+                    self._trace.finish_request(ticket.request.request_id, ticket.text, ticket.token_ids,
+                                               self._trace_error(error or reason))
             ticket.sent.set()
             ticket.admitted.set()
             ticket.received.set()
@@ -356,6 +385,7 @@ class VllmHttpSession:
                 "resolved_input_tokens": ticket.request.resolved_input_tokens,
                 "adapter_id": ticket.request.adapter_id or "base",
                 "sampling": ticket.request.sampling,
+                "priority": ticket.request.priority,
             },
             separators=(",", ":"),
         ).encode("utf-8")
@@ -425,5 +455,9 @@ class VllmHttpSession:
             "sampling_record",
             "initial_cache_state",
             "preparation_observations",
+            "architecture_record",
+            "revision_resolution",
+            "resolved_configuration",
+            "profiling_record",
         ):
             setattr(self, name, getattr(base, name, None))

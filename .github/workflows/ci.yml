@@ -39,7 +39,8 @@ jobs:
             httpx==0.28.1 \
             pytest==9.1.1 \
             python-multipart==0.0.32 \
-            uvicorn==0.53.0
+            uvicorn==0.53.0 \
+            langsmith==0.14.4
           python -m pip install --no-deps -e .
 
       - name: Set up Node.js

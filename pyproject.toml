@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.115",
     "python-multipart>=0.0.9",
     "uvicorn>=0.32",
+    "langsmith>=0.4,<1",
 ]
 
 [project.optional-dependencies]
@@ -24,3 +25,6 @@ testpaths = ["tests"]
 [tool.setuptools]
 packages = ["runner", "vllm_030"]
 package-dir = {vllm_030 = "instrumentation/vllm_030"}
+
+[tool.setuptools.package-data]
+runner = ["*.json"]

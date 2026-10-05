@@ -19,6 +19,7 @@ export function flattenRequests(scenario: ScenarioDraft): RunRequestBody["reques
     arrival_offset_ms: batch.arrivalOffsetMs,
     max_output_tokens: sample.maxOutputTokens,
     adapter_id: sample.adapterId === "__base__" ? null : sample.adapterId ?? batch.defaultAdapterId,
+    priority: sample.priority ?? 0,
   })))
 }
 
@@ -40,6 +41,7 @@ export function workloadPlan(scenario: ScenarioDraft): WorkloadPlan {
         resolved_input_tokens: sample.resolvedInputTokens,
         max_output_tokens: sample.maxOutputTokens,
         adapter_id: sample.adapterId === "__base__" ? "base" : sample.adapterId,
+        priority: sample.priority ?? 0,
       })),
     })),
   }
@@ -80,7 +82,7 @@ export function toRunBody(scenario: ScenarioDraft, settings: EngineSettings): Ru
     model_configuration: {
       source,
       tokenizer: {
-        locator: settings.model.trim(),
+        locator: settings.tokenizer.trim() || settings.model.trim(),
         revision: settings.tokenizerRevision.trim() || null,
       },
       dtype: settings.dtype,
@@ -97,8 +99,12 @@ export function toRunBody(scenario: ScenarioDraft, settings: EngineSettings): Ru
       enable_chunked_prefill: settings.chunkedPrefill,
       enable_prefix_caching: settings.engine === "fixture" ? false : settings.prefixCaching,
       gpu_memory_utilization: Number(settings.gpuMemoryUtilization),
+      scheduling_policy: settings.schedulingPolicy,
+      long_prefill_token_threshold: Number(settings.longPrefillTokenThreshold),
+      kv_cache_memory_bytes: settings.kvCacheMemoryBytes.trim() ? Number(settings.kvCacheMemoryBytes) : null,
       fresh_prefix_cache: true,
     },
+    profiling_configuration: { mode: settings.profilingMode, max_steps: Number(settings.profilingMaxSteps) },
     sampling: {
       temperature: Number(settings.temperature),
       top_p: Number(settings.topP),
@@ -159,6 +165,7 @@ export function scenarioFromRecordedPlan(
         adapterId: item.adapter_id === "base"
           ? "__base__"
           : typeof item.adapter_id === "string" ? item.adapter_id : null,
+        priority: typeof item.priority === "number" ? item.priority : 0,
       }]
     })
     if (samples.length === 0) return []

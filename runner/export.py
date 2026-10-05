@@ -27,6 +27,9 @@ def export_structural(source: Path, destination: Path) -> Path:
     manifest = _without_content(data.manifest)
     manifest["content_retained"] = False
     manifest["structural_export"] = True
+    profiling = manifest.get("profiling")
+    if isinstance(profiling, dict):
+        profiling.update(raw_artifacts=[], normalized_artifact=None, attachment_status="omitted_by_structural_export")
     (destination / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",

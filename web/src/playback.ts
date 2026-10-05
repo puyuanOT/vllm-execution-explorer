@@ -1,5 +1,10 @@
 import type { TraceEvent } from "../../replay/src/reduce.ts"
 
+/** Events beyond the first trace gap cannot be played as observed execution. */
+export function replayableEvents(events: TraceEvent[], maxSequence: number): TraceEvent[] {
+  return events.filter((event) => event.sequence <= maxSequence)
+}
+
 export function nextSequence(events: TraceEvent[], current: number): number {
   for (const event of events) {
     if (event.sequence > current) return event.sequence
@@ -26,3 +31,9 @@ export function eventAt(events: TraceEvent[], sequence: number): TraceEvent | nu
 }
 
 export const SPEEDS = [0.25, 0.5, 1, 2, 4] as const
+
+export const RECORDED_SPEEDS = [0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, ...SPEEDS] as const
+
+export function playbackSpeeds(mode: "events" | "recorded" | "teaching" | "measured"): readonly number[] {
+  return mode === "recorded" || mode === "measured" ? RECORDED_SPEEDS : SPEEDS
+}

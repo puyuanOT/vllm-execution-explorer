@@ -14,6 +14,7 @@ from typing import Any
 from vllm_030.blocks import GenerationTracker
 from vllm_030.capture import copy_block_groups, snapshot_scheduled_step
 from vllm_030.collector import Recording
+from vllm_030.inventory import cache_inventory, queue_snapshot, scheduled_bindings
 from vllm_030.compatibility import (
     assert_block_pool_source,
     assert_engine_shape,
@@ -40,6 +41,12 @@ class Instrumentation:
         self._results: dict[str, int] = {}
         self._result_seen: set[str] = set()
         self._positions: dict[str, int] = {}
+        self._accepted_token_ids: dict[str, list[int]] = {}
+        self._block_tables: dict[str, list[list[int]]] = {}
+        self._step_writes: dict[str, list[dict[str, Any]]] = {}
+        self.cache_inventory: dict[str, Any] = {"pools": [], "groups": []}
+        self.token_pieces: Any = None
+        self.token_pieces_by_request: dict[str, Any] = {}
         self._open_step: str | None = None
         self._generations = GenerationTracker()
         self._restore: list[tuple[Any, str, Any]] = []
@@ -65,6 +72,26 @@ class Instrumentation:
         )
         if sequence is not None:
             self._results[step_id] = sequence
+        for write in self._step_writes.pop(step_id, []):
+            values = dict(write)
+            token_ids = values.pop("_token_ids")
+            if token_ids:
+                self.recording.content(kind="kv_tokens", step_id=step_id, **values, token_ids=token_ids, **self._pieces(token_ids, values["request_id"]))
+            self.recording.event("kv_block_written", step_id=step_id, **values,
+                                 token_content_observed=bool(token_ids), causal_event_sequence=sequence,
+                                 observation_boundary=observation)
+
+    def _pieces(self, token_ids: list[int], request_id: str | None = None) -> dict[str, Any]:
+        decoder = self.token_pieces_by_request.get(request_id, self.token_pieces)
+        if decoder is None:
+            return {}
+        try:
+            pieces = decoder(token_ids)
+            if isinstance(pieces, list) and len(pieces) == len(token_ids) and all(isinstance(item, str) for item in pieces):
+                return {"token_pieces": pieces, "token_piece_semantics": "individually decoded tokenizer fragments; not original-text slices, and concatenation is not guaranteed to equal complete decoded text"}
+        except Exception:
+            pass  # IDs remain observed; text labels are optional, never invented.
+        return {}
 
     def _emit_accepted(self, step_id: str, result: Any) -> None:
         for output in _iter_outputs(result):
@@ -78,6 +105,7 @@ class Instrumentation:
                     step_id=step_id,
                     output_position_start=start,
                     token_ids=token_ids,
+                    **self._pieces(token_ids, request_id),
                 )
                 self.recording.event(
                     "tokens_accepted",
@@ -89,8 +117,9 @@ class Instrumentation:
                     causal_event_sequence=self._results.get(step_id),
                 )
                 self._positions[request_id] = start + len(token_ids)
+                self._accepted_token_ids.setdefault(request_id, []).extend(token_ids)
             reason = getattr(output, "finish_reason", None)
-            if reason:
+            if reason is not None:
                 observed = str(reason)
                 event_type = "cancellation" if observed in {"abort", "cancelled"} else "completion"
                 self.recording.event(
@@ -108,17 +137,28 @@ def install(
     *,
     vllm_version: str | None = None,
     check_sources: bool = True,
+    token_pieces: Any = None,
 ) -> Instrumentation:
     if vllm_version is not None:
         assert_vllm_version(vllm_version)
     assert_engine_shape(engine_core)
-    adapter = Instrumentation(recording)
-    _install_scheduler(adapter, engine_core.scheduler)
-    _install_executor(adapter, engine_core.model_executor)
-    for index, pool in enumerate(discover_block_pools(engine_core.scheduler)):
-        if check_sources:
+    pools = discover_block_pools(engine_core.scheduler)
+    if check_sources:
+        for pool in pools:
             assert_block_pool_source(pool)
-        _install_pool(adapter, pool, f"pool-{index}")
+    adapter = Instrumentation(recording)
+    adapter.token_pieces = token_pieces
+    adapter.cache_inventory = cache_inventory(engine_core.scheduler, adapter._generations,
+                                             authored_fixture=getattr(engine_core, "explorer_token_slot_mapper", None) == "authored_fixture_v1")
+    recording.event("cache_inventory", **adapter.cache_inventory)
+    try:
+        _install_scheduler(adapter, engine_core.scheduler)
+        _install_executor(adapter, engine_core.model_executor)
+        for index, pool in enumerate(pools):
+            _install_pool(adapter, pool, f"pool-{index}")
+    except Exception:
+        adapter.uninstall()
+        raise
     return adapter
 
 
@@ -128,8 +168,10 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
     original_prefix = scheduler._get_local_prefix_cache_hit
     original_preempt = scheduler._preempt_request
     original_add = scheduler.add_request
+    original_finish = getattr(scheduler, "finish_requests", None)
 
     def schedule(*args: Any, **kwargs: Any) -> Any:
+        before = queue_snapshot(scheduler)
         output = original_schedule(*args, **kwargs)
         step_id = adapter._ids.create()
         setattr(output, "explorer_step_id", step_id)
@@ -138,9 +180,19 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
             dict(scheduler.requests),
             int(scheduler.max_num_scheduled_tokens),
         )
+        snapshot["queue_before"] = before
+        snapshot["queue_after"] = queue_snapshot(scheduler)
+        policy = getattr(scheduler, "policy", None)
+        snapshot["policy"] = str(getattr(policy, "value", policy) or "unreported")
+        snapshot["queue_observation_boundary"] = "before_and_after_scheduler.schedule"
         sequence = adapter.recording.event("step_scheduled", step_id=step_id, **snapshot)
         if sequence is not None:
             adapter._scheduled[step_id] = sequence
+        bindings, writes = scheduled_bindings(adapter, scheduler, snapshot)
+        adapter._step_writes[step_id] = writes
+        for binding in bindings:
+            adapter.recording.event("kv_block_binding", step_id=step_id, **binding, causal_event_sequence=sequence,
+                                   observation_boundary="scheduler.schedule.returned")
         return output
 
     def update_from_output(scheduler_output: Any, model_runner_output: Any, *args: Any, **kwargs: Any) -> Any:
@@ -190,6 +242,7 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
                 request_id=request_id,
                 token_count=count,
                 token_ids=token_ids,
+                **adapter._pieces(token_ids, request_id),
             )
         adapter.recording.event(
             "engine_prompt_observed",
@@ -203,7 +256,24 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
             request_id=request_id,
             status="scheduler_added",
             observation_boundary="scheduler.add_request.returned",
+            priority=int(getattr(request, "priority", 0)),
         )
+        return result
+
+    def finish_requests(*args: Any, **kwargs: Any) -> Any:
+        result = original_finish(*args, **kwargs)
+        # Native aborts bypass update_from_output. The returned requests exclude
+        # unknown/already-finished IDs and have completed the scheduler cleanup.
+        for request in result:
+            if getattr(getattr(request, "status", None), "name", None) == "FINISHED_ABORTED":
+                adapter.recording.event(
+                    "cancellation",
+                    request_id=str(request.request_id),
+                    status="abort",
+                    reason="abort",
+                    request_status="FINISHED_ABORTED",
+                    observation_boundary="scheduler.finish_requests.returned",
+                )
         return result
 
     adapter._patch(scheduler, "schedule", schedule)
@@ -211,6 +281,8 @@ def _install_scheduler(adapter: Instrumentation, scheduler: Any) -> None:
     adapter._patch(scheduler, "_get_local_prefix_cache_hit", _get_local_prefix_cache_hit)
     adapter._patch(scheduler, "_preempt_request", _preempt_request)
     adapter._patch(scheduler, "add_request", add_request)
+    if callable(original_finish):
+        adapter._patch(scheduler, "finish_requests", finish_requests)
 
 
 def _install_executor(adapter: Instrumentation, executor: Any) -> None:
@@ -269,6 +341,19 @@ def _install_pool(adapter: Instrumentation, pool: Any, pool_name: str) -> None:
     original_touch = pool.touch
     original_free = pool.free_blocks
     original_unpin = pool.unpin_blocks
+    original_cache = getattr(pool, "cache_full_blocks", None)
+
+    def cache_full_blocks(*args: Any, **kwargs: Any) -> Any:
+        # Observe hash publication, which may happen while a block is referenced.
+        blocks = kwargs.get("blocks") if "blocks" in kwargs else (args[1] if len(args) > 1 else [])
+        before = [(block, int(block.ref_cnt), block.block_hash is not None) for block in blocks]
+        result = original_cache(*args, **kwargs)
+        for block, refs, had_hash in before:
+            if had_hash != (block.block_hash is not None):
+                _emit_block(recording, tracker, pool_name, block, operation="cache", ref_before=refs,
+                            ref_after=int(block.ref_cnt), has_hash_before=had_hash,
+                            has_hash_after=block.block_hash is not None, new_occupant=False)
+        return result
 
     def _maybe_evict_cached_block(block: Any, _original: Any = original_evict) -> Any:
         ref_before = int(block.ref_cnt)
@@ -393,6 +478,8 @@ def _install_pool(adapter: Instrumentation, pool: Any, pool_name: str) -> None:
     adapter._patch(pool, "free_blocks", free_blocks)
     adapter._patch(pool, "unpin_blocks", unpin_blocks)
     adapter._patch(pool, "get_new_blocks", get_new_blocks)
+    if callable(original_cache):
+        adapter._patch(pool, "cache_full_blocks", cache_full_blocks)
 
 
 def _emit_block(
