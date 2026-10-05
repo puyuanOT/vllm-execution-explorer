@@ -16,6 +16,8 @@ export interface CatalogEntry {
 
 export interface LoadedRecording {
   source: string
+  /** Display name for recordings opened from files, whose source is only the manifest file name. */
+  name?: string
   manifest: RecordingManifest
   events: TraceEvent[]
   content: ContentRecord[]
@@ -200,7 +202,7 @@ export async function loadFiles(files: FileList): Promise<LoadedRecording> {
     if (!file) throw new Error("Select the declared normalized profile JSON together with this recording.")
     return file.text()
   })
-  return { source: manifestFile.name, manifest, events, content, ...profile }
+  return { source: manifestFile.name, name: typeof manifest.run_id === "string" && manifest.run_id ? manifest.run_id : undefined, manifest, events, content, ...profile }
 }
 
 async function loadFromBase(base: string, source: string): Promise<LoadedRecording> {

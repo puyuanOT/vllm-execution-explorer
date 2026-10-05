@@ -119,8 +119,8 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
           {groups.map((group) => (
             <div key={group.batchId} className="contents">
               <div className="cp-roll-label col-span-1 flex items-center gap-2 border-t border-line-strong bg-[#0a1220] px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-[0.1em] text-faint">
-                <b className="font-semibold tracking-[0.06em] text-ink">{group.batchLabel}</b>
-                <span className="truncate">{group.recorded ? `${group.arrivalOffsetMs == null ? "arrival time not planned" : `t+${group.arrivalOffsetMs} ms`} · ` : ""}{group.samples.length}</span>
+                <b className="max-w-[70%] shrink-0 truncate font-semibold tracking-[0.06em] text-ink" title={group.batchLabel}>{group.batchLabel}</b>
+                <span className="min-w-0 truncate">{group.recorded ? `${group.arrivalOffsetMs == null ? "arrival time not planned" : `t+${group.arrivalOffsetMs} ms`} · ` : ""}{group.samples.length}</span>
               </div>
               <div className="border-t border-line-strong bg-[#0a1220]" />
               {group.samples.map((item) => {
@@ -201,13 +201,23 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
   )
 }
 
+const SHORT_PHASE: Partial<Record<SampleProjection["phase"], string>> = {
+  awaiting: "Awaiting",
+  observed: "Observed",
+  tokenized: "Prompt",
+  prefill: "Prefill",
+  decode: "Decode",
+  mixed: "Mixed",
+  not_submitted: "Not sent",
+}
+
 function PhaseTag({ item }: { item: SampleProjection }) {
   const kind = item.phase === "completed" ? "neutral"
     : item.phase === "unknown" ? "unknown"
       : item.phase === "cancelled" || item.phase === "preempted" ? "warning"
         : item.phase === "decode" || item.phase === "prefill" || item.phase === "mixed" ? "derived"
           : "neutral"
-  return <EvidenceTag kind={kind}>{item.phaseLabel}</EvidenceTag>
+  return <span title={item.phaseLabel}><EvidenceTag kind={kind}>{SHORT_PHASE[item.phase] ?? item.phaseLabel}</EvidenceTag></span>
 }
 
 function StepDetail({ step, current, columns, labels, colors, steps, onSelect }: {

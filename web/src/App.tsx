@@ -784,7 +784,7 @@ export function App() {
   const status = runnerActive
     ? `${statusLabel(runner.live?.status ?? "running")}${runner.live?.message ? ` · ${runner.live.message}` : ""}`
     : preparingRun ? preparationStatus || "Preparing capture"
-    : recording ? `Recording · ${recording.source}` : runner.health || "Runner unchecked"
+    : recording ? `Recording · ${recording.name ?? recording.source}` : runner.health || "Runner unchecked"
   const hostReadiness = hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
     ? { label: "Unchecked", message: "Choose the SSH key and check the selected remote host before capture.", tone: "neutral" as const }
     : deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message))
@@ -818,7 +818,7 @@ export function App() {
       <AppHeader
         route={route}
         status={runnerActive ? status : preparingRun ? preparationStatus || "Preparing capture" : runner.health || "Checking controller"}
-        recording={route === "explore" ? recording ? recording.source : showingLive ? `Live · ${runner.live?.run_id ?? "capture"}` : "Draft preview" : null}
+        recording={route === "explore" ? recording ? recording.name ?? recording.source : showingLive ? `Live · ${runner.live?.run_id ?? "capture"}` : "Draft preview" : null}
         evidence={route === "explore" && evidenceKind !== "recorded" ? evidenceKind : null}
         controller={{
           label: settings.runnerUrl ? controllerLabel(settings.runnerUrl) : "Local controller",

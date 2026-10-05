@@ -478,7 +478,7 @@ function Telemetry({ telemetry, selected, state, onSelect, onExplore }: {
                 onDoubleClick={() => onExplore(component.id)}
               >
                 <span className={cn("col-span-2 mb-1 truncate text-xs", active ? "text-ink" : "text-muted")}>{component.label}</span>
-                <span className="truncate font-mono text-[20px] font-medium leading-none tracking-[-0.02em] text-ink">{item.value}</span>
+                <span className={cn("truncate font-mono font-medium leading-none tracking-[-0.02em] text-ink", item.value.length > 6 ? "text-[16px]" : "text-[20px]")} title={item.value}>{item.value}</span>
                 <span className="row-span-2 self-end"><Sparkline values={state ? item.series : []} max={item.max} active={active} width={52} height={26} /></span>
                 <span className="mt-1 truncate font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">{item.unit}</span>
               </button>
