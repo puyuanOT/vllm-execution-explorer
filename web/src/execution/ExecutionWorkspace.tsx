@@ -16,10 +16,9 @@ import { Chip, Segmented, Sparkline } from "../ui/controls.tsx"
 import { RequestSequencer, SequencerLegend } from "./RequestSequencer.tsx"
 import type { TelemetryPoint } from "./telemetry.ts"
 import type { Selection, WorkspaceView } from "./types.ts"
+import type { EvidenceKind } from "./evidence.ts"
 
 const EMPTY_REPLAY = initialState()
-
-export type EvidenceKind = "synthetic" | "gpu" | "draft" | "recorded"
 
 export function ExecutionWorkspace({
   samples,
@@ -354,7 +353,7 @@ function SceneLegend({ focus, state, labels, colors, cache, latestStep }: {
 }
 
 function Watermark({ kind, evidence }: { kind: EvidenceKind; evidence: string }) {
-  const tone = kind === "synthetic" ? "text-synthetic" : kind === "gpu" ? "text-emerald-400" : kind === "draft" ? "text-amber-300" : "text-muted"
+  const tone = kind === "synthetic" ? "text-synthetic" : kind === "gpu" ? "text-emerald-400" : kind === "draft" || kind === "unverified" ? "text-amber-300" : "text-muted"
   return (
     <p className={cn("m-0 ml-auto flex max-w-[min(30rem,100%)] items-center gap-2.5 text-right font-mono text-[9.5px] uppercase tracking-[0.08em]", tone)}>
       {kind === "synthetic" ? <i className="h-1.5 w-7 shrink-0 bg-[repeating-linear-gradient(135deg,currentColor_0_2px,transparent_2px_5px)] opacity-70" aria-hidden="true" /> : <i className="h-px w-7 shrink-0 bg-current opacity-60" aria-hidden="true" />}
@@ -364,7 +363,7 @@ function Watermark({ kind, evidence }: { kind: EvidenceKind; evidence: string })
 }
 
 function EvidenceChip({ kind, evidence }: { kind: EvidenceKind; evidence: string }) {
-  return <Chip tone={kind === "synthetic" ? "synthetic" : kind === "gpu" ? "gpu" : kind === "draft" ? "warning" : undefined}><span>{evidence}</span></Chip>
+  return <Chip tone={kind === "synthetic" ? "synthetic" : kind === "gpu" ? "gpu" : kind === "draft" || kind === "unverified" ? "warning" : undefined}><span>{evidence}</span></Chip>
 }
 
 function RequestFinder({ samples, onSelect }: { samples: SampleProjection[]; onSelect: (selection: Selection) => void }) {

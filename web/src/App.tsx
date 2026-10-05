@@ -32,7 +32,8 @@ import {
   type SetupStage,
 } from "./configure/index.ts"
 import { focusValidationField } from "./configure/focusValidation.ts"
-import { ExecutionWorkspace, type EvidenceKind } from "./execution/ExecutionWorkspace.tsx"
+import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
+import { recordingEvidence } from "./execution/evidence.ts"
 import { projectArchitecture } from "../../replay/src/learning.ts"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
 import { scopeChannel, sequencePosition, type ScopeMarker, type ScopeTick } from "./execution/scope.ts"
@@ -43,7 +44,7 @@ import { useAppRoute } from "./hooks/useAppRoute.ts"
 import { useLiveTrace } from "./hooks/useLiveTrace.ts"
 import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
-import { eventAt, nextSequence, previousSequence, playbackSpeeds } from "./playback.ts"
+import { eventAt, nextSequence, previousSequence, playbackSpeeds, replayableEvents } from "./playback.ts"
 import { defaultSettings } from "./scenario/example.ts"
 import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
 import { monitorTargetConnection } from "./scenario/targetConnection.ts"
@@ -312,7 +313,8 @@ export function App() {
     }
   }, [events, manifest])
   const viewState = useMemo(() => built.player ? attachContent(built.player.at(sequence), content) : null, [built.player, content, sequence])
-  const index = useMemo(() => buildTimeline(events, manifest), [events, manifest])
+  const playbackEvents = useMemo(() => replayableEvents(events, built.player?.maxSequence ?? 0), [events, built.player])
+  const index = useMemo(() => buildTimeline(playbackEvents, manifest), [playbackEvents, manifest])
   const samples = useMemo(() => {
     if (!viewState) return []
     return projectSamples(index, viewState, sequence, {
@@ -333,11 +335,11 @@ export function App() {
   const atEnd = mode === "measured" ? Boolean(profileExtent && nativeProfileTime >= profileExtent.endUs)
     : mode === "teaching" ? teachingProgress >= 1 && index.steps.length > 0 && nextStepSequence(index.steps, sequence) == null
     : sequence >= maxSequence && maxSequence > 0
-  const currentEvent = eventAt(events, sequence)
-  const eventTicks = useMemo<ScopeTick[]>(() => events.flatMap((event) => {
+  const currentEvent = eventAt(playbackEvents, sequence)
+  const eventTicks = useMemo<ScopeTick[]>(() => playbackEvents.flatMap((event) => {
     const channel = scopeChannel(event.event_type)
     return channel ? [{ position: sequencePosition(event.sequence, maxSequence), channel }] : []
-  }), [events, maxSequence])
+  }), [playbackEvents, maxSequence])
   const stepMarkers = useMemo<ScopeMarker[]>(() => index.steps.map((step, order) => ({ position: sequencePosition(step.sequence, maxSequence), label: `S${order + 1}` })), [index.steps, maxSequence])
   const elapsed = elapsedMsAt(index, sequence)
   const valueText = currentEvent
@@ -349,16 +351,16 @@ export function App() {
   }, [followLive, maxSequence, runner.live?.status, showingLive])
 
   useEffect(() => {
-    if (!playing || mode !== "events" || events.length === 0 || followLive) return
+    if (!playing || mode !== "events" || playbackEvents.length === 0 || followLive) return
     const timer = window.setInterval(() => {
       setSequence((current) => {
-        const next = nextSequence(events, current)
+        const next = nextSequence(playbackEvents, current)
         if (next === current) setPlaying(false)
         return next
       })
     }, Math.max(80, 700 / speed))
     return () => window.clearInterval(timer)
-  }, [events, followLive, mode, playing, speed])
+  }, [playbackEvents, followLive, mode, playing, speed])
 
   const sequenceRef = useRef(sequence)
   sequenceRef.current = sequence
@@ -438,7 +440,7 @@ export function App() {
         }
         return
       }
-      if (events.length === 0) return
+      if (playbackEvents.length === 0) return
       if (event.code === "Space") {
         event.preventDefault()
         setFollowLive(false)
@@ -446,10 +448,10 @@ export function App() {
         else setPlaying((current) => !current)
       } else if (event.code === "ArrowRight") {
         event.preventDefault()
-        seek(nextSequence(events, sequence))
+        seek(nextSequence(playbackEvents, sequence))
       } else if (event.code === "ArrowLeft") {
         event.preventDefault()
-        seek(previousSequence(events, sequence))
+        seek(previousSequence(playbackEvents, sequence))
       } else if (event.code === "BracketRight") {
         event.preventDefault()
         const next = nextStepSequence(index.steps, sequence)
@@ -468,7 +470,7 @@ export function App() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [events, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
+  }, [playbackEvents, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
 
   function restartPlayback() {
     setFollowLive(false)
@@ -482,7 +484,7 @@ export function App() {
     setFollowLive(false)
     setPlaying(false)
     setTeachingProgress(0)
-    setSequence(Math.max(0, next))
+    setSequence(Math.min(maxSequence, Math.max(0, next)))
     if (nextSelection) {
       setSelection(nextSelection)
       if (compact && nextSelection.kind !== "component") setInspectorOpen(true)
@@ -760,11 +762,7 @@ export function App() {
     setRunError("")
   }
 
-  const evidence = evidenceText(manifest, showingDraft)
-  const evidenceKind: EvidenceKind = showingDraft ? "draft"
-    : manifest.execution_kind === "gpu" ? "gpu"
-      : manifest.demo_fixture === true || manifest.execution_kind === "fixture" ? "synthetic"
-        : "recorded"
+  const { kind: evidenceKind, text: evidence } = recordingEvidence(manifest, showingDraft)
   const profileSpan = profileExtent ? Math.max(1, profileExtent.endUs - profileExtent.startUs) : 1
   const profileTicks = useMemo<ScopeTick[]>(() => profileExtent
     ? measuredProfile.activities.map((activity) => ({ position: (activity.startUs - profileExtent.startUs) / profileSpan, channel: "model" as const }))
@@ -924,7 +922,7 @@ export function App() {
             ) : null}
           </main>
           <PlaybackTransport
-            disabled={mode === "measured" ? measuredProfile.status !== "observed" : events.length === 0 && samples.length === 0}
+            disabled={mode === "measured" ? measuredProfile.status !== "observed" : playbackEvents.length === 0 && samples.length === 0}
             playing={playing}
             atEnd={atEnd}
             speed={speed}
@@ -946,8 +944,8 @@ export function App() {
             onReduced={setForceReduced}
             onTogglePlay={() => { setFollowLive(false); setPlaying((current) => !current) }}
             onReplay={restartPlayback}
-            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(events, sequence))}
-            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(events, sequence))}
+            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(playbackEvents, sequence))}
+            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(playbackEvents, sequence))}
             onPreviousStep={() => { if (mode === "measured") { jumpProfile("batch", -1); return }; const previous = previousStepSequence(index.steps, sequence); if (previous != null) seek(previous) }}
             onNextStep={() => { if (mode === "measured") { jumpProfile("batch", 1); return }; const next = nextStepSequence(index.steps, sequence); if (next != null) seek(next) }}
             onScrub={(value) => { if (mode === "measured") { setPlaying(false); setProfileTimeUs(value + (profileExtent?.startUs ?? 0)) } else seek(value) }}
@@ -1041,13 +1039,6 @@ function highlight(selection: Selection | null, state: ReturnType<typeof attachC
 
 function promptMap(scenario: ScenarioDraft): Record<string, string> {
   return Object.fromEntries(scenario.batches.flatMap((batch) => batch.samples.map((sample) => [sample.id, sample.prompt])))
-}
-
-function evidenceText(manifest: RecordingManifest, draftPreview: boolean): string {
-  if (draftPreview) return "Draft preview. Values are planned inputs and are not execution evidence."
-  if (manifest.execution_kind === "gpu") return "Observed GPU recording. Host intervals are not GPU kernel durations."
-  if (manifest.demo_fixture === true || manifest.execution_kind === "fixture") return "Demo fixture. Teaching pace is synthetic and is not GPU evidence."
-  return "Recorded execution evidence."
 }
 
 function statusLabel(status: string): string {

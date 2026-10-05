@@ -1,0 +1,205 @@
+{
+  "run_id": "run-14001494e084",
+  "scope": "recorded_gpu_contracts",
+  "analysis": {
+    "contract_version": 1,
+    "helper_sha256": "3bfbc5e6ba4995c4f8c4de26344251829a0baa524a37f0d20479d5490221020b",
+    "replay_projection_sha256": "cf87893c7760b18c984f3abe7d5c72ef79f6c7ddd12802c7af91724238a9d4a8"
+  },
+  "status": "failed",
+  "findings": [
+    {
+      "check": "gpu_provenance",
+      "status": "fail",
+      "required": true,
+      "detail": "GPU execution kind and reported CUDA hardware are required; fixture evidence never qualifies a GPU."
+    },
+    {
+      "check": "vllm_version",
+      "status": "pass",
+      "required": true,
+      "detail": "Exact vLLM 0.30.0 engine metadata."
+    },
+    {
+      "check": "model_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "Expected Qwen/Qwen3-4B-Instruct-2507."
+    },
+    {
+      "check": "immutable_revisions",
+      "status": "fail",
+      "required": true,
+      "detail": "Canonical model and tokenizer must both use the pinned SHA."
+    },
+    {
+      "check": "qwen3_geometry",
+      "status": "fail",
+      "required": true,
+      "detail": "Explicit head_dim=128 is required; hidden/query-head division would incorrectly give 80."
+    },
+    {
+      "check": "qwen3_operator_metadata",
+      "status": "fail",
+      "required": true,
+      "detail": "Canonical dense Qwen3 operator metadata and complete ordered layer identities."
+    },
+    {
+      "check": "loaded_architecture",
+      "status": "fail",
+      "required": true,
+      "detail": "GPU geometry must come from initialized model configuration; fixture reference geometry is separately labeled."
+    },
+    {
+      "check": "warmup_reset_boundary",
+      "status": "fail",
+      "required": true,
+      "detail": "Capture readiness follows successful warmup and verified prefix-cache reset."
+    },
+    {
+      "check": "capture_source_identity",
+      "status": "unavailable",
+      "required": true,
+      "detail": "Distributed runner/instrumentation fingerprint matches the specified audited source; docs do not affect it."
+    },
+    {
+      "check": "retained_content",
+      "status": "pass",
+      "required": true,
+      "detail": "Token content sidecars are necessary for ID/provenance checks."
+    },
+    {
+      "check": "event_chain",
+      "status": "fail",
+      "required": true,
+      "detail": "Contiguous per-run event identities."
+    },
+    {
+      "check": "complete_host_capture",
+      "status": "pass",
+      "required": true,
+      "detail": "Trace-gap suffixes are never used to claim current state."
+    },
+    {
+      "check": "existing_integrity.sequences",
+      "status": "fail",
+      "required": true,
+      "detail": "recording has no events"
+    },
+    {
+      "check": "existing_integrity.event_types",
+      "status": "pass",
+      "required": true,
+      "detail": "every event type is in the v1 contract"
+    },
+    {
+      "check": "existing_integrity.content_separated",
+      "status": "pass",
+      "required": true,
+      "detail": "prompt text, token ids, and text deltas stay in the content attachment"
+    },
+    {
+      "check": "existing_integrity.step_identity",
+      "status": "pass",
+      "required": true,
+      "detail": "no scheduler steps were recorded"
+    },
+    {
+      "check": "existing_integrity.cursors",
+      "status": "pass",
+      "required": true,
+      "detail": "scheduled ranges meet the previous cursor, including after preemption"
+    },
+    {
+      "check": "existing_integrity.blocks",
+      "status": "pass",
+      "required": true,
+      "detail": "no block transitions were recorded"
+    },
+    {
+      "check": "existing_integrity.arrivals",
+      "status": "pass",
+      "required": true,
+      "detail": "planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations"
+    },
+    {
+      "check": "existing_integrity.completeness",
+      "status": "pass",
+      "required": true,
+      "detail": "event stream is complete"
+    },
+    {
+      "check": "physical_inventory",
+      "status": "unavailable",
+      "required": true,
+      "detail": "Exactly one complete initial physical inventory is required."
+    },
+    {
+      "check": "native_profile",
+      "status": "unavailable",
+      "required": false,
+      "detail": "Native eager diagnostic profiling was not captured."
+    },
+    {
+      "check": "frontend_pool",
+      "status": "fail",
+      "required": true,
+      "detail": "Actual frontend projection includes every physical block, including final ID."
+    },
+    {
+      "check": "frontend_slot_qualification",
+      "status": "unavailable",
+      "required": true,
+      "detail": "Actual token occupancy projection is observed, not merely a fully enumerated physical grid."
+    },
+    {
+      "check": "frontend_final_outputs",
+      "status": "unavailable",
+      "required": true,
+      "detail": "0 sampled final output tokens projected. Historical final-token computation matches actual later writes; acceptance alone never computes KV.",
+      "applicability": "unknown"
+    },
+    {
+      "check": "backward_seek",
+      "status": "pass",
+      "required": true,
+      "detail": "Final projection is stable after backward seeking."
+    }
+  ],
+  "facts": {
+    "architecture": {
+      "source": null,
+      "dimensions": {
+        "num_layers": null,
+        "hidden_size": null,
+        "intermediate_size": null,
+        "num_attention_heads": null,
+        "num_key_value_heads": null,
+        "head_dim": null
+      }
+    },
+    "capture_source": {
+      "recorded_sha256": null,
+      "comparison_sha256": "c48b0fd1c8eccdc0b0d1d1d37e08b02f854a6e8bfd13531f81bf116bc524704d",
+      "comparison_ref": "ca9a516",
+      "declared_revision": null
+    },
+    "events": {},
+    "replay": {
+      "trust": "known",
+      "inventoryStatus": "unavailable",
+      "requests": [],
+      "pools": [],
+      "finals": [],
+      "boundary": null,
+      "nativeProfile": null,
+      "backwardSeekStable": true
+    }
+  },
+  "limitations": [
+    "No numerical K/V tensors are read; successful result boundaries establish logical full-attention KV writes.",
+    "Packed rows identify batch participants, never individual-token or head duration.",
+    "This script does not qualify GPU/browser performance or inspect actual UI rendering.",
+    "Manifest initialized-config provenance must be supported by the preserved runtime/deployment receipt."
+  ]
+}

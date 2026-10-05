@@ -1,27 +1,63 @@
 import * as THREE from "three"
 import type { DieLayout, PoolGridLayout } from "./model.ts"
 
-/** Picks a flat die by intersecting its top plane, so cost does not grow with pool capacity. */
-export function createDieRaycast(layout: DieLayout, top = 0): THREE.InstancedMesh["raycast"] {
+/** Traverse floor cells, then intersect their actual variable-height instance bounds. */
+export function createDieRaycast(layout: DieLayout): THREE.InstancedMesh["raycast"] {
   const inverse = new THREE.Matrix4()
+  const instanceMatrix = new THREE.Matrix4()
   const ray = new THREE.Ray()
-  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -top)
+  const entry = new THREE.Vector3()
   const hit = new THREE.Vector3()
   const worldHit = new THREE.Vector3()
+  const bounds = new THREE.Box3()
+  const cellBox = new THREE.Box3()
   return function (this: THREE.InstancedMesh, raycaster, intersections) {
     if (!layout.capacity) return
+    if (!this.boundingBox) this.computeBoundingBox()
+    if (!this.geometry.boundingBox) this.geometry.computeBoundingBox()
+    bounds.copy(this.boundingBox!)
+    // Include gaps and padding in the traversal grid, but only actual columns can be hit.
+    bounds.min.x = -layout.width / 2
+    bounds.max.x = layout.width / 2
+    bounds.min.z = -layout.depth / 2
+    bounds.max.z = layout.depth / 2
     inverse.copy(this.matrixWorld).invert()
     ray.copy(raycaster.ray).applyMatrix4(inverse)
-    if (!ray.intersectPlane(plane, hit)) return
-    const column = Math.floor((hit.x + layout.width / 2) / layout.pitch)
-    const row = Math.floor((layout.depth / 2 - hit.z) / layout.pitch)
-    if (column < 0 || column >= layout.columns || row < 0 || row >= layout.rows) return
-    const index = row * layout.columns + column
-    if (index >= layout.capacity) return
-    worldHit.copy(hit).applyMatrix4(this.matrixWorld)
-    const distance = raycaster.ray.origin.distanceTo(worldHit)
-    if (distance < raycaster.near || distance > raycaster.far) return
-    intersections.push({ distance, point: worldHit.clone(), object: this, instanceId: index })
+    if (!ray.intersectBox(bounds, entry)) return
+    if (bounds.containsPoint(ray.origin)) entry.copy(ray.origin)
+    const dims = [layout.columns, layout.rows]
+    const origin = [ray.origin.x, ray.origin.z]
+    const direction = [ray.direction.x, ray.direction.z]
+    const min = [bounds.min.x, bounds.min.z]
+    const coordinates = [entry.x, entry.z].map((value, axis) => THREE.MathUtils.clamp(
+      Math.floor((value + direction[axis] * 1e-7 - min[axis]) / layout.pitch), 0, dims[axis] - 1,
+    ))
+    const strides = direction.map((value) => value > 0 ? 1 : value < 0 ? -1 : 0)
+    const next = direction.map((value, axis) => value === 0 ? Infinity : (
+      min[axis] + (coordinates[axis] + (value > 0 ? 1 : 0)) * layout.pitch - origin[axis]
+    ) / value)
+    const delta = direction.map((value) => value === 0 ? Infinity : layout.pitch / Math.abs(value))
+    for (let visited = 0; visited <= layout.columns + layout.rows; visited += 1) {
+      const index = (layout.rows - 1 - coordinates[1]) * layout.columns + coordinates[0]
+      if (index < layout.capacity) {
+        this.getMatrixAt(index, instanceMatrix)
+        cellBox.copy(this.geometry.boundingBox!).applyMatrix4(instanceMatrix)
+        if (ray.intersectBox(cellBox, hit)) {
+          worldHit.copy(hit).applyMatrix4(this.matrixWorld)
+          const distance = raycaster.ray.origin.distanceTo(worldHit)
+          if (distance >= raycaster.near && distance <= raycaster.far) {
+            intersections.push({ distance, point: worldHit.clone(), object: this, instanceId: index })
+            return
+          }
+          if (distance > raycaster.far) return
+        }
+      }
+      const axis = next[0] <= next[1] ? 0 : 1
+      if (!strides[axis]) return
+      coordinates[axis] += strides[axis]
+      if (coordinates[axis] < 0 || coordinates[axis] >= dims[axis]) return
+      next[axis] += delta[axis]
+    }
   }
 }
 

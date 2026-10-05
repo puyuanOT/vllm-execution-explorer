@@ -142,7 +142,7 @@ export function ConsoleRail({ modules, loadedExample, disabled, canUndo, storage
         <div>
           <SectionTitle>Draft</SectionTitle>
           <div className="flex flex-wrap gap-1.5">
-            {onUndo ? <button className={buttonClass} type="button" disabled={!canUndo || disabled} onClick={onUndo}><Undo2 className="size-3.5" aria-hidden="true" />Undo</button> : null}
+            {onUndo ? <button className={buttonClass} type="button" disabled={!canUndo || disabled} onClick={onUndo}><Undo2 className="size-3.5" aria-hidden="true" />Undo deletion</button> : null}
             {onStartEmpty ? <button className={buttonClass} type="button" disabled={disabled} onClick={onStartEmpty}>Start empty</button> : null}
             {onReset ? <button className={buttonClass} type="button" disabled={disabled} onClick={onReset}>Reset</button> : null}
           </div>
