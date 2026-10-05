@@ -25,7 +25,7 @@ Base: `3766f6d5506d7f8d09720efe3c5f8d6448060259`, tested from `codex/arrival-dia
 | One and two requests at zero | Separate point rows on a valid integer-millisecond axis. |
 | Capture, then return to Configure | Original six-request plan and the diamond chart remain intact. |
 
-Screenshots: [implemented diagram](arrival-diagram.png), [desktop](desktop.png), [320 px](mobile-320.png), [360 px](mobile-360.png), [64 requests at the end of the scroller](dense-64.png).
+Screenshots: [desktop](desktop.png), [320 px](mobile-320.png), [360 px](mobile-360.png), [64 requests at the end of the scroller](dense-64.png).
 
 Phone testing discovered an existing draft-actions overflow: page scrollWidth was 375 at both 320 and 360 px. Constraining the draft-summary/action container to its available width allows the existing wrapping buttons to wrap. Final page scrollWidth equals 320 and 360 respectively. The earlier failing observations remain in the raw evidence. The first immediate keyboard-End observation occurred during native scroll animation; the settled observation confirms the final row is reachable.
 
