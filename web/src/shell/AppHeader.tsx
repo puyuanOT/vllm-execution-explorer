@@ -2,9 +2,10 @@ import { Archive, Disc3, FlaskConical } from "lucide-react"
 
 import { cn } from "../lib/cn.ts"
 import type { AppRoute } from "../hooks/useAppRoute.ts"
+import type { EvidenceKind } from "../execution/evidence.ts"
 import { Chip, Led, type Tone } from "../ui/controls.tsx"
 
-export type HeaderEvidence = "synthetic" | "gpu" | "draft" | "recorded" | null
+export type HeaderEvidence = EvidenceKind | null
 
 export function AppHeader({
   route,
@@ -63,6 +64,7 @@ export function AppHeader({
         {recording ? <Chip className="hidden max-w-64 sm:inline-flex" title={recording}><Disc3 className="size-3.5 shrink-0" aria-hidden="true" /><span className="text-ink">{recording}</span></Chip> : null}
         {evidence === "synthetic" ? <Chip tone="synthetic"><FlaskConical className="size-3.5 shrink-0" aria-hidden="true" /><span>Synthetic fixture · not GPU evidence</span></Chip> : null}
         {evidence === "gpu" ? <Chip tone="gpu"><Led /><span>Observed GPU recording</span></Chip> : null}
+        {evidence === "unverified" ? <Chip tone="warning"><span>GPU execution unverified</span></Chip> : null}
         {evidence === "draft" ? <Chip tone="warning"><span>Draft preview · not execution evidence</span></Chip> : null}
         <span className="flex h-6 max-w-72 items-center gap-2 border-line font-mono text-[10.5px] text-faint sm:border-l sm:pl-3" role="status" title={status}>
           <Led tone={controller.tone} />

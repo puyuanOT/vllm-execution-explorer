@@ -207,7 +207,7 @@ export function ConfigurePage({
               </div>
               {(onUndo || onStartEmpty || onClearDraft) ? (
                 <div className="flex flex-wrap gap-1.5 xl:hidden" aria-label="Draft actions">
-                  {onUndo ? <button className={buttonClass} type="button" disabled={!canUndo || busy} onClick={onUndo}>Undo</button> : null}
+                  {onUndo ? <button className={buttonClass} type="button" disabled={!canUndo || busy} onClick={onUndo}>Undo deletion</button> : null}
                   {onStartEmpty ? <button className={buttonClass} type="button" disabled={busy} onClick={onStartEmpty}>Start empty</button> : null}
                   {onClearDraft ? <button className={buttonClass} type="button" disabled={busy} onClick={onClearDraft}>Reset example</button> : null}
                 </div>

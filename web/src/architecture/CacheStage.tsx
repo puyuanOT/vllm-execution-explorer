@@ -47,7 +47,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
 }) {
   const layout = useMemo(() => dieLayout(pool.capacity, span), [pool.capacity, span])
-  const raycast = useMemo(() => createDieRaycast(layout, 0.04), [layout])
+  const raycast = useMemo(() => createDieRaycast(layout), [layout])
   const mesh = useRef<THREE.InstancedMesh>(null)
   const hover = useHoverCursor()
   const byId = useMemo(() => new Map(pool.blocks.map((block) => [block.blockId, block])), [pool.blocks])
@@ -76,6 +76,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     }
     instance.instanceMatrix.needsUpdate = true
     if (instance.instanceColor) instance.instanceColor.needsUpdate = true
+    instance.computeBoundingBox()
     instance.computeBoundingSphere()
   }, [layout, byId, requestOrder, selectedRequest, selected?.key])
   const viewportWidth = useThree((state) => state.size.width)
@@ -146,15 +147,14 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
   const activeRequestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
   const activePosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
   const header = (
-    <div className="mb-2 flex items-center gap-2">
+    <div className="mb-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1">
       <span className="grid h-[18px] shrink-0 place-items-center whitespace-nowrap border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">BLK {block.blockId}</span>
-      <span className="shrink-0 whitespace-nowrap font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
-      <span className="min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
-      <span className="flex-1" />
-      <EvidenceTag kind={block.trust === "unknown" ? "unknown" : "observed"}>{block.trust === "unknown" ? "Unknown" : "Observed"}</EvidenceTag>
+      <span className="min-w-0 truncate font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
+      <span className="col-span-2 row-start-2 min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
+      <span className="col-start-3 row-start-2 justify-self-end"><EvidenceTag kind={block.trust === "unknown" ? "unknown" : "observed"}>{block.trust === "unknown" ? "Unknown" : "Observed"}</EvidenceTag></span>
       <button
         type="button"
-        className="-mr-1 grid size-6 min-h-0 shrink-0 place-items-center rounded-none border-0 bg-transparent p-0 text-faint hover:text-ink"
+        className="-mr-1 col-start-3 row-start-1 grid size-6 min-h-0 shrink-0 place-items-center justify-self-end rounded-none border-0 bg-transparent p-0 text-faint hover:text-ink"
         aria-label={`Close token slots for block ${block.blockId}`}
         title="Close token slots"
         onClick={() => onSelect({ kind: "component", id: "kv-cache" })}

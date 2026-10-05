@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react"
 
+import { arrivalAxis } from "./arrivalAxis.ts"
 import { formatTime } from "../scenario/time.ts"
 import type { ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import { requestColor } from "../theme.ts"
@@ -18,7 +19,7 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   useLayoutEffect(() => {
     const element = container.current
     if (!element) return
-    const update = () => setWidth(Math.max(280, element.clientWidth))
+    const update = () => setWidth(Math.max(480, element.clientWidth))
     update()
     const observer = new ResizeObserver(update)
     observer.observe(element)
@@ -27,7 +28,7 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   if (!hasRows) return null
   const order = rows.map((row) => row.sample.id)
   const latest = Math.max(0, ...scenario.batches.map((batch) => batch.arrivalOffsetMs))
-  const span = niceSpan(latest)
+  const { span, ticks } = arrivalAxis(latest)
   const left = PREP + 18 + LABELS
   const right = width - 12
   const x = (ms: number) => left + (ms / span) * Math.max(40, right - left - 60)
@@ -35,8 +36,6 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   const rowHeight = Math.max(2, Math.min(14, Math.floor(available / rows.length)))
   const rowY = (index: number) => TOP + index * rowHeight
   const showLabels = rowHeight >= 10
-  const step = tickStep(span)
-  const ticks = Array.from({ length: Math.floor(span / step) + 1 }, (_, index) => index * step)
   const bottom = rowY(rows.length) + 2
   const prepBottom = Math.max(bottom, TOP + 48)
   const height = Math.max(HEIGHT, bottom + 20, prepBottom + 8)
@@ -46,7 +45,7 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
   let rowIndex = 0
   return (
     <div className="flex flex-col border border-slate-800 bg-[#060a11] md:flex-row">
-      <div ref={container} className="relative min-w-0 flex-1 overflow-hidden">
+      <div ref={container} className="relative min-w-0 flex-1 overflow-x-auto" role="region" aria-label="Planned request arrivals" tabIndex={0}>
         <svg width={width} height={height} role="img" aria-label={`Arrival sequencer: ${description}`}>
           <defs>
             <pattern id="arrival-prep" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -69,7 +68,7 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
             </g>
           ))}
           <line x1={x(0)} x2={x(0)} y1={TOP - 12} y2={bottom} stroke="var(--accent)" strokeWidth={1.2} />
-          <text x={x(0) + 5} y={TOP - 8} className="fill-accent font-mono text-[9px] tracking-[0.04em]">t=0 · cache verified fresh</text>
+          <text x={x(0) + 5} y={TOP - 8} className="fill-accent font-mono text-[9px] tracking-[0.04em]">t=0 · fresh cache required</text>
           {scenario.batches.map((batch) => {
             const first = rowIndex
             const notes = batch.samples.map((sample) => {
@@ -89,20 +88,8 @@ export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; 
       </div>
       <div className="grid shrink-0 content-start gap-1.5 px-3.5 pb-3 md:w-52 md:py-3.5 md:pl-0">
         <span className="cp-label">Arrival sequencer</span>
-        <span className="text-pretty text-[11.5px] leading-[1.45] text-faint">Each batch dispatches at its offset after a verified fresh prefix cache. vLLM still decides how requests join scheduler steps.</span>
+        <span className="text-pretty text-[11.5px] leading-[1.45] text-faint">Capture verifies a fresh prefix cache before planned t=0. Each batch then dispatches at its offset. vLLM still decides how requests join scheduler steps.</span>
       </div>
     </div>
   )
-}
-
-function niceSpan(latest: number): number {
-  const target = Math.max(10, latest * 1.25)
-  const magnitude = 10 ** Math.floor(Math.log10(target))
-  return [1, 1.5, 2, 2.5, 3, 5, 7.5, 10].map((factor) => factor * magnitude).find((value) => value >= target) ?? 10 * magnitude
-}
-
-function tickStep(span: number): number {
-  const raw = span / 4
-  const magnitude = 10 ** Math.floor(Math.log10(raw))
-  return [1, 2, 2.5, 5, 10].map((factor) => factor * magnitude).find((value) => value >= raw) ?? magnitude * 10
 }

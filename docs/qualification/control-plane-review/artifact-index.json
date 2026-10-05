@@ -1,0 +1,64 @@
+{
+  "archive": {
+    "path": "a100-captures.tar.gz",
+    "size_bytes": 716369,
+    "sha256": "8c5b2c7c5a829f6668e30eec193cafdcbcb0089623fe6490a501b9bfd6b3fbaa"
+  },
+  "files": [
+    {
+      "path": "run-14001494e084/content.jsonl",
+      "size_bytes": 3627,
+      "sha256": "e2f96504354d447d2f72b4a11810e935765a6b8662ab39d8cb390c0859b403fb"
+    },
+    {
+      "path": "run-14001494e084/events.jsonl",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "run-14001494e084/manifest.json",
+      "size_bytes": 7659,
+      "sha256": "c491aa618aea3b90df138cacdda069e092e88f1fa1514b7ee540791ca05e77d8"
+    },
+    {
+      "path": "run-5328256bf349/content.jsonl",
+      "size_bytes": 56821,
+      "sha256": "ab51f5b8b9d55dc5a3b3581c0413aafe5f3ed7c8e28a9a335478299cd98264d1"
+    },
+    {
+      "path": "run-5328256bf349/events.jsonl",
+      "size_bytes": 288825,
+      "sha256": "1ef5e227d26c6a218cba256997a4e884845124f6df1f61c9d761248fddf68470"
+    },
+    {
+      "path": "run-5328256bf349/manifest.json",
+      "size_bytes": 39402,
+      "sha256": "4924c783dc10c925de00f502a3137455b71c3ee49d4170b22c06e7cb3d54123a"
+    },
+    {
+      "path": "run-5328256bf349/profiling/activities.json",
+      "size_bytes": 6506964,
+      "sha256": "b69944ce88eea05f94ef9fe9cc7880b405f650b0c90e5525f9e7b83656061646"
+    },
+    {
+      "path": "run-5328256bf349/profiling/raw/explorer-run-5328256bf349_rank0.1791168102442515443.pt.trace.json.gz",
+      "size_bytes": 394266,
+      "sha256": "e62c9599363066ef050c7f54e32a8e578d718ea4ef2a48dff35132c2c6c802c6"
+    },
+    {
+      "path": "run-d0ec34078edc/content.jsonl",
+      "size_bytes": 44546,
+      "sha256": "5bbbb8cf1a00e3844e4d5e560c9483e6bb5d809c0bfbd24568aefd9f63f1ed75"
+    },
+    {
+      "path": "run-d0ec34078edc/events.jsonl",
+      "size_bytes": 264788,
+      "sha256": "2ca9fd07517abf87f609d2ea2196455052ddaeb1f8ae0a030efef06ddd838789"
+    },
+    {
+      "path": "run-d0ec34078edc/manifest.json",
+      "size_bytes": 100625,
+      "sha256": "4a88cf6568ad2cd66bc9821a8fefd6c45297e835bab718b820b495e6b57c6aa6"
+    }
+  ]
+}

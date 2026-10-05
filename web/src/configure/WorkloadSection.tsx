@@ -24,7 +24,7 @@ import {
 } from "./ui.tsx"
 
 const BASE_OVERRIDE = "__base__"
-const ROW_GRID = "grid grid-cols-[3px_minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-x-2.5 gap-y-2 md:grid-cols-[3px_minmax(96px,132px)_minmax(0,1fr)_104px_84px_auto]"
+const ROW_GRID = "grid grid-cols-[3px_minmax(0,1fr)_minmax(0,1fr)] items-start gap-x-2.5 gap-y-2 [@container(min-width:700px)]:grid-cols-[3px_minmax(96px,132px)_minmax(0,1fr)_104px_84px_auto]"
 
 type Sample = ScenarioDraft["batches"][number]["samples"][number]
 
@@ -134,7 +134,7 @@ export function WorkloadSection({
             <FieldError id="add-batch-error" message={issueFor("add-batch")} />
           </div>
         ) : (
-          <ol className="m-0 grid list-none gap-2 p-0" aria-label="Arrival batches">
+          <ol className="m-0 grid min-w-0 grid-cols-1 list-none gap-2 p-0" aria-label="Arrival batches">
             {scenario.batches.map((batch, batchIndex) => {
               const timeError = issueFor(`batch-time-${batch.id}`)
               const labelError = issueFor(`batch-label-${batch.id}`)
@@ -161,7 +161,7 @@ export function WorkloadSection({
                       </span>
                       <ChevronDown className="size-4 shrink-0 text-faint group-open/batch:rotate-180" aria-hidden="true" />
                     </summary>
-                    <div className="border-t border-slate-800">
+                    <div className="border-t border-slate-800 [container-type:inline-size]">
                       <div className={cn("grid items-start gap-3 px-3 py-3 sm:grid-cols-2", adapters.length > 0 ? "md:grid-cols-[minmax(0,240px)_160px_minmax(0,240px)]" : "md:grid-cols-[minmax(0,240px)_160px]")}>
                         <label className="block text-xs font-medium text-slate-400" htmlFor={`batch-label-${batch.id}`}>
                           Batch label
@@ -223,7 +223,7 @@ export function WorkloadSection({
                         <p className="m-0 border-t border-slate-800 px-3 py-4 text-center text-pretty text-sm text-slate-400">No requests arrive in this batch. Add a request below.</p>
                       ) : (
                         <>
-                          <div className={cn(ROW_GRID, "hidden border-t border-slate-800 px-3 pb-1 pt-2 md:grid")} aria-hidden="true">
+                          <div className={cn(ROW_GRID, "hidden border-t border-slate-800 px-3 pb-1 pt-2 [@container(min-width:700px)]:grid")} aria-hidden="true">
                             <span />
                             <span className="cp-label">Label</span>
                             <span className="cp-label">Prompt or input length</span>
@@ -329,8 +329,8 @@ function RequestRow({
   return (
     <li className="border-t border-slate-800 px-3 py-2">
       <div className={ROW_GRID}>
-        <i className="row-span-3 w-[3px] self-stretch md:row-span-1 md:h-7 md:self-center" style={{ background: color }} aria-hidden="true" />
-        <Cell className="col-span-2 md:col-span-1" label="Request label" htmlFor={`sample-label-${sample.id}`}>
+        <i className="row-span-3 w-[3px] self-stretch [@container(min-width:700px)]:row-span-1 [@container(min-width:700px)]:h-7 [@container(min-width:700px)]:self-center" style={{ background: color }} aria-hidden="true" />
+        <Cell className="col-start-2 [@container(min-width:700px)]:col-start-auto" label="Request label" htmlFor={`sample-label-${sample.id}`}>
           <input
             id={`sample-label-${sample.id}`}
             className={cn(compactInputClass, "font-mono")}
@@ -342,12 +342,12 @@ function RequestRow({
           />
         </Cell>
         {sample.inputMode === "synthetic" ? (
-          <Cell className="col-span-3 col-start-2 md:col-span-1 md:col-start-auto" label="Target input tokens" htmlFor={`sample-synthetic-${sample.id}`}>
-            <Suffixed suffix="synthetic tokens">
+          <Cell className="col-span-2 col-start-2 [@container(min-width:700px)]:col-span-1 [@container(min-width:700px)]:col-start-auto" label="Target input tokens" htmlFor={`sample-synthetic-${sample.id}`}>
+            <Suffixed suffix="tokens">
               <input
                 key={`${sample.id}-synthetic-${sample.syntheticInputTokens}`}
                 id={`sample-synthetic-${sample.id}`}
-                className={cn(compactInputClass, "pr-32 font-mono tabular-nums")}
+                className={cn(compactInputClass, "[@container(min-width:700px)]:pr-16 font-mono tabular-nums")}
                 inputMode="numeric"
                 defaultValue={sample.syntheticInputTokens}
                 aria-required="true"
@@ -363,7 +363,7 @@ function RequestRow({
             </Suffixed>
           </Cell>
         ) : (
-          <Cell className="col-span-3 col-start-2 md:col-span-1 md:col-start-auto" label="Prompt" htmlFor={`sample-prompt-${sample.id}`}>
+          <Cell className="col-span-2 col-start-2 [@container(min-width:700px)]:col-span-1 [@container(min-width:700px)]:col-start-auto" label="Prompt" htmlFor={`sample-prompt-${sample.id}`}>
             <textarea
               id={`sample-prompt-${sample.id}`}
               className={cn(compactInputClass, "max-h-40 min-h-[34px] resize-y [field-sizing:content]")}
@@ -376,12 +376,12 @@ function RequestRow({
             />
           </Cell>
         )}
-        <Cell className="col-start-2 md:col-start-auto" label="Maximum output tokens" htmlFor={`sample-output-${sample.id}`}>
+        <Cell className="col-start-2 [@container(min-width:700px)]:col-start-auto" label="Maximum output tokens" htmlFor={`sample-output-${sample.id}`}>
           <Suffixed suffix="max out">
             <input
               key={`${sample.id}-output-${sample.maxOutputTokens}`}
               id={`sample-output-${sample.id}`}
-              className={cn(compactInputClass, "pr-16 font-mono tabular-nums")}
+              className={cn(compactInputClass, "[@container(min-width:700px)]:pr-14 font-mono tabular-nums")}
               inputMode="numeric"
               defaultValue={sample.maxOutputTokens}
               aria-required="true"
@@ -401,7 +401,7 @@ function RequestRow({
             <input
               id={`sample-priority-${sample.id}`}
               key={`${sample.id}-priority-${sample.priority ?? 0}`}
-              className={cn(compactInputClass, "pr-9 font-mono tabular-nums")}
+              className={cn(compactInputClass, "[@container(min-width:700px)]:pr-9 font-mono tabular-nums")}
               inputMode="numeric"
               defaultValue={sample.priority ?? 0}
               aria-invalid={Boolean(priorityError)}
@@ -415,7 +415,7 @@ function RequestRow({
             />
           </Suffixed>
         </Cell>
-        <div className="col-start-4 row-start-1 flex items-center gap-0.5 md:col-start-auto md:row-start-auto md:h-[34px]">
+        <div className="col-start-3 row-start-1 flex items-center justify-end gap-0.5 [@container(min-width:700px)]:col-start-auto [@container(min-width:700px)]:row-start-auto [@container(min-width:700px)]:h-[34px]">
           <button
             type="button"
             className={cn(iconButtonClass, expanded && "text-accent")}
@@ -513,7 +513,7 @@ function RequestRow({
 function Cell({ label, htmlFor, className, children }: { label: string; htmlFor: string; className?: string; children: ReactNode }) {
   return (
     <div className={cn("min-w-0", className)}>
-      <label className="mb-1 block text-[11px] font-medium text-slate-400 md:sr-only" htmlFor={htmlFor}>{label}</label>
+      <label className="mb-1 block text-[11px] font-medium text-slate-400 [@container(min-width:700px)]:sr-only" htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
   )
@@ -523,7 +523,7 @@ function Suffixed({ suffix, children }: { suffix: string; children: ReactNode })
   return (
     <div className="relative">
       {children}
-      <span className="pointer-events-none absolute right-2 top-[17px] -translate-y-1/2 font-mono text-[9px] uppercase tracking-[0.08em] text-faint" aria-hidden="true">{suffix}</span>
+      <span className="pointer-events-none absolute right-2 top-[17px] hidden -translate-y-1/2 font-mono text-[9px] [@container(min-width:700px)]:block uppercase tracking-[0.08em] text-faint" aria-hidden="true">{suffix}</span>
     </div>
   )
 }

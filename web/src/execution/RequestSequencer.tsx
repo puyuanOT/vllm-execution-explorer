@@ -5,6 +5,7 @@ import type { IndexedStep, SampleProjection } from "../../../replay/src/timeline
 import { arrivalGroup } from "../explore/model.ts"
 import { cn } from "../lib/cn.ts"
 import { EvidenceTag } from "../ui/controls.tsx"
+import { sequencerScrollLeft } from "./sequencerScroll.ts"
 import type { Selection } from "./types.ts"
 
 const LABEL_WIDTH = 220
@@ -70,10 +71,7 @@ export function RequestSequencer({ samples, steps, allSteps, colors, selection, 
   useLayoutEffect(() => {
     const element = scroller.current
     if (!element || currentIndex < 0) return
-    const right = LABEL_WIDTH + (currentIndex + 1) * columnWidth
-    if (right > element.scrollLeft + element.clientWidth - 24 || right < element.scrollLeft + LABEL_WIDTH) {
-      element.scrollLeft = Math.max(0, right - element.clientWidth + columnWidth * 3)
-    }
+    element.scrollLeft = sequencerScrollLeft(currentIndex, columnWidth, LABEL_WIDTH, element.clientWidth, element.scrollLeft)
   }, [currentIndex, columnWidth])
 
   if (samples.length === 0) {

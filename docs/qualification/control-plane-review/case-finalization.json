@@ -1,0 +1,212 @@
+[
+  {
+    "run_id": "run-14001494e084",
+    "completion_status": "failed",
+    "content_kinds": [
+      "prompt_text"
+    ],
+    "execution_process": {
+      "clock_domain": "controller:time.monotonic_ns",
+      "exit_code": 0,
+      "exited_monotonic_ns": 20482409375537,
+      "kind": "spawn_per_run",
+      "pid": 63096,
+      "started_monotonic_ns": 20418481610015,
+      "status": "exited"
+    },
+    "capture": {
+      "contract_version": 1,
+      "engine_admission_boundary": "scheduler.add_request",
+      "http_boundary_observed": false,
+      "implementation": "unknown",
+      "message": "To serve at least one request with the model's max seq len (4096), (0.56 GiB KV cache is needed, which is larger than the available KV cache memory (0.25 GiB). Based on the available memory, the estimated maximum model length is 1792. Try increasing `gpu_memory_utilization` (which also controls CPU memory on the CPU backend) or decreasing `max_model_len` when initializing the engine. See https://docs.vllm.ai/en/latest/configuration/conserving_memory/ for more details.",
+      "phase_history": [
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20418481274398,
+          "phase": "configuration_accepted"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20418890481393,
+          "phase": "initializing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20418891537894,
+          "phase": "preparing_execution_runtime"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20479731959837,
+          "phase": "finalizing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20479735376415,
+          "phase": "failed"
+        }
+      ],
+      "preparation_observations": null,
+      "status": "failed",
+      "transport": "in_process_direct_engine"
+    },
+    "hardware": {
+      "gpu": null
+    }
+  },
+  {
+    "run_id": "run-5328256bf349",
+    "completion_status": "completed",
+    "content_kinds": [
+      "accepted_tokens",
+      "kv_tokens",
+      "prompt",
+      "synthetic_input",
+      "text"
+    ],
+    "execution_process": {
+      "clock_domain": "controller:time.monotonic_ns",
+      "exit_code": 0,
+      "exited_monotonic_ns": 20024654860775,
+      "kind": "spawn_per_run",
+      "pid": 61926,
+      "started_monotonic_ns": 19837423452396,
+      "status": "exited"
+    },
+    "capture": {
+      "contract_version": 1,
+      "engine_admission_boundary": "scheduler.add_request",
+      "http_boundary_observed": true,
+      "implementation": "instrumented_loopback_http",
+      "phase_history": [
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 19837423112269,
+          "phase": "configuration_accepted"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 19837824219471,
+          "phase": "initializing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 19837825223401,
+          "phase": "preparing_execution_runtime"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20018937927824,
+          "phase": "capture_ready"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20018938297651,
+          "phase": "dispatching_workload"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20020564255349,
+          "phase": "finalizing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20022313841835,
+          "phase": "completed"
+        }
+      ],
+      "preparation_observations": {
+        "cache_reset_completed_monotonic_ns": 20018874030384,
+        "cache_reset_started_monotonic_ns": 20018873851411,
+        "capture_ready_monotonic_ns": 20018875716637,
+        "clock_domain": "engine_process:time.monotonic_ns",
+        "engine_ready_monotonic_ns": 20018774426724,
+        "preparation_started_monotonic_ns": 19837846806731,
+        "warmup_completed_monotonic_ns": 20018873851160
+      },
+      "status": "completed",
+      "transport": "instrumented_http"
+    },
+    "hardware": {
+      "gpu": "NVIDIA A100-SXM4-40GB"
+    }
+  },
+  {
+    "run_id": "run-d0ec34078edc",
+    "completion_status": "completed",
+    "content_kinds": [
+      "accepted_tokens",
+      "kv_tokens",
+      "prompt",
+      "prompt_text",
+      "text"
+    ],
+    "execution_process": {
+      "clock_domain": "controller:time.monotonic_ns",
+      "exit_code": 0,
+      "exited_monotonic_ns": 20699514165232,
+      "kind": "spawn_per_run",
+      "pid": 63507,
+      "started_monotonic_ns": 20667257291232,
+      "status": "exited"
+    },
+    "capture": {
+      "contract_version": 1,
+      "engine_admission_boundary": "scheduler.add_request",
+      "http_boundary_observed": true,
+      "implementation": "instrumented_loopback_http",
+      "phase_history": [
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20667256960976,
+          "phase": "configuration_accepted"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20667665393245,
+          "phase": "initializing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20667666455876,
+          "phase": "preparing_execution_runtime"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20694169699716,
+          "phase": "capture_ready"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20694170046053,
+          "phase": "dispatching_workload"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20695283839993,
+          "phase": "finalizing_recording"
+        },
+        {
+          "clock_domain": "controller:time.monotonic_ns",
+          "observed_monotonic_ns": 20697060487960,
+          "phase": "completed"
+        }
+      ],
+      "preparation_observations": {
+        "cache_reset_completed_monotonic_ns": 20694128998238,
+        "cache_reset_started_monotonic_ns": 20694128848165,
+        "capture_ready_monotonic_ns": 20694131824744,
+        "clock_domain": "engine_process:time.monotonic_ns",
+        "engine_ready_monotonic_ns": 20694098303997,
+        "preparation_started_monotonic_ns": 20667673877833,
+        "warmup_completed_monotonic_ns": 20694128847865
+      },
+      "status": "completed",
+      "transport": "instrumented_http"
+    },
+    "hardware": {
+      "gpu": "NVIDIA A100-SXM4-40GB"
+    }
+  }
+]

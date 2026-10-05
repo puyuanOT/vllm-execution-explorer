@@ -1,0 +1,384 @@
+
+> test
+> node --experimental-strip-types --test src/scenario/*.test.ts
+
+TAP version 13
+# (node:18267) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a real-sized pool has a unique, stable cell for every physical ID
+ok 1 - a real-sized pool has a unique, stable cell for every physical ID
+  ---
+  duration_ms: 14.441375
+  ...
+# Subtest: fast pool picking reaches the final physical block and skips empty grid padding
+ok 2 - fast pool picking reaches the final physical block and skips empty grid padding
+  ---
+  duration_ms: 3.153166
+  ...
+# Subtest: pool picking respects gaps, near/far clipping and all six viewing directions
+ok 3 - pool picking respects gaps, near/far clipping and all six viewing directions
+  ---
+  duration_ms: 13.779625
+  ...
+# Subtest: pool picking preserves block identity under translation, rotation and nonuniform scale
+ok 4 - pool picking preserves block identity under translation, rotation and nonuniform scale
+  ---
+  duration_ms: 0.371125
+  ...
+# Subtest: GQA maps all 32 query heads to the captured 8 KV heads without guessing incompatible geometry
+ok 5 - GQA maps all 32 query heads to the captured 8 KV heads without guessing incompatible geometry
+  ---
+  duration_ms: 0.268833
+  ...
+# Subtest: scheduled token geometry distinguishes prefill/decode and excludes the next sampled output
+ok 6 - scheduled token geometry distinguishes prefill/decode and excludes the next sampled output
+  ---
+  duration_ms: 0.145875
+  ...
+# Subtest: logical teaching stages require an explicit teaching clock
+ok 7 - logical teaching stages require an explicit teaching clock
+  ---
+  duration_ms: 0.123916
+  ...
+# Subtest: measured row geometry follows observed native rows independently of host state and excludes padding
+ok 8 - measured row geometry follows observed native rows independently of host state and excludes padding
+  ---
+  duration_ms: 0.157792
+  ...
+# Subtest: reused prefix slots select the active request while retaining the original content source
+ok 9 - reused prefix slots select the active request while retaining the original content source
+  ---
+  duration_ms: 0.340125
+  ...
+# Subtest: rotate, Ctrl/Cmd pan and right-button pan never select objects on release
+ok 10 - rotate, Ctrl/Cmd pan and right-button pan never select objects on release
+  ---
+  duration_ms: 0.347542
+  ...
+# (node:18269) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a flat die gives every physical block its own floor cell
+ok 11 - a flat die gives every physical block its own floor cell
+  ---
+  duration_ms: 11.679709
+  ...
+# Subtest: block zero sits at the front-left corner of the die
+ok 12 - block zero sits at the front-left corner of the die
+  ---
+  duration_ms: 0.087416
+  ...
+# Subtest: die picking returns the physical block under the pointer and skips padding
+ok 13 - die picking returns the physical block under the pointer and skips padding
+  ---
+  duration_ms: 14.584667
+  ...
+# Subtest: oblique die picking hits the rendered columns rather than a fixed floor plane
+ok 14 - oblique die picking hits the rendered columns rather than a fixed floor plane
+  ---
+  duration_ms: 12.959208
+  ...
+# (node:18270) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: learning examples remain editable valid live drafts and preserve host/model choices
+ok 15 - learning examples remain editable valid live drafts and preserve host/model choices
+  ---
+  duration_ms: 1.553709
+  ...
+# Subtest: a loaded learning example is recognized only while its workload and overrides are unchanged
+ok 16 - a loaded learning example is recognized only while its workload and overrides are unchanged
+  ---
+  duration_ms: 0.670625
+  ...
+# Subtest: automatic revisions and explicit tokenizer overrides serialize without stale pins
+ok 17 - automatic revisions and explicit tokenizer overrides serialize without stale pins
+  ---
+  duration_ms: 0.238958
+  ...
+# Subtest: raw priorities cannot silently fall back and are retained by recording edits
+ok 18 - raw priorities cannot silently fall back and are retained by recording edits
+  ---
+  duration_ms: 1.3925
+  ...
+# Subtest: invalid runtime combinations fail before submitting a capture
+ok 19 - invalid runtime combinations fail before submitting a capture
+  ---
+  duration_ms: 0.229375
+  ...
+# Subtest: recorded clock supports much slower speeds without changing other clocks
+ok 20 - recorded clock supports much slower speeds without changing other clocks
+  ---
+  duration_ms: 0.057583
+  ...
+# (node:18271) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a demo fixture host check does not report the missing CUDA runtime as complete
+ok 21 - a demo fixture host check does not report the missing CUDA runtime as complete
+  ---
+  duration_ms: 0.433458
+  ...
+# Subtest: a live local engine keeps a failed CUDA check visible
+ok 22 - a live local engine keeps a failed CUDA check visible
+  ---
+  duration_ms: 0.078542
+  ...
+# Subtest: a ready CUDA runtime is reported as ready
+ok 23 - a ready CUDA runtime is reported as ready
+  ---
+  duration_ms: 0.089875
+  ...
+# Subtest: a missing preflight reports that the controller was not reached
+ok 24 - a missing preflight reports that the controller was not reached
+  ---
+  duration_ms: 0.071708
+  ...
+# Subtest: each host check returns its own stage objects
+ok 25 - each host check returns its own stage objects
+  ---
+  duration_ms: 0.084625
+  ...
+# (node:18272) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: profile imports verify bytes and recording identity while retaining host replay on failure
+ok 26 - profile imports verify bytes and recording identity while retaining host replay on failure
+  ---
+  duration_ms: 3.603291
+  ...
+# Subtest: profile import rejects unsafe paths and oversized attachments before reading them
+ok 27 - profile import rejects unsafe paths and oversized attachments before reading them
+  ---
+  duration_ms: 0.611375
+  ...
+# (node:18273) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: batch navigation skips embeddings and runtime calls and deduplicates delayed sampling scopes
+ok 28 - batch navigation skips embeddings and runtime calls and deduplicates delayed sampling scopes
+  ---
+  duration_ms: 0.620416
+  ...
+# (node:18274) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: short arrival plans have valid whole-millisecond ticks in either display unit
+ok 29 - short arrival plans have valid whole-millisecond ticks in either display unit
+  ---
+  duration_ms: 3.490041
+  ...
+# Subtest: requested GPU execution needs observed provenance and hardware before claiming GPU evidence
+ok 30 - requested GPU execution needs observed provenance and hardware before claiming GPU evidence
+  ---
+  duration_ms: 0.238875
+  ...
+# Subtest: a trace gap excludes the raw tail from scope, scheduler markers and playback
+ok 31 - a trace gap excludes the raw tail from scope, scheduler markers and playback
+  ---
+  duration_ms: 1.045167
+  ...
+# Subtest: forward and backward sequencer scrolling keeps the whole current column beside sticky labels
+ok 32 - forward and backward sequencer scrolling keeps the whole current column beside sticky labels
+  ---
+  duration_ms: 0.204167
+  ...
+# (node:18275) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: requests are named by workload label and fall back to the recorded id
+ok 33 - requests are named by workload label and fall back to the recorded id
+  ---
+  duration_ms: 0.360833
+  ...
+# Subtest: requests without a recorded arrival group share one honestly named group
+ok 34 - requests without a recorded arrival group share one honestly named group
+  ---
+  duration_ms: 0.298459
+  ...
+# (node:18276) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: only a matching completed run triggers the recording fallback
+ok 35 - only a matching completed run triggers the recording fallback
+  ---
+  duration_ms: 0.576833
+  ...
+# Subtest: a matching failed run preserves the controller error for Configure
+ok 36 - a matching failed run preserves the controller error for Configure
+  ---
+  duration_ms: 0.172667
+  ...
+# Subtest: the fallback ignores active, mismatched, and manually superseded runs
+ok 37 - the fallback ignores active, mismatched, and manually superseded runs
+  ---
+  duration_ms: 0.092792
+  ...
+# (node:18277) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: the example flattens to the 0/100/120 offsets without merging equal times
+ok 38 - the example flattens to the 0/100/120 offsets without merging equal times
+  ---
+  duration_ms: 1.195083
+  ...
+# Subtest: authoring the acceptance sequence keeps identities when labels change
+ok 39 - authoring the acceptance sequence keeps identities when labels change
+  ---
+  duration_ms: 1.676375
+  ...
+# Subtest: duplicate, move, and delete keep other sample identities
+ok 40 - duplicate, move, and delete keep other sample identities
+  ---
+  duration_ms: 0.153083
+  ...
+# Subtest: equal arrival times stay in authoring order and are not merged
+ok 41 - equal arrival times stay in authoring order and are not merged
+  ---
+  duration_ms: 0.057458
+  ...
+# Subtest: seconds convert exactly and reject sub-millisecond values
+ok 42 - seconds convert exactly and reject sub-millisecond values
+  ---
+  duration_ms: 0.2345
+  ...
+# Subtest: dragging an arrival marker lands on integer milliseconds
+ok 43 - dragging an arrival marker lands on integer milliseconds
+  ---
+  duration_ms: 0.095292
+  ...
+# Subtest: saved v1 drafts from before input modes are normalized
+ok 44 - saved v1 drafts from before input modes are normalized
+  ---
+  duration_ms: 0.140667
+  ...
+# Subtest: run serialization emits the nested capture contract
+ok 45 - run serialization emits the nested capture contract
+  ---
+  duration_ms: 0.263791
+  ...
+# Subtest: runner capabilities block an unavailable saved quantization choice
+ok 46 - runner capabilities block an unavailable saved quantization choice
+  ---
+  duration_ms: 0.450542
+  ...
+# Subtest: recorded base routes remain explicit when copied into an adapter draft
+ok 47 - recorded base routes remain explicit when copied into an adapter draft
+  ---
+  duration_ms: 0.318458
+  ...
+# (node:18278) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: scope channels follow the serving subsystem that recorded each event
+ok 48 - scope channels follow the serving subsystem that recorded each event
+  ---
+  duration_ms: 0.393417
+  ...
+# Subtest: the scope never draws ticks or step markers past the playhead
+ok 49 - the scope never draws ticks or step markers past the playhead
+  ---
+  duration_ms: 0.598334
+  ...
+# Subtest: an event's tick shares the playhead column once the slider reaches it
+ok 50 - an event's tick shares the playhead column once the slider reaches it
+  ---
+  duration_ms: 0.299542
+  ...
+# Subtest: a trace gap keeps its own column and collapsed positions stay in range
+ok 51 - a trace gap keeps its own column and collapsed positions stay in range
+  ---
+  duration_ms: 0.146417
+  ...
+# Subtest: telemetry sparklines end at the playhead and drop later samples
+ok 52 - telemetry sparklines end at the playhead and drop later samples
+  ---
+  duration_ms: 0.366459
+  ...
+# (node:18279) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SSH verification is bound to the checked host, setup mode, key, and endpoint
+ok 53 - SSH verification is bound to the checked host, setup mode, key, and endpoint
+  ---
+  duration_ms: 0.517125
+  ...
+# Subtest: SSH capture requires both a key and a completed host check
+ok 54 - SSH capture requires both a key and a completed host check
+  ---
+  duration_ms: 0.089375
+  ...
+# Subtest: remote readiness requires a visible GPU and vLLM 0.30.x
+ok 55 - remote readiness requires a visible GPU and vLLM 0.30.x
+  ---
+  duration_ms: 0.088292
+  ...
+# (node:18280) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: malformed stored batches and samples recover without a startup exception
+ok 56 - malformed stored batches and samples recover without a startup exception
+  ---
+  duration_ms: 1.220667
+  ...
+# Subtest: valid incomplete drafts remain editable after reload
+ok 57 - valid incomplete drafts remain editable after reload
+  ---
+  duration_ms: 0.392709
+  ...
+# Subtest: older stored drafts still gain input-mode and settings defaults
+ok 58 - older stored drafts still gain input-mode and settings defaults
+  ---
+  duration_ms: 0.227625
+  ...
+# Subtest: malformed persisted settings cannot reach string or adapter controls
+ok 59 - malformed persisted settings cannot reach string or adapter controls
+  ---
+  duration_ms: 2.110084
+  ...
+# (node:18281) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: SSH reachability stays active until the host has responded
+ok 60 - SSH reachability stays active until the host has responded
+  ---
+  duration_ms: 0.675166
+  ...
+# Subtest: runtime copying and preparation show SSH complete without claiming the controller ready
+ok 61 - runtime copying and preparation show SSH complete without claiming the controller ready
+  ---
+  duration_ms: 0.064834
+  ...
+# Subtest: tunnel phases wait for final controller verification
+ok 62 - tunnel phases wait for final controller verification
+  ---
+  duration_ms: 0.083417
+  ...
+# Subtest: prior ready or failed responses and unknown phases cannot replace current progress
+ok 63 - prior ready or failed responses and unknown phases cannot replace current progress
+  ---
+  duration_ms: 0.043334
+  ...
+# (node:18282) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: invalid raw output values block a saved valid draft
+ok 64 - invalid raw output values block a saved valid draft
+  ---
+  duration_ms: 0.665625
+  ...
+# Subtest: invalid raw offsets block the previous valid time in either display unit
+ok 65 - invalid raw offsets block the previous valid time in either display unit
+  ---
+  duration_ms: 0.241458
+  ...
+# Subtest: submission uses latest valid raw values and preserves identities and order
+ok 66 - submission uses latest valid raw values and preserves identities and order
+  ---
+  duration_ms: 0.788542
+  ...
+# Subtest: synthetic lengths are validated only for the active request mode
+ok 67 - synthetic lengths are validated only for the active request mode
+  ---
+  duration_ms: 0.870875
+  ...
+# Subtest: unchanged fields retain their draft values without losing valid zero offsets
+ok 68 - unchanged fields retain their draft values without losing valid zero offsets
+  ---
+  duration_ms: 1.874583
+  ...
+1..68
+# tests 68
+# suites 0
+# pass 68
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 155.749167
