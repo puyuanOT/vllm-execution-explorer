@@ -73,13 +73,14 @@ export function Readouts({ items }: { items: Array<{ label: string; value: React
 }
 
 /** Plots only the values it is given; callers pass the recorded prefix up to the playhead. */
-export function Sparkline({ values, max, width = 88, height = 26, active = false, label }: {
+export function Sparkline({ values, max, width = 88, height = 26, active = false, label, className }: {
   values: number[]
   max?: number
   width?: number
   height?: number
   active?: boolean
   label?: string
+  className?: string
 }) {
   const top = Math.max(1, max ?? 0, ...values)
   const step = values.length > 1 ? width / (values.length - 1) : 0
@@ -87,7 +88,7 @@ export function Sparkline({ values, max, width = 88, height = 26, active = false
   const line = points.map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ")
   const stroke = active ? "var(--accent)" : "#5d6f8a"
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} className="shrink-0">
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true} className={cn("shrink-0", className)}>
       {points.length > 1 ? (
         <>
           <path d={`${line} L${points.at(-1)![0].toFixed(1)},${height} L0,${height} Z`} fill={stroke} opacity={0.08} />
