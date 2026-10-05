@@ -44,15 +44,18 @@ function anchorOffset(anchor: LabelAnchor, width: number, height: number): [numb
 
 const CLAMP_MARGIN = 8
 
+/** Pixel bands a clamped label keeps clear of, measured from each canvas edge. */
+export interface ClampInsets { top?: number; right?: number; bottom?: number; left?: number }
+
 /**
  * DOM text that follows a 3D anchor; it stays crisp at any zoom and never blocks scene picking unless interactive.
- * Clamped labels are nudged so the whole box stays inside the canvas.
+ * Clamped labels are nudged so the whole box stays inside the canvas, outside any given inset bands.
  */
 export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactive = false, clamp = false, children }: {
   position?: Position3
   anchor?: LabelAnchor
   interactive?: boolean
-  clamp?: boolean
+  clamp?: boolean | ClampInsets
   children: ReactNode
 }) {
   const group = useRef<THREE.Group>(null)
@@ -92,12 +95,13 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
 
   useEffect(() => { invalidate() }, [position[0], position[1], position[2], invalidate])
 
+  const clamped = Boolean(clamp)
   useEffect(() => {
-    if (!clamp) return
+    if (!clamped) return
     const observer = new ResizeObserver(() => invalidate())
     observer.observe(element)
     return () => observer.disconnect()
-  }, [clamp, element, invalidate])
+  }, [clamped, element, invalidate])
 
   useFrame(() => {
     const object = group.current
@@ -110,9 +114,13 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     let y = (-vector.y * 0.5 + 0.5) * size.height
     const box = clamp ? element.firstElementChild as HTMLElement | null : null
     if (box) {
+      const insets = clamp === true ? {} : clamp as ClampInsets
       const [dx, dy] = anchorOffset(anchor, box.offsetWidth, box.offsetHeight)
-      x = Math.min(Math.max(x + dx, CLAMP_MARGIN), Math.max(CLAMP_MARGIN, size.width - box.offsetWidth - CLAMP_MARGIN)) - dx
-      y = Math.min(Math.max(y + dy, CLAMP_MARGIN), Math.max(CLAMP_MARGIN, size.height - box.offsetHeight - CLAMP_MARGIN)) - dy
+      const maxX = size.width - (insets.right ?? CLAMP_MARGIN) - box.offsetWidth
+      const maxY = size.height - (insets.bottom ?? CLAMP_MARGIN) - box.offsetHeight
+      // A box larger than the free band keeps clear of the right and bottom bands and overflows toward the top-left.
+      x = Math.max(CLAMP_MARGIN, Math.min(Math.max(x + dx, insets.left ?? CLAMP_MARGIN), maxX)) - dx
+      y = Math.max(CLAMP_MARGIN, Math.min(Math.max(y + dy, insets.top ?? CLAMP_MARGIN), maxY)) - dy
     }
     element.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`
   })

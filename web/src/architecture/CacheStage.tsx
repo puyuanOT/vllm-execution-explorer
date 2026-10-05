@@ -90,6 +90,8 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   const cartridgeSide = selectedPosition && selectedPosition[0] < 0 ? "left" : "right"
   const cartridgeX = selectedPosition ? besideDie ? (cartridgeSide === "right" ? 1 : -1) * (layout.width / 2 + 0.45) : selectedPosition[0] : 0
   const cartridgeAnchor = besideDie ? cartridgeSide : selectedPosition && selectedPosition[0] > layout.width * 0.15 ? "left" : "right"
+  // Keep clear of the canvas overlays: camera controls (a right column, or a top strip on phones) and the legend and evidence watermark below.
+  const cartridgeInsets = viewportWidth < 640 ? { top: 84, bottom: 104 } : { top: 72, right: 84, bottom: viewportWidth < 1000 ? 80 : 52 }
   return <group position={[x, DIE_Y, 0]}>
     <mesh position={[0, -0.09, 0]} raycast={() => null}>
       <boxGeometry args={[layout.width + 0.5, 0.16, layout.depth + 0.5]} />
@@ -126,16 +128,16 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     })}
     <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
-      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp>
-        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} onSelect={onSelect} />
+      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp={cartridgeInsets}>
+        <BlockCartridge block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
   </group>
 }
 
-function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, narrow = false, onSelect }: {
+function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, narrow = false, short = false, onSelect }: {
   block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
-  trackedRequestId?: string | null; trackedTokenPosition?: number | null; narrow?: boolean; onSelect: (selection: Selection) => void
+  trackedRequestId?: string | null; trackedTokenPosition?: number | null; narrow?: boolean; short?: boolean; onSelect: (selection: Selection) => void
 }) {
   const nameOf = (requestId: string) => requestLabel(requestLabels, requestId)
   const groups = new Set([...block.contents, ...block.bindings].map((span) => span.cacheGroup))
@@ -186,7 +188,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
         return <li key={slot}>
           <button
             type="button"
-            className="relative block h-[52px] w-full min-h-0 overflow-hidden rounded-none py-1 pl-2 pr-1.5 text-left disabled:cursor-default disabled:opacity-100"
+            className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
             style={{
               borderColor: status === "computed" || status === "reserved" ? `color-mix(in srgb, ${holderColor} 35%, transparent)` : "#1c2a41",
               background: status === "computed" ? `color-mix(in srgb, ${holderColor} 9%, #080d16)` : status === "unknown" ? undefined : "#080d16",
