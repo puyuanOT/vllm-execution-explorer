@@ -258,6 +258,7 @@ export function ConfigurePage({
           />
           <VllmSection
             settings={settings}
+            requests={scenario.batches.flatMap((batch) => batch.samples.map((sample) => ({ id: sample.id, label: sample.label })))}
             issues={issues}
             readiness={vllmReadiness}
             onSettings={onSettings}

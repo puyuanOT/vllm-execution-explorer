@@ -459,5 +459,6 @@ class VllmHttpSession:
             "revision_resolution",
             "resolved_configuration",
             "profiling_record",
+            "kv_cache_record",
         ):
             setattr(self, name, getattr(base, name, None))

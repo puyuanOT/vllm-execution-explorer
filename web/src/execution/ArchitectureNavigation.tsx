@@ -1,4 +1,5 @@
 import type { ArchitectureProjection, KvCacheProjection } from "../../../replay/src/learning.ts"
+import type { KvConfiguredPool } from "../../../replay/src/kv.ts"
 import { architectureFocusLabel, type ArchitectureFocus } from "../architecture/model.ts"
 import { cn } from "../lib/cn.ts"
 import type { Selection } from "./types.ts"
@@ -59,7 +60,7 @@ export function ArchitectureNavigation({ architecture, focus, onExplore, onSelec
 
 export function PoolNavigation({ cache, onSelect }: { cache: KvCacheProjection; onSelect: (selection: Selection) => void }) {
   return <div className="grid gap-2">
-    <p className="m-0 text-pretty text-[11.5px] text-faint">{cache.reason ?? "Each cell is one physical block. A cached block with zero references is available for reassignment."}</p>
+    <p className="m-0 text-pretty text-[11.5px] text-faint">{cache.reason ?? "Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices."}</p>
     {cache.pools.map((pool) => <form key={pool.pool} className="flex flex-wrap items-center gap-2" onSubmit={(event) => {
       event.preventDefault()
       const raw = new FormData(event.currentTarget).get("block")
@@ -69,7 +70,7 @@ export function PoolNavigation({ cache, onSelect }: { cache: KvCacheProjection; 
       if (block) onSelect({ kind: "block", key: block.key })
     }}>
       <label className={field}>
-        <span className="normal-case tracking-normal text-muted">{pool.pool} · {pool.capacity.toLocaleString()} blocks · {pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific token geometry" : `${pool.blockSize} token positions each`}</span>
+        <span className="normal-case tracking-normal text-muted">{(pool as Partial<KvConfiguredPool>).devices?.join(", ") || "Device not captured"} / {pool.pool} · {pool.capacity.toLocaleString()} blocks · {pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific token geometry" : `${pool.blockSize} token slots/block`}</span>
         <input className="h-7 w-40 rounded-none border-line-strong bg-surface py-0 font-mono text-[11px] text-ink" name="block" type="number" min={0} max={pool.capacity - 1} step={1} required placeholder="Physical block ID" aria-label={`Physical block ID in ${pool.pool}`} />
       </label>
       <button type="submit" className={control}>Inspect block</button>

@@ -1,0 +1,559 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-model-batching":
+    - generic: gpu-model-batching
+  - generic: Observed GPU recording
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model architecture" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "Model execution focused 3D view":
+      - generic: Qwen3-4B-Instruct-2507
+      - generic: Logical model structure · GPU layer timing available in Profile mode
+      - generic: L1
+      - generic: L10
+      - generic: L19
+      - generic: L28
+      - generic: L36
+      - generic: Token embeddings
+      - generic: Norm → LM head → sampling
+      - generic: Scheduled input positions
+      - generic "Requests scheduled in this step":
+        - button "long-input Positions 512–512 · 0 prefill / 1 decode":
+          - generic: long-input
+          - generic: Positions 512–512 · 0 prefill / 1 decode
+        - button "short-input Positions 0–15 · 16 prefill / 0 decode":
+          - generic: short-input
+          - generic: Positions 0–15 · 16 prefill / 0 decode
+      - generic: "step-9: 17 scheduled input positions / 2 requests"
+      - generic: 2 requests · 17 positions
+      - generic: Decode lighter · explanatory layout
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: Model execution
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 255
+    - generic: step_scheduled
+    - generic: step-9
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - generic: Selected
+    - generic: Walkthrough position
+    - generic: Profiler activity
+    - generic: Numerical K/V snapshots not captured
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic "Model structure controls"
+    - option "Layer 1" [selected]
+    - option "Layer 2"
+    - option "Layer 3"
+    - option "Layer 4"
+    - option "Layer 5"
+    - option "Layer 6"
+    - option "Layer 7"
+    - option "Layer 8"
+    - option "Layer 9"
+    - option "Layer 10"
+    - option "Layer 11"
+    - option "Layer 12"
+    - option "Layer 13"
+    - option "Layer 14"
+    - option "Layer 15"
+    - option "Layer 16"
+    - option "Layer 17"
+    - option "Layer 18"
+    - option "Layer 19"
+    - option "Layer 20"
+    - option "Layer 21"
+    - option "Layer 22"
+    - option "Layer 23"
+    - option "Layer 24"
+    - option "Layer 25"
+    - option "Layer 26"
+    - option "Layer 27"
+    - option "Layer 28"
+    - option "Layer 29"
+    - option "Layer 30"
+    - option "Layer 31"
+    - option "Layer 32"
+    - option "Layer 33"
+    - option "Layer 34"
+    - option "Layer 35"
+    - option "Layer 36"
+    - region "Layer and token participation":
+      - heading "Layer × requests · step-9" [level=2]
+      - generic: Host step boundaries
+      - paragraph: Host/teaching playback shows scheduled participation. GPU write chronology uses the independent profiler clock.
+      - generic "Layer matrix legend":
+        - generic: S
+        - text: Scheduled
+        - generic: W
+        - text: KV write operation active
+        - generic: C
+        - text: KV write operation completed
+        - generic: R
+        - text: Existing prefix KV reused
+        - generic: —
+        - text: Outside this step
+        - generic: "?"
+        - text: Unknown
+      - button "Previous columns" [disabled]
+      - generic: 1–2 of 2
+      - button "Next columns" [disabled]
+      - generic: Select a request to inspect its tokens
+      - table "Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.":
+        - caption: Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.
+        - rowgroup:
+          - row "Layer long-input 1 scheduled 111 prior positions short-input 16 scheduled":
+            - columnheader "Layer"
+            - columnheader "long-input 1 scheduled 111 prior positions":
+              - button "long-input 1 scheduled 111 prior positions":
+                - generic: long-input
+                - generic: 1 scheduled
+                - generic: 111 prior positions
+            - columnheader "short-input 16 scheduled":
+              - button "short-input 16 scheduled":
+                - generic: short-input
+                - generic: 16 scheduled
+        - rowgroup:
+          - 'row "Layer 1 long-input, layer 1: 111 existing prefix kv reused, 1 scheduled short-input, layer 1: 16 scheduled"':
+            - rowheader "Layer 1":
+              - button "Layer 1"
+            - 'cell "long-input, layer 1: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 1: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 1: 16 scheduled"':
+              - 'button "short-input, layer 1: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 2 long-input, layer 2: 111 existing prefix kv reused, 1 scheduled short-input, layer 2: 16 scheduled"':
+            - rowheader "Layer 2":
+              - button "Layer 2"
+            - 'cell "long-input, layer 2: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 2: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 2: 16 scheduled"':
+              - 'button "short-input, layer 2: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 3 long-input, layer 3: 111 existing prefix kv reused, 1 scheduled short-input, layer 3: 16 scheduled"':
+            - rowheader "Layer 3":
+              - button "Layer 3"
+            - 'cell "long-input, layer 3: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 3: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 3: 16 scheduled"':
+              - 'button "short-input, layer 3: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 4 long-input, layer 4: 111 existing prefix kv reused, 1 scheduled short-input, layer 4: 16 scheduled"':
+            - rowheader "Layer 4":
+              - button "Layer 4"
+            - 'cell "long-input, layer 4: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 4: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 4: 16 scheduled"':
+              - 'button "short-input, layer 4: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 5 long-input, layer 5: 111 existing prefix kv reused, 1 scheduled short-input, layer 5: 16 scheduled"':
+            - rowheader "Layer 5":
+              - button "Layer 5"
+            - 'cell "long-input, layer 5: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 5: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 5: 16 scheduled"':
+              - 'button "short-input, layer 5: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 6 long-input, layer 6: 111 existing prefix kv reused, 1 scheduled short-input, layer 6: 16 scheduled"':
+            - rowheader "Layer 6":
+              - button "Layer 6"
+            - 'cell "long-input, layer 6: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 6: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 6: 16 scheduled"':
+              - 'button "short-input, layer 6: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 7 long-input, layer 7: 111 existing prefix kv reused, 1 scheduled short-input, layer 7: 16 scheduled"':
+            - rowheader "Layer 7":
+              - button "Layer 7"
+            - 'cell "long-input, layer 7: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 7: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 7: 16 scheduled"':
+              - 'button "short-input, layer 7: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 8 long-input, layer 8: 111 existing prefix kv reused, 1 scheduled short-input, layer 8: 16 scheduled"':
+            - rowheader "Layer 8":
+              - button "Layer 8"
+            - 'cell "long-input, layer 8: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 8: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 8: 16 scheduled"':
+              - 'button "short-input, layer 8: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 9 long-input, layer 9: 111 existing prefix kv reused, 1 scheduled short-input, layer 9: 16 scheduled"':
+            - rowheader "Layer 9":
+              - button "Layer 9"
+            - 'cell "long-input, layer 9: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 9: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 9: 16 scheduled"':
+              - 'button "short-input, layer 9: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 10 long-input, layer 10: 111 existing prefix kv reused, 1 scheduled short-input, layer 10: 16 scheduled"':
+            - rowheader "Layer 10":
+              - button "Layer 10"
+            - 'cell "long-input, layer 10: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 10: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 10: 16 scheduled"':
+              - 'button "short-input, layer 10: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 11 long-input, layer 11: 111 existing prefix kv reused, 1 scheduled short-input, layer 11: 16 scheduled"':
+            - rowheader "Layer 11":
+              - button "Layer 11"
+            - 'cell "long-input, layer 11: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 11: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 11: 16 scheduled"':
+              - 'button "short-input, layer 11: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 12 long-input, layer 12: 111 existing prefix kv reused, 1 scheduled short-input, layer 12: 16 scheduled"':
+            - rowheader "Layer 12":
+              - button "Layer 12"
+            - 'cell "long-input, layer 12: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 12: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 12: 16 scheduled"':
+              - 'button "short-input, layer 12: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 13 long-input, layer 13: 111 existing prefix kv reused, 1 scheduled short-input, layer 13: 16 scheduled"':
+            - rowheader "Layer 13":
+              - button "Layer 13"
+            - 'cell "long-input, layer 13: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 13: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 13: 16 scheduled"':
+              - 'button "short-input, layer 13: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 14 long-input, layer 14: 111 existing prefix kv reused, 1 scheduled short-input, layer 14: 16 scheduled"':
+            - rowheader "Layer 14":
+              - button "Layer 14"
+            - 'cell "long-input, layer 14: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 14: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 14: 16 scheduled"':
+              - 'button "short-input, layer 14: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 15 long-input, layer 15: 111 existing prefix kv reused, 1 scheduled short-input, layer 15: 16 scheduled"':
+            - rowheader "Layer 15":
+              - button "Layer 15"
+            - 'cell "long-input, layer 15: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 15: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 15: 16 scheduled"':
+              - 'button "short-input, layer 15: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 16 long-input, layer 16: 111 existing prefix kv reused, 1 scheduled short-input, layer 16: 16 scheduled"':
+            - rowheader "Layer 16":
+              - button "Layer 16"
+            - 'cell "long-input, layer 16: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 16: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 16: 16 scheduled"':
+              - 'button "short-input, layer 16: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 17 long-input, layer 17: 111 existing prefix kv reused, 1 scheduled short-input, layer 17: 16 scheduled"':
+            - rowheader "Layer 17":
+              - button "Layer 17"
+            - 'cell "long-input, layer 17: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 17: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 17: 16 scheduled"':
+              - 'button "short-input, layer 17: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 18 long-input, layer 18: 111 existing prefix kv reused, 1 scheduled short-input, layer 18: 16 scheduled"':
+            - rowheader "Layer 18":
+              - button "Layer 18"
+            - 'cell "long-input, layer 18: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 18: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 18: 16 scheduled"':
+              - 'button "short-input, layer 18: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 19 long-input, layer 19: 111 existing prefix kv reused, 1 scheduled short-input, layer 19: 16 scheduled"':
+            - rowheader "Layer 19":
+              - button "Layer 19"
+            - 'cell "long-input, layer 19: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 19: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 19: 16 scheduled"':
+              - 'button "short-input, layer 19: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 20 long-input, layer 20: 111 existing prefix kv reused, 1 scheduled short-input, layer 20: 16 scheduled"':
+            - rowheader "Layer 20":
+              - button "Layer 20"
+            - 'cell "long-input, layer 20: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 20: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 20: 16 scheduled"':
+              - 'button "short-input, layer 20: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 21 long-input, layer 21: 111 existing prefix kv reused, 1 scheduled short-input, layer 21: 16 scheduled"':
+            - rowheader "Layer 21":
+              - button "Layer 21"
+            - 'cell "long-input, layer 21: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 21: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 21: 16 scheduled"':
+              - 'button "short-input, layer 21: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 22 long-input, layer 22: 111 existing prefix kv reused, 1 scheduled short-input, layer 22: 16 scheduled"':
+            - rowheader "Layer 22":
+              - button "Layer 22"
+            - 'cell "long-input, layer 22: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 22: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 22: 16 scheduled"':
+              - 'button "short-input, layer 22: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 23 long-input, layer 23: 111 existing prefix kv reused, 1 scheduled short-input, layer 23: 16 scheduled"':
+            - rowheader "Layer 23":
+              - button "Layer 23"
+            - 'cell "long-input, layer 23: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 23: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 23: 16 scheduled"':
+              - 'button "short-input, layer 23: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 24 long-input, layer 24: 111 existing prefix kv reused, 1 scheduled short-input, layer 24: 16 scheduled"':
+            - rowheader "Layer 24":
+              - button "Layer 24"
+            - 'cell "long-input, layer 24: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 24: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 24: 16 scheduled"':
+              - 'button "short-input, layer 24: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 25 long-input, layer 25: 111 existing prefix kv reused, 1 scheduled short-input, layer 25: 16 scheduled"':
+            - rowheader "Layer 25":
+              - button "Layer 25"
+            - 'cell "long-input, layer 25: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 25: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 25: 16 scheduled"':
+              - 'button "short-input, layer 25: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 26 long-input, layer 26: 111 existing prefix kv reused, 1 scheduled short-input, layer 26: 16 scheduled"':
+            - rowheader "Layer 26":
+              - button "Layer 26"
+            - 'cell "long-input, layer 26: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 26: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 26: 16 scheduled"':
+              - 'button "short-input, layer 26: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 27 long-input, layer 27: 111 existing prefix kv reused, 1 scheduled short-input, layer 27: 16 scheduled"':
+            - rowheader "Layer 27":
+              - button "Layer 27"
+            - 'cell "long-input, layer 27: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 27: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 27: 16 scheduled"':
+              - 'button "short-input, layer 27: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 28 long-input, layer 28: 111 existing prefix kv reused, 1 scheduled short-input, layer 28: 16 scheduled"':
+            - rowheader "Layer 28":
+              - button "Layer 28"
+            - 'cell "long-input, layer 28: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 28: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 28: 16 scheduled"':
+              - 'button "short-input, layer 28: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 29 long-input, layer 29: 111 existing prefix kv reused, 1 scheduled short-input, layer 29: 16 scheduled"':
+            - rowheader "Layer 29":
+              - button "Layer 29"
+            - 'cell "long-input, layer 29: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 29: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 29: 16 scheduled"':
+              - 'button "short-input, layer 29: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 30 long-input, layer 30: 111 existing prefix kv reused, 1 scheduled short-input, layer 30: 16 scheduled"':
+            - rowheader "Layer 30":
+              - button "Layer 30"
+            - 'cell "long-input, layer 30: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 30: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 30: 16 scheduled"':
+              - 'button "short-input, layer 30: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 31 long-input, layer 31: 111 existing prefix kv reused, 1 scheduled short-input, layer 31: 16 scheduled"':
+            - rowheader "Layer 31":
+              - button "Layer 31"
+            - 'cell "long-input, layer 31: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 31: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 31: 16 scheduled"':
+              - 'button "short-input, layer 31: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 32 long-input, layer 32: 111 existing prefix kv reused, 1 scheduled short-input, layer 32: 16 scheduled"':
+            - rowheader "Layer 32":
+              - button "Layer 32"
+            - 'cell "long-input, layer 32: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 32: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 32: 16 scheduled"':
+              - 'button "short-input, layer 32: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 33 long-input, layer 33: 111 existing prefix kv reused, 1 scheduled short-input, layer 33: 16 scheduled"':
+            - rowheader "Layer 33":
+              - button "Layer 33"
+            - 'cell "long-input, layer 33: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 33: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 33: 16 scheduled"':
+              - 'button "short-input, layer 33: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 34 long-input, layer 34: 111 existing prefix kv reused, 1 scheduled short-input, layer 34: 16 scheduled"':
+            - rowheader "Layer 34":
+              - button "Layer 34"
+            - 'cell "long-input, layer 34: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 34: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 34: 16 scheduled"':
+              - 'button "short-input, layer 34: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 35 long-input, layer 35: 111 existing prefix kv reused, 1 scheduled short-input, layer 35: 16 scheduled"':
+            - rowheader "Layer 35":
+              - button "Layer 35"
+            - 'cell "long-input, layer 35: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 35: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 35: 16 scheduled"':
+              - 'button "short-input, layer 35: 16 scheduled"':
+                - generic: S 16
+          - 'row "Layer 36 long-input, layer 36: 111 existing prefix kv reused, 1 scheduled short-input, layer 36: 16 scheduled"':
+            - rowheader "Layer 36":
+              - button "Layer 36"
+            - 'cell "long-input, layer 36: 111 existing prefix kv reused, 1 scheduled"':
+              - 'button "long-input, layer 36: 111 existing prefix kv reused, 1 scheduled"':
+                - generic: R 111
+                - generic: S 1
+            - 'cell "short-input, layer 36: 16 scheduled"':
+              - 'button "short-input, layer 36: 16 scheduled"':
+                - generic: S 16
+      - paragraph: This matrix is bounded for large batches. Select a request or token to inspect a smaller scope.
+  - complementary "Inspector":
+    - paragraph: Component
+    - heading "Model execution" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - paragraph: Submitted steps, participants, and recorded executor results.
+    - generic: 8/8
+    - generic: results / submissions
+    - generic: "255"
+    - generic: Playhead event
+    - region "Derived from observations":
+      - list:
+        - generic: Derived
+        - generic: 8 steps have a recorded executor submission; 8 have a recorded result.
+    - generic "Explanation"
+    - generic: Lesson
+    - generic: "Real GPU: mixed prefill and decode"
+    - paragraph: Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots.
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step" [active]:
+  - slider "Playhead": "255"
+  - paragraph: Event 255, step_scheduled, 1333 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

@@ -1,0 +1,212 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation:
+    - button:
+      - generic: "01"
+      - text: Configure
+    - button:
+      - generic: "02"
+      - text: Explore
+  - generic: Synthetic fixture · not GPU evidence
+  - status:
+    - generic: Local controller
+    - generic: · Runner is reachable.
+  - button:
+- main:
+  - region:
+    - heading [level=1]: KV-cache manager
+    - generic: Find a request
+    - combobox
+    - button [pressed]:
+      - text: 3D architecture
+    - button:
+      - text: Request lanes
+    - button:
+      - generic: Edit as new
+    - button:
+      - text: Open inspector
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic: prefix-reader · token position 0 · block 0 / slot 0
+    - generic: Layer 2 · KV head 1 · cuda:0 · float16
+    - button [pressed]: Keys · shape [16]
+    - generic: Structural dimensions
+    - button: Values · shape [16]
+    - generic: Structural dimensions
+    - navigation:
+      - button: Overview
+      - generic: KV-cache manager
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - text: Referenced
+    - generic: "2"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "0"
+    - text: Reserved null
+    - generic: "0"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Demo fixture. Teaching pace is synthetic and is not GPU evidence.
+    - region:
+      - navigation:
+        - button: cuda:0 / pool-0 / group 0 / Block 0
+        - generic: /
+        - generic: Slot 0
+        - generic: /
+        - generic: Token position 0
+        - generic: /
+        - generic: Layer 2 / KV head 1 / K
+      - text: Layer
+      - combobox
+      - text: KV head index
+      - combobox
+      - button [pressed]: Keys (K)
+      - button: Values (V)
+      - button: Inspect token and captured values
+      - paragraph: One token’s structural K/V slice. Layer, head and K/V choices are shared with the inspector; numerical data appears only for captured snapshots.
+    - generic: Find a physical KV block
+    - paragraph: Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+    - generic: cuda:0 / pool-0 · 2 blocks · 4 token slots/block
+    - spinbutton: "0"
+    - button: Inspect block
+- button:
+- button:
+- button:
+- button:
+  - text: Play
+- button:
+- button:
+- slider: "23"
+- paragraph: Event 23, kv_block_binding, 28 ms. Since first recorded event|Event clock advances through recorded observations at a teaching pace.
+- generic: Event order · not elapsed time
+- generic: Clock
+- button [pressed]: Events
+- button: Walkthrough
+- button: Rec time
+- button: Profile
+- generic: Speed
+- combobox
+- checkbox
+- text: Reduce motion
+- dialog "Execution inspector" [active]:
+  - heading "Execution inspector" [level=2]
+  - paragraph: Recorded evidence for the selected workflow object.
+  - button "Close Execution inspector":
+  - complementary "Inspector":
+    - paragraph: Token position
+    - heading "Request token" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals"
+    - option "step-1" [selected]
+    - option "step-2"
+    - option "step-3"
+    - heading "Token at position 0" [level=3]
+    - term: Token ID
+    - definition: "10"
+    - term: Decoded fragment
+    - definition: The
+    - term: KV state now
+    - definition: computed
+    - term: Previously computed
+    - definition: "Yes"
+    - button "pool-0 block 0 · generation 1 · group 0 · slot 0"
+    - region "Token KV tensor inspection":
+      - heading "KV tensors for token position 0" [level=3]
+      - navigation "KV tensor breadcrumb":
+        - button "cuda:0"
+        - generic: /
+        - generic: pool-0 · group 0
+        - generic: /
+        - button "Block 0"
+        - generic: /
+        - generic: Slot 0
+        - generic: /
+        - generic: Token position 0
+        - generic: /
+        - generic: Layer 2
+        - generic: /
+        - generic: KV head 1
+        - generic: /
+        - generic: K
+      - text: Layer slice
+      - combobox "KV tensor layer":
+        - option "Layer 1"
+        - option "Layer 2" [selected]
+      - text: KV head index
+      - combobox "KV tensor head":
+        - option "Head 0 (zero-based)"
+        - option "Head 1 (zero-based)" [selected]
+      - group "KV tensor kind":
+        - button "Keys (K)" [pressed]
+        - button "Values (V)"
+      - term: Request / token
+      - definition: prefix-reader · The · ID 10
+      - term: Current holder
+      - definition: prefix-reader
+      - term: Contents written by
+      - definition: prefix-writer · token position 0
+      - term: Actual datatype
+      - definition: float16
+      - term: Actual quantization
+      - definition: NONE
+      - term: K quantization scale
+      - definition: float32 · [] · cuda:0
+      - term: Backing tensor shape
+      - definition: "[2, 2, 4, 32]"
+      - term: Token/head slice shape
+      - definition: "[16] per K or V"
+      - term: Tensor layout
+      - definition: kernel_block,kv_head,token_slot,concatenated_K_V
+      - term: Backing storage
+      - definition: storage-1
+      - term: Manager / kernel block size
+      - definition: 4 / 4 slots
+      - term: Allocation generation
+      - definition: "1"
+      - paragraph: Layer/head slices share the block’s allocation. They do not increase the pool’s block count. These keys and values are attention state, separate from the token ID.
+      - heading "Recorded numerical slice" [level=4]
+      - generic: Synthetic
+      - paragraph: "Authored example of the 256-byte budget: first-layer slices retained; second-layer values omitted. No numerical tensor was read."
+      - paragraph: This holder reuses prefix state written by prefix-writer. It does not write that prefix again; a numerical rerun targets the original writer.
+      - paragraph: "Target a new diagnostic capture: prefix-writer, token position 0, layer 2, KV head 1. Choose a small dimension slice and byte limit before recording."
+      - button "Prepare targeted rerun"
+    - paragraph: A sampled output token may not yet have been processed by the model. Reserved slots are distinct from computed KV data.
+    - button "Previous tokens" [disabled]
+    - generic: 0–5 of 6
+    - button "Next tokens" [disabled]
+    - list "Request token positions":
+      - button "Position 0, prompt, token 10, KV computed":
+        - generic: "0"
+        - generic: The
+        - generic: computed
+      - button "Position 1, prompt, token 11, KV computed":
+        - generic: "1"
+        - generic: shared
+        - generic: computed
+      - button "Position 2, prompt, token 12, KV computed":
+        - generic: "2"
+        - generic: prefix
+        - generic: computed
+      - button "Position 3, prompt, token 13, KV computed":
+        - generic: "3"
+        - generic: ends
+        - generic: computed
+      - button "Position 4, prompt, token 14, KV not_computed":
+        - generic: "4"
+        - generic: "14"
+        - generic: not computed
+      - button "Position 5, prompt, token 15, KV not_computed":
+        - generic: "5"
+        - generic: "15"
+        - generic: not computed

@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import * as THREE from "three"
 
-import { kvHeadForQuery, mappedBlockSlot, observedProfileTokenPositions, poolCellPosition, poolGridLayout, scheduledTokenPositions, sceneClick, teachingLayer } from "../architecture/model.ts"
+import { BLOCK_STATE_COLORS, kvHeadForQuery, mappedBlockSlot, observedProfileTokenPositions, physicalBlockState, poolCellPosition, poolGridLayout, scheduledTokenPositions, sceneClick, teachingLayer } from "../architecture/model.ts"
 import { createPoolRaycast } from "../architecture/poolPicking.ts"
 
 test("a real-sized pool has a unique, stable cell for every physical ID", () => {
@@ -125,6 +125,20 @@ test("reused prefix slots select the active request while retaining the original
   assert.equal(reserved.tokenId, null)
   assert.equal(mappedBlockSlot({ contents, bindings: [] }, 16, 1).requestId, "a")
   assert.equal(mappedBlockSlot({ contents: [], bindings }, 16, 1, "b").sourceRequestId, null)
+})
+
+test("physical allocation colors distinguish free, cached, referenced, null and unknown without request identity", () => {
+  const available = { isNull: false, trust: "known" as const, refCount: 0, hasHash: false }
+  const cached = { ...available, hasHash: true }
+  const referenced = { ...available, refCount: 2 }
+  const nullBlock = { ...available, isNull: true }
+  assert.equal(physicalBlockState(available), "available")
+  assert.equal(physicalBlockState(cached), "cached")
+  assert.equal(physicalBlockState(referenced), "referenced")
+  assert.equal(physicalBlockState(nullBlock), "null")
+  assert.equal(physicalBlockState({ ...referenced, trust: "unknown" }), "unknown")
+  assert.equal(physicalBlockState(undefined), "unknown")
+  assert.equal(new Set(Object.values(BLOCK_STATE_COLORS)).size, 5)
 })
 
 test("rotate, Ctrl/Cmd pan and right-button pan never select objects on release", () => {

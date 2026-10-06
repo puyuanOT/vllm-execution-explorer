@@ -1,4 +1,5 @@
 import { profileBoundaryTimes } from "./profilePlayback.ts"
+import { tensorRerunSettings, type TensorRerunTarget } from "./scenario/tensorRerun.ts"
 import { createProfileIntervalIndex, projectMeasuredProfile } from "../../replay/src/profiling.ts"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
@@ -269,14 +270,16 @@ export function App() {
   const nativeProfileTime = profileExtent ? Math.min(profileExtent.endUs, Math.max(profileExtent.startUs, profileTimeUs)) : 0
   const profileIntervalIndex = useMemo(() => createProfileIntervalIndex(measuredProfile.activities), [measuredProfile.activities])
   const activeProfileActivities = useMemo(() => profileIntervalIndex.at(nativeProfileTime), [profileIntervalIndex, nativeProfileTime])
-  const profileStepId = activeProfileActivities.find((activity) => activity.scope.stepId)?.scope.stepId ?? null
+  const gpuProfileActivities = useMemo(() => activeProfileActivities.filter((activity) => activity.kind.startsWith("cuda_")), [activeProfileActivities])
+  const profileStepId = gpuProfileActivities.find((activity) => activity.scope.stepId)?.scope.stepId
+    ?? activeProfileActivities.find((activity) => activity.scope.stepId)?.scope.stepId ?? null
   const measuredScene = useMemo(() => mode === "measured" ? {
     evidenceKind: measuredProfile.evidenceKind,
-    activeLayers: [...new Set(activeProfileActivities.flatMap((activity) => activity.scope.layerIndex == null ? [] : [activity.scope.layerIndex]))],
-    activeModules: activeProfileActivities.flatMap((activity) => activity.scope.layerIndex != null && activity.scope.component != null ? [{ layerIndex: activity.scope.layerIndex, module: activity.scope.component }] : []),
+    activeLayers: [...new Set(gpuProfileActivities.flatMap((activity) => activity.scope.layerIndex == null ? [] : [activity.scope.layerIndex]))],
+    activeModules: gpuProfileActivities.flatMap((activity) => activity.scope.layerIndex != null && activity.scope.component != null ? [{ layerIndex: activity.scope.layerIndex, module: activity.scope.component }] : []),
     stepId: profileStepId,
     packedRows: measuredProfile.steps.find((step) => step.stepId === profileStepId && step.mappingStatus === "observed")?.packedRows ?? [],
-  } : undefined, [activeProfileActivities, measuredProfile.steps, mode, profileStepId])
+  } : undefined, [gpuProfileActivities, measuredProfile.evidenceKind, measuredProfile.steps, mode, profileStepId])
   useEffect(() => {
     setProfileTimeUs(profileExtent?.startUs ?? 0)
     if (!profileExtent && mode === "measured") { setMode("events"); setPlaying(false) }
@@ -492,12 +495,14 @@ export function App() {
   }
 
   function choose(next: Selection) {
+    const updatingTokenSlice = next.kind === "token" && next.kvLayerIndex != null && selection?.kind === "token"
+      && next.requestId === selection.requestId && next.position === selection.position
     if (next.kind === "request" || next.kind === "token") {
       setTrackedRequestId(next.kind === "request" ? next.id : next.requestId)
       setTrackedTokenPosition(next.kind === "token" ? next.position : null)
     }
     setSelection(next)
-    if (compact && next.kind !== "component") setInspectorOpen(true)
+    if (compact && next.kind !== "component" && !updatingTokenSlice) setInspectorOpen(true)
     if (next.kind === "step") {
       const step = index.steps.find((item) => item.id === next.id) ?? viewState?.steps.find((item) => item.id === next.id)
       if (step) seek(step.sequence, next)
@@ -712,6 +717,21 @@ export function App() {
     setAnnounce("A copy of the recorded sequence is ready to edit.")
   }
 
+  function prepareTensorRerun(target: TensorRerunTarget) {
+    const copied = scenarioFromRecordedPlan(manifest.workload_plan, promptsFromContent(content))
+    if (!copied || !copied.batches.some((batch) => batch.samples.some((sample) => sample.id === target.requestId))) {
+      setAnnounce("The recording does not retain this request's workload. Create a workload and select the numerical capture target in configuration.")
+      return
+    }
+    draft.replace(copied)
+    updateSettings(tensorRerunSettings(settings, manifest, { ...target, startStep: 1 }))
+    setPlaying(false)
+    setInspectorOpen(false)
+    navigate("configure")
+    setAnnounce("Targeted diagnostic rerun prepared with the recorded workload and inference settings. Capture starts at request admission. For later decode positions, adjust the diagnostic window before starting capture.")
+    focusValidationField("setting-profiling-tensor-request")
+  }
+
   function updateSettings(next: EngineSettings) {
     const sshConnectionChanged = settings.hostKind !== next.hostKind
       || settings.sshUser !== next.sshUser
@@ -874,10 +894,13 @@ export function App() {
               state={viewState}
               manifest={manifest}
               measuredProfile={measuredScene}
+              profileObservations={recording?.profile ?? null}
+              profileTimeUs={mode === "measured" ? nativeProfileTime : null}
               teachingProgress={mode === "teaching" ? teachingProgress : undefined}
               onTeachingProgress={(value) => { setPlaying(false); setTeachingProgress(value) }}
               trackedRequestId={trackedRequestId}
               trackedTokenPosition={trackedTokenPosition}
+              onClearTracking={() => { setTrackedRequestId(null); setTrackedTokenPosition(null); setSelection({ kind: "component", id: "model-execution" }) }}
               requestOrder={built.player?.requestOrder ?? []}
               colors={colors}
               selection={selection}
@@ -910,6 +933,9 @@ export function App() {
                 manifest={manifest}
                 sequence={sequence}
                 measuredProfile={measuredProfile}
+                profileObservations={recording?.profile ?? null}
+                profileTimeUs={mode === "measured" ? nativeProfileTime : null}
+                onCaptureTensor={editableScenario ? prepareTensorRerun : undefined}
                 activeProfileActivities={activeProfileActivities}
                 profileError={recording?.profileError ?? ""}
                 measuredMode={mode === "measured"}
@@ -995,6 +1021,9 @@ export function App() {
           manifest={manifest}
           sequence={sequence}
           measuredProfile={measuredProfile}
+          profileObservations={recording?.profile ?? null}
+          profileTimeUs={mode === "measured" ? nativeProfileTime : null}
+          onCaptureTensor={editableScenario ? prepareTensorRerun : undefined}
           activeProfileActivities={activeProfileActivities}
           profileError={recording?.profileError ?? ""}
           measuredMode={mode === "measured"}

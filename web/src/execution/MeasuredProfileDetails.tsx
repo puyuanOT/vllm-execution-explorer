@@ -43,6 +43,15 @@ export function MeasuredProfileDetails({ profile, activities, error, active, onT
           {layer.devices.length === 0 ? <p className="m-0 text-xs text-muted">CUDA activity correlation unavailable.</p> : null}
         </li>)}
       </ul>
+      <h3 className="text-sm font-medium text-ink">KV cache-write operations</h3>
+      <p className="text-xs text-muted">These are shared batch operations for one layer. Participant membership and correlated GPU activity establish which positions are involved; they do not assign individual token durations.</p>
+      {profile.cacheWrites.filter((write) => write.stepId === stepId).length ? <ul className="max-h-56 list-none space-y-2 overflow-auto p-0" aria-label="Measured layer cache writes">{profile.cacheWrites.filter((write) => write.stepId === stepId).map((write) => <li key={write.operationId} className="border border-line px-2 py-1.5">
+        <button type="button" className="min-h-6 border-0 bg-transparent p-0 text-left text-xs text-ink" onClick={() => onSelect({ kind: "layer", layerIndex: write.layerIndex })}>Layer {write.layerIndex + 1} · {write.device ?? "device not captured"}</button>
+        <p className="m-0 text-xs text-muted">{write.participants.length} participating positions · {write.gpuActivityIds.length} correlated GPU activities · {write.observationBoundary}</p>
+        {write.reason ? <p className="m-0 text-xs text-muted">{write.reason}</p> : null}
+        <div className="mt-1 flex flex-wrap gap-1">{write.participants.slice(0, 8).map((participant) => <button key={participant.row} type="button" className="min-h-6 px-1 py-0 text-[10px]" onClick={() => onSelect({ kind: "token", requestId: participant.requestId, position: participant.tokenPosition })}>{participant.requestId} · position {participant.tokenPosition}</button>)}</div>
+        {write.participants.length > 8 ? <p className="m-0 text-[10px] text-muted">Use the layer matrix for the remaining {write.participants.length - 8} positions.</p> : null}
+      </li>)}</ul> : <p className="text-xs text-muted">Layer-specific cache-write operations were not captured for this batch. General layer activity does not establish cache-write chronology.</p>}
       <h3 className="text-sm font-medium text-ink">Packed input token rows</h3>
       <p className="text-xs text-muted">{step?.mappingStatus === "observed" ? `${step.unpaddedTokens} actual rows; ${step.paddedTokens == null ? `padding unavailable (${step.paddingReason ?? "not observed"})` : `${step.paddedTokens} including padding`}. Observed at ${step.mappingObservationBoundary}. Row order can differ from scheduler order.` : step?.mappingReason ?? "Select a measured batch interval to inspect its input rows."}</p>
       {rows.length > 0 ? <>

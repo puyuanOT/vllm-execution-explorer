@@ -1,0 +1,312 @@
+TAP version 13
+# (node:23190) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: bundled lessons preserve real GPU and synthetic provenance with honest historical capture limits
+ok 1 - bundled lessons preserve real GPU and synthetic provenance with honest historical capture limits
+  ---
+  duration_ms: 315.35225
+  ...
+# (node:23191) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: configuration counts shared storage once and separates context limits from physical pool occupancy
+ok 2 - configuration counts shared storage once and separates context limits from physical pool occupancy
+  ---
+  duration_ms: 4.89175
+  ...
+# Subtest: layer matrix follows batch GPU cache writes, not host result or CPU return, with seek-safe endpoints
+ok 3 - layer matrix follows batch GPU cache writes, not host result or CPU return, with seek-safe endpoints
+  ---
+  duration_ms: 21.064667
+  ...
+# Subtest: legacy, unsupported, missing and synthetic layer evidence stay explicit
+ok 4 - legacy, unsupported, missing and synthetic layer evidence stay explicit
+  ---
+  duration_ms: 1.491459
+  ...
+# Subtest: legacy attention module names link existing prefix KV only to declared layers
+ok 5 - legacy attention module names link existing prefix KV only to declared layers
+  ---
+  duration_ms: 0.551875
+  ...
+# Subtest: tensor previews retain exact allocation identity and content-export omission
+ok 6 - tensor previews retain exact allocation identity and content-export omission
+  ---
+  duration_ms: 0.813
+  ...
+# Subtest: gaps freeze dynamic occupancy and linked state without erasing static configuration
+ok 7 - gaps freeze dynamic occupancy and linked state without erasing static configuration
+  ---
+  duration_ms: 0.669625
+  ...
+# Subtest: malformed cache attribution, snapshots and unique storage accounting are rejected
+ok 8 - malformed cache attribution, snapshots and unique storage accounting are rejected
+  ---
+  duration_ms: 1.551208
+  ...
+# (node:23192) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: full inventory is authoritative, includes null cells, and leaves checkpoint state sparse
+ok 9 - full inventory is authoritative, includes null cells, and leaves checkpoint state sparse
+  ---
+  duration_ms: 233.466333
+  ...
+# Subtest: scheduled reservations and host results do not establish computed KV; partial writes do
+ok 10 - scheduled reservations and host results do not establish computed KV; partial writes do
+  ---
+  duration_ms: 2.693875
+  ...
+# Subtest: the final sampled output is accepted content without computed K/V
+ok 11 - the final sampled output is accepted content without computed K/V
+  ---
+  duration_ms: 0.604542
+  ...
+# Subtest: released prefix bytes persist through reuse and hash eviction, then disappear on reassignment
+ok 12 - released prefix bytes persist through reuse and hash eviction, then disappear on reassignment
+  ---
+  duration_ms: 2.222125
+  ...
+# Subtest: pool/group/generation identity keeps independent writes and equal block IDs separate
+ok 13 - pool/group/generation identity keeps independent writes and equal block IDs separate
+  ---
+  duration_ms: 0.55025
+  ...
+# Subtest: queue snapshots preserve observed order and priority without inventing selection reasons
+ok 14 - queue snapshots preserve observed order and priority without inventing selection reasons
+  ---
+  duration_ms: 0.21825
+  ...
+# Subtest: heterogeneous group sizes and unmapped groups stay explicit instead of inventing pool geometry
+ok 15 - heterogeneous group sizes and unmapped groups stay explicit instead of inventing pool geometry
+  ---
+  duration_ms: 0.27225
+  ...
+# Subtest: unsupported state and circular layouts keep full physical inventory without invented token slots
+ok 16 - unsupported state and circular layouts keep full physical inventory without invented token slots
+  ---
+  duration_ms: 0.701916
+  ...
+# Subtest: mixed groups preserve qualified contents while aggregate token validity remains unavailable
+ok 17 - mixed groups preserve qualified contents while aggregate token validity remains unavailable
+  ---
+  duration_ms: 0.307542
+  ...
+# Subtest: legacy inventory never qualifies by type name and only explicit token observations remain usable
+ok 18 - legacy inventory never qualifies by type name and only explicit token observations remain usable
+  ---
+  duration_ms: 0.496917
+  ...
+# Subtest: computed proof is tracked separately by cache group rather than promoted from one group
+ok 19 - computed proof is tracked separately by cache group rather than promoted from one group
+  ---
+  duration_ms: 0.288542
+  ...
+# Subtest: unavailable mapping cannot be bypassed through a false pool or unlisted group identity
+ok 20 - unavailable mapping cannot be bypassed through a false pool or unlisted group identity
+  ---
+  duration_ms: 0.202
+  ...
+# Subtest: overlapping writes replace only the affected group slots and seek-safe content slices
+ok 21 - overlapping writes replace only the affected group slots and seek-safe content slices
+  ---
+  duration_ms: 0.344333
+  ...
+# Subtest: backward seeking and optional content retain only writes already observed
+ok 22 - backward seeking and optional content retain only writes already observed
+  ---
+  duration_ms: 1.95125
+  ...
+# Subtest: old recordings, unsupported architectures, gaps and verified resets retain honest uncertainty
+ok 23 - old recordings, unsupported architectures, gaps and verified resets retain honest uncertainty
+  ---
+  duration_ms: 0.542709
+  ...
+# (node:23193) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: measured scope uses native profiler time and packed post-reorder rows, with no token/head duration
+ok 24 - measured scope uses native profiler time and packed post-reorder rows, with no token/head duration
+  ---
+  duration_ms: 4.10825
+  ...
+# Subtest: profiler selection is independent of host replay and cannot map activity names to a layer
+ok 25 - profiler selection is independent of host replay and cannot map activity names to a layer
+  ---
+  duration_ms: 14.285167
+  ...
+# Subtest: unknown packed mapping and missing attachments remain explicit, including structural export
+ok 26 - unknown packed mapping and missing attachments remain explicit, including structural export
+  ---
+  duration_ms: 0.521042
+  ...
+# Subtest: partial capture retains measured intervals with bounded qualification and no host conversion
+ok 27 - partial capture retains measured intervals with bounded qualification and no host conversion
+  ---
+  duration_ms: 0.542916
+  ...
+# Subtest: device summaries do not merge devices or treat CPU launch spans as GPU busy time
+ok 28 - device summaries do not merge devices or treat CPU launch spans as GPU busy time
+  ---
+  duration_ms: 0.316792
+  ...
+# Subtest: observed real rows survive execution failure before padding is observed
+ok 29 - observed real rows survive execution failure before padding is observed
+  ---
+  duration_ms: 0.180125
+  ...
+# Subtest: synthetic attachments retain explicit fixture provenance rather than claim GPU measurement
+ok 30 - synthetic attachments retain explicit fixture provenance rather than claim GPU measurement
+  ---
+  duration_ms: 0.233542
+  ...
+# Subtest: contradictory padding observation claims are rejected
+ok 31 - contradictory padding observation claims are rejected
+  ---
+  duration_ms: 0.368583
+  ...
+# Subtest: attachment identity, modes and clock reject incompatible or foreign data
+ok 32 - attachment identity, modes and clock reject incompatible or foreign data
+  ---
+  duration_ms: 1.874208
+  ...
+# Subtest: bad correlation, malformed rows and duplicate identities fail without inventing attribution
+ok 33 - bad correlation, malformed rows and duplicate identities fail without inventing attribution
+  ---
+  duration_ms: 0.503
+  ...
+# Subtest: loader artifact references are explicit relative paths with integrity metadata
+ok 34 - loader artifact references are explicit relative paths with integrity metadata
+  ---
+  duration_ms: 0.298875
+  ...
+# Subtest: native interval index preserves asynchronous overlaps, endpoints, zero events and backward seeks
+ok 35 - native interval index preserves asynchronous overlaps, endpoints, zero events and backward seeks
+  ---
+  duration_ms: 0.493625
+  ...
+# Subtest: indexed sparse large traces match a scan at deterministically varied native playheads
+ok 36 - indexed sparse large traces match a scan at deterministically varied native playheads
+  ---
+  duration_ms: 76.159708
+  ...
+# (node:23194) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: wide integer parsing preserves prompts, escaped quotes, arrays, and numeric syntax
+ok 37 - wide integer parsing preserves prompts, escaped quotes, arrays, and numeric syntax
+  ---
+  duration_ms: 2.95225
+  ...
+# Subtest: replay is deterministic and seeks match the event prefix
+ok 38 - replay is deterministic and seeks match the event prefix
+  ---
+  duration_ms: 8.068583
+  ...
+# Subtest: HTTP capture boundaries apply recorded intake facts without regressing later state
+ok 39 - HTTP capture boundaries apply recorded intake facts without regressing later state
+  ---
+  duration_ms: 0.391292
+  ...
+# Subtest: a successful HTTP response with an engine finish reason closes an early-EOS request
+ok 40 - a successful HTTP response with an engine finish reason closes an early-EOS request
+  ---
+  duration_ms: 0.180375
+  ...
+# Subtest: an HTTP boundary without a successful terminal finish reason is not completion evidence
+ok 41 - an HTTP boundary without a successful terminal finish reason is not completion evidence
+  ---
+  duration_ms: 0.092209
+  ...
+# Subtest: a trace gap prevents later HTTP evidence from being treated as observed
+ok 42 - a trace gap prevents later HTTP evidence from being treated as observed
+  ---
+  duration_ms: 0.105
+  ...
+# Subtest: a trace gap freezes later events
+ok 43 - a trace gap freezes later events
+  ---
+  duration_ms: 0.1415
+  ...
+# Subtest: content stays out of the structural state until it is attached
+ok 44 - content stays out of the structural state until it is attached
+  ---
+  duration_ms: 1.195292
+  ...
+# Subtest: unsupported schema and a broken sequence are rejected
+ok 45 - unsupported schema and a broken sequence are rejected
+  ---
+  duration_ms: 0.450959
+  ...
+# Subtest: request model routing is a supported observed boundary
+ok 46 - request model routing is a supported observed boundary
+  ---
+  duration_ms: 0.443167
+  ...
+# Subtest: explanations keep observed facts apart from policy
+ok 47 - explanations keep observed facts apart from policy
+  ---
+  duration_ms: 0.31675
+  ...
+# (node:23195) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: planned rows stay visible before any receipt event
+ok 48 - planned rows stay visible before any receipt event
+  ---
+  duration_ms: 2.651541
+  ...
+# Subtest: HTTP intake milestones retain their named boundaries and exact observed clocks
+ok 49 - HTTP intake milestones retain their named boundaries and exact observed clocks
+  ---
+  duration_ms: 2.2395
+  ...
+# Subtest: prefix playback hides future output and restores it only at that event
+ok 50 - prefix playback hides future output and restores it only at that event
+  ---
+  duration_ms: 1.108958
+  ...
+# Subtest: mixed ranges, preemption, trace gaps, and unsubmitted samples stay distinct
+ok 51 - mixed ranges, preemption, trace gaps, and unsubmitted samples stay distinct
+  ---
+  duration_ms: 0.52525
+  ...
+# Subtest: legacy recordings do not invent an origin or arrival groups
+ok 52 - legacy recordings do not invent an origin or arrival groups
+  ---
+  duration_ms: 0.211959
+  ...
+# Subtest: recorded time keeps elapsed across timestamps outside the safe integer range
+ok 53 - recorded time keeps elapsed across timestamps outside the safe integer range
+  ---
+  duration_ms: 0.299542
+  ...
+# Subtest: a missing controller origin stays anchored at the first event
+ok 54 - a missing controller origin stays anchored at the first event
+  ---
+  duration_ms: 0.162875
+  ...
+# Subtest: shared blocks are not assigned to one request
+ok 55 - shared blocks are not assigned to one request
+  ---
+  duration_ms: 0.232208
+  ...
+# Subtest: terminal and preempted requests stop owning reused block numbers
+ok 56 - terminal and preempted requests stop owning reused block numbers
+  ---
+  duration_ms: 0.823625
+  ...
+# Subtest: block tables do not claim ownership of a free block or an ambiguous pool
+ok 57 - block tables do not claim ownership of a free block or an ambiguous pool
+  ---
+  duration_ms: 5.604792
+  ...
+# Subtest: active requests shedding a block do not retain ownership of its next allocation
+ok 58 - active requests shedding a block do not retain ownership of its next allocation
+  ---
+  duration_ms: 0.273958
+  ...
+1..58
+# tests 58
+# suites 0
+# pass 58
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 463.800666

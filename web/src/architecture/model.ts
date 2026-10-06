@@ -88,6 +88,22 @@ export function mappedBlockSlot(block: Pick<KvBlockProjection, "contents" | "bin
   }
 }
 
+/** Allocation state is independent of request identity and retained token contents. */
+export function physicalBlockState(block: Pick<KvBlockProjection, "isNull" | "trust" | "refCount" | "hasHash"> | undefined): "available" | "cached" | "referenced" | "null" | "unknown" {
+  if (!block || block.trust === "unknown") return "unknown"
+  if (block.isNull) return "null"
+  if (block.refCount > 0) return "referenced"
+  return block.hasHash ? "cached" : "available"
+}
+
+export const BLOCK_STATE_COLORS = {
+  available: "#1b293d", cached: "#80602c", referenced: "#345b88", null: "#586176", unknown: "#272334",
+} as const
+
+export function physicalBlockStateLabel(state: ReturnType<typeof physicalBlockState>): string {
+  return { available: "Available", cached: "Reusable prefix", referenced: "Referenced", null: "Reserved null", unknown: "Unknown" }[state]
+}
+
 /** Shared by all objects so modifier-based camera gestures cannot select data. */
 export function sceneClick(event: { delta: number; nativeEvent: { button: number; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean } }): boolean {
   return event.delta <= 4 && event.nativeEvent.button === 0

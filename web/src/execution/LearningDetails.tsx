@@ -4,10 +4,16 @@ import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.
 import { kvHeadForQuery, mappedBlockSlot } from "../architecture/model.ts"
 import { requestLabel } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
+import type { ProfileKvObservations } from "../../../replay/src/profiling.ts"
+import { KvTensorDetails, type TensorCaptureTarget } from "./KvTensorDetails.tsx"
+import { projectKvConfiguration } from "../../../replay/src/kv.ts"
+import { physicalBlockState, physicalBlockStateLabel } from "../architecture/model.ts"
 
-export function LearningDetails({ selection, state, manifest, labels, onSelect }: {
+export function LearningDetails({ selection, state, manifest, labels, measuredProfile, onSelect, onCaptureTensor }: {
   selection: Selection | null; state: ReplayState | null; manifest: RecordingManifest | null
   labels?: ReadonlyMap<string, string>
+  measuredProfile?: ProfileKvObservations | null
+  onCaptureTensor?: (target: TensorCaptureTarget) => void
   onSelect: (selection: Selection) => void
 }) {
   const nameOf = (requestId: string) => requestLabel(labels, requestId)
@@ -24,7 +30,7 @@ export function LearningDetails({ selection, state, manifest, labels, onSelect }
       ? kvHeadForQuery(queryHead, architecture.queryHeads, architecture.kvHeads) : null
     return <section className="mt-4 space-y-3">
       <h3>Layer {layerIndex + 1}{selection.kind === "module" ? ` / ${selection.module === "attention" ? "Attention" : "Feed-forward"}` : selection.kind === "head" ? ` / ${selection.headKind === "query" ? "Query" : "KV"} head ${selection.headIndex + 1}` : ""}</h3>
-      <p className="text-sm text-muted">This structure view explains the host replay batch. Teaching progression is explanatory; the separate profiler panel shows captured batch and layer measurements when available. Individual token and head durations remain unknown.</p>
+      <p className="text-sm text-muted">The layer matrix identifies the participating requests and tokens. GPU cache-write activity appears only when a batch operation has correlated profiler evidence. Teaching progression remains explanatory; individual token and head durations are unknown.</p>
       <dl className="facts">
         <div><dt>Hidden dimension</dt><dd className="tabular-nums">{architecture.hiddenSize ?? "Unknown"}</dd></div>
         <div><dt>Feed-forward dimension</dt><dd className="tabular-nums">{architecture.intermediateSize ?? "Unknown"}</dd></div>
@@ -41,9 +47,14 @@ export function LearningDetails({ selection, state, manifest, labels, onSelect }
     const block = cache?.pools.flatMap((pool) => pool.blocks).find((candidate) => candidate.key === selection.key || `${candidate.pool}:${candidate.blockId}` === selection.key)
     const pool = cache?.pools.find((candidate) => candidate.pool === block?.pool)
     if (!block || !pool) return <p className="mt-4 text-sm text-muted">Full physical block contents were not captured in this recording.</p>
+    const configuration = projectKvConfiguration(state, manifest)
+    const configuredPool = configuration.pools.find((candidate) => candidate.pool === pool.pool)
     return <section className="mt-4 space-y-3">
-      <h3>{block.pool} · Physical block {block.blockId}</h3>
+      <h3>{configuredPool?.devices.join(", ") || "Device not captured"} / {block.pool} / Block {block.blockId}</h3>
       <dl className="facts">
+        <div><dt>Allocation state</dt><dd>{physicalBlockStateLabel(physicalBlockState(block))}</dd></div>
+        <div><dt>Actual KV datatype</dt><dd>{configuredPool?.dtypes.join(", ") || "Not captured"}</dd></div>
+        <div><dt>Associated layers</dt><dd>{configuredPool?.layerIndices.length ? configuredPool.layerIndices.map((index) => index + 1).join(", ") : "Not captured"}</dd></div>
         <div><dt>Allocation generation</dt><dd>{block.generation}</dd></div>
         <div><dt>References</dt><dd>{block.trust === "unknown" ? "Unknown" : block.refCount}</dd></div>
         <div><dt>Prefix cached</dt><dd>{block.trust === "unknown" ? "Unknown" : block.hasHash ? "Yes" : "No"}</dd></div>
@@ -56,12 +67,13 @@ export function LearningDetails({ selection, state, manifest, labels, onSelect }
         {Array.from({ length: pool.blockSize ?? 0 }, (_, slot) => {
           const { span, binding, position, requestId, sourceRequestId, tokenId, tokenPiece } = mappedBlockSlot(block, pool.blockSize!, slot)
           const known = block.trust === "known"
-          return <li key={slot}><button className="w-full text-left" type="button" disabled={position == null || requestId == null || !known || block.isNull} aria-label={`Slot ${slot}: ${!known ? "unknown" : block.isNull ? "reserved" : span ? `computed token ${tokenId ?? "ID unavailable"}, ${requestId ? nameOf(requestId) : "unknown request"} position ${position}; content source ${sourceRequestId ? nameOf(sourceRequestId) : "unknown"}` : binding ? `reserved for ${requestId ? nameOf(requestId) : "unknown request"} position ${position}, computation unobserved` : "contents unobserved"}`} onClick={() => { if (requestId && position != null) onSelect({ kind: "token", requestId, position }) }}><span className="block text-xs text-muted">Slot {slot}</span><span className="block truncate text-sm tabular-nums">{!known ? "Unknown" : tokenPiece ?? tokenId ?? (span ? "Computed" : binding ? "Reserved" : "—")}</span></button></li>
+          return <li key={slot}><button className="w-full text-left" type="button" disabled={position == null || requestId == null || !known || block.isNull} aria-label={`Slot ${slot}: ${!known ? "unknown" : block.isNull ? "reserved" : span ? `computed token ${tokenId ?? "ID unavailable"}, ${requestId ? nameOf(requestId) : "unknown request"} position ${position}; content source ${sourceRequestId ? nameOf(sourceRequestId) : "unknown"}` : binding ? `reserved for ${requestId ? nameOf(requestId) : "unknown request"} position ${position}, computation unobserved` : "contents unobserved"}`} onClick={() => { if (requestId && position != null) onSelect({ kind: "token", requestId, position }) }}><span className="block text-xs text-muted">Slot {slot}</span><span className="block truncate text-sm tabular-nums">{!known ? "Unknown" : tokenPiece ?? (span ? "Computed" : binding ? "Reserved" : "Unwritten")}</span>{position != null ? <span className="block text-[10px] text-muted">Position {position}</span> : null}{tokenId != null ? <span className="block text-[10px] tabular-nums text-muted">ID {tokenId}</span> : null}</button></li>
         })}
       </ol>}
       <h3>Request and prefix bindings</h3>
       {block.bindings.map((binding) => <button className="block w-full text-left" type="button" key={`${binding.requestId}-${binding.cacheGroup}-${binding.tokenStart}`} onClick={() => onSelect({ kind: "request", id: binding.requestId })}>{nameOf(binding.requestId)} · cache group {binding.cacheGroup} · positions {binding.tokenStart}–{binding.tokenEnd - 1}</button>)}
       {block.refCount === 0 && block.hasHash && block.trust === "known" ? <p className="text-sm text-muted">The prefix remains cached after release. Another request can reuse it; reassignment removes the old occupant.</p> : null}
+      {block.refCount === 0 && !block.isNull && block.trust === "known" ? <p className="text-xs text-muted">Available for allocation can still contain old recorded tensor contents. Allocation state and memory erasure are different.</p> : null}
     </section>
   }
   if (selection.kind === "component" && selection.id === "scheduler" || selection.kind === "step") {
@@ -79,6 +91,7 @@ export function LearningDetails({ selection, state, manifest, labels, onSelect }
       {selectedToken ? <><dl className="facts"><div><dt>Token ID</dt><dd>{selectedToken.tokenId ?? "Content omitted"}</dd></div><div><dt>Decoded fragment</dt><dd>{selectedToken.tokenPiece ?? "Unavailable"}</dd></div><div><dt>KV state now</dt><dd>{selectedToken.kvState.replaceAll("_", " ")}</dd></div><div><dt>Previously computed</dt><dd>{selectedToken.computedEver == null ? "Unknown" : selectedToken.computedEver ? "Yes" : "No"}</dd></div></dl>{selectedToken.locations.map((location) => <button type="button" className="block w-full text-left" key={`${location.key}-${location.cacheGroup}`} onClick={() => onSelect({ kind: "block", key: location.key })}>{location.pool} block {location.blockId} · generation {location.generation} · group {location.cacheGroup} · slot {location.slot}</button>)}</> : null}
       {selectedToken?.kvReason ? <p className="text-sm text-muted">{selectedToken.kvReason}</p> : null}
       {selectedToken && selectedToken.cacheGroups.length > 1 ? <ul className="list-none space-y-1 p-0 text-xs text-muted">{selectedToken.cacheGroups.map((group) => <li key={group.cacheGroup}>Group {group.cacheGroup}: {group.kvState.replaceAll("_", " ")}{group.reason ? ` · ${group.reason}` : ""}</li>)}</ul> : null}
+      {selectedToken && selection.kind === "token" ? <KvTensorDetails key={`${requestId}:${selectedToken.position}`} state={state} manifest={manifest} profile={measuredProfile} requestId={requestId} position={selectedToken.position} selection={selection} labels={labels} onSelect={onSelect} onCaptureTensor={onCaptureTensor} /> : null}
       <p className="text-xs text-muted">A sampled output token may not yet have been processed by the model. Reserved slots are distinct from computed KV data.</p>
       <TokenList key={requestId} tokens={tokens} requestId={requestId} onSelect={onSelect} />
     </section>

@@ -2,7 +2,8 @@
 
 Hooks match the installed vLLM 0.30.0 GPUModelRunner: _update_states condenses
 and reorders the batch before _prepare_inputs writes req_indices/query_pos.
-Only CPU metadata is copied here; no GPU tensor read or synchronization occurs.
+Packed identities use CPU metadata. Optional cache snapshots clone on the native
+update stream and are materialized only after native profiling has stopped.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ MAX_PACKED_ROWS = 65_536
 
 
 class DiagnosticHooks:
-    def __init__(self, runner: Any, record_function: Callable[[str], Any], max_steps: int, *, check_sources: bool = True) -> None:
+    def __init__(self, runner: Any, record_function: Callable[[str], Any], max_steps: int, *, check_sources: bool = True,
+                 cache_records: dict[str, Any] | None = None, tensor_capture: dict[str, Any] | None = None, generation_lookup: Any = None) -> None:
         self.runner = runner
         self.record_function = record_function
         self.max_steps = max_steps
@@ -29,6 +31,8 @@ class DiagnosticHooks:
         self.check_sources = check_sources
         self._pending_sample_step: str | None = None
         self.source_fingerprints: dict[str, str] = {}
+        from vllm_030.cache_tensors import CacheWriteCapture
+        self.cache_capture = CacheWriteCapture(self, cache_records or {}, tensor_capture, generation_lookup)
 
     def install(self) -> None:
         runner = self.runner
@@ -101,6 +105,7 @@ class DiagnosticHooks:
         self._patch(runner, "execute_model", execute)
         self._patch(runner, "_prepare_inputs", prepare)
         self._patch(runner, "_preprocess", preprocess)
+        self.cache_capture.install()
         if callable(getattr(runner, "sample_tokens", None)):
             original_sample = runner.sample_tokens
 

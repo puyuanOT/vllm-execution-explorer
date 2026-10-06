@@ -1,6 +1,7 @@
 import type { EngineSettings } from "../scenario/types.ts"
 import type { FieldIssue } from "../scenario/validate.ts"
 import type { ReadinessState } from "./types.ts"
+import { DiagnosticCapture, type CaptureRequestChoice } from "./DiagnosticCapture.tsx"
 import {
   CheckboxField,
   ConfigureSection,
@@ -15,11 +16,13 @@ export function VllmSection({
   settings,
   issues,
   readiness,
+  requests,
   onSettings,
 }: {
   settings: EngineSettings
   issues: FieldIssue[]
   readiness?: ReadinessState
+  requests?: CaptureRequestChoice[]
   onSettings: (settings: EngineSettings) => void
 }) {
   const issueFor = (id: string) => issues.find((issue) => issue.fieldId === id)?.message ?? ""
@@ -32,7 +35,7 @@ export function VllmSection({
       summary={summary}
       status={readiness?.label ?? "Configured"}
       statusTone={readiness?.tone ?? "ready"}
-      forceOpen={issues.some((issue) => [
+      forceOpen={issues.some((issue) => issue.fieldId.startsWith("setting-profiling") || [
         "setting-max-model-len",
         "setting-max-seqs",
         "setting-token-budget",
@@ -137,23 +140,7 @@ export function VllmSection({
           />
         </div>
 
-        <Details className="rounded-lg border border-slate-800 p-4" forceOpen={issues.some((issue) => issue.fieldId.startsWith("setting-profiling"))}>
-          <summary className="cursor-pointer text-sm font-medium text-slate-200">Measured layer profiling</summary>
-          <div className="mt-3 grid items-start gap-4 md:grid-cols-2">
-            <label htmlFor="setting-profiling-mode" className="block text-xs font-medium text-slate-400">Capture mode
-              <select id="setting-profiling-mode" className={inputClass} value={settings.profilingMode} aria-invalid={Boolean(issueFor("setting-profiling-mode"))} aria-describedby="setting-profiling-hint setting-profiling-mode-error" onChange={(event) => onSettings({ ...settings, profilingMode: event.target.value as EngineSettings["profilingMode"] })}>
-                <option value="off">Serving capture</option>
-                <option value="eager_diagnostic">Eager diagnostic profile</option>
-              </select>
-              <FieldError id="setting-profiling-mode-error" message={issueFor("setting-profiling-mode")} />
-            </label>
-            {settings.profilingMode !== "off" ? <label htmlFor="setting-profiling-steps" className="block text-xs font-medium text-slate-400">Maximum profiled scheduler steps
-              <input id="setting-profiling-steps" className={inputClass} inputMode="numeric" value={settings.profilingMaxSteps} aria-invalid={Boolean(issueFor("setting-profiling-steps"))} aria-describedby="setting-profiling-hint setting-profiling-steps-error" onChange={(event) => onSettings({ ...settings, profilingMaxSteps: event.target.value })} />
-              <FieldError id="setting-profiling-steps-error" message={issueFor("setting-profiling-steps")} />
-            </label> : null}
-          </div>
-          <FieldHint id="setting-profiling-hint">Diagnostic profiling uses the V1 GPU model runner with CUDA graphs disabled and adds recording overhead. It measures supported layer and batch activities on a separate profiler clock. Packed kernels do not establish individual token or attention-head durations. Initially supported for dense Qwen3.</FieldHint>
-        </Details>
+        <DiagnosticCapture settings={settings} issues={issues} requests={requests} onSettings={onSettings} />
 
         <div className="rounded-lg border border-blue-900 bg-blue-950/40 p-4">
           <h3 className="text-balance text-sm font-semibold text-blue-200">Fresh-cache run contract</h3>

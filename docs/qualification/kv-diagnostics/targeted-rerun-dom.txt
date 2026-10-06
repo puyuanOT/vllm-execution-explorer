@@ -1,0 +1,301 @@
+- paragraph: Targeted diagnostic rerun prepared with the recorded workload and inference settings. Capture starts at request admission. For later decode positions, adjust the diagnostic window before starting capture.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - navigation "Capture console":
+    - paragraph: Capture console
+    - list:
+      - 'button "Workload Workload: ready 2 batches · 2 req · 10 ms"':
+        - generic: "01"
+        - generic: Workload
+        - 'img "Workload: ready"'
+        - generic: 2 batches · 2 req · 10 ms
+      - 'button "Execution host Execution host: needs attention Local machine · needs GPU"':
+        - generic: "02"
+        - generic: Execution host
+        - 'img "Execution host: needs attention"'
+        - generic: Local machine · needs GPU
+      - 'button "Model Model: ready Qwen3-4B-Instruct-2507"':
+        - generic: "03"
+        - generic: Model
+        - 'img "Model: ready"'
+        - generic: Qwen3-4B-Instruct-2507
+      - 'button "vLLM engine vLLM engine: blocked 64 ctx · 2 seq · 8 tok"':
+        - generic: "04"
+        - generic: vLLM engine
+        - 'img "vLLM engine: blocked"'
+        - generic: 64 ctx · 2 seq · 8 tok
+    - heading "Learning examples" [level=3]
+    - list:
+      - button "Staggered arrivals":
+        - generic: Staggered arrivals
+      - button "Partial prefix reuse":
+        - generic: Partial prefix reuse
+      - button "Chunked prefill":
+        - generic: Chunked prefill
+      - button "Cache pressure":
+        - generic: Cache pressure
+    - paragraph: Prefix reuse, synthetic lengths and memory pressure need live vLLM. The demo fixture uses scripted behavior.
+    - heading "Draft" [level=3]
+    - button "Undo deletion" [disabled]:
+      - text: Undo deletion
+    - button "Start empty"
+    - button "Reset"
+    - paragraph: Saved on this device · secrets never stored
+  - paragraph: Configure · capture · explore
+  - heading "Build an observed vLLM capture" [level=1]
+  - paragraph: Define timed requests, prepare the serving host, and capture instrumented vLLM boundaries. Opening this page never starts a run.
+  - generic "Draft summary":
+    - generic: Draft ready
+    - generic: 2 batches
+    - generic: 2 requests
+  - region "Query batch sequence":
+    - heading "Query batch sequence" [level=2]
+    - generic "Query batch sequence Ready 2 batches · 2 requests · 10 ms":
+      - generic: "01"
+      - generic: Query batch sequence
+      - generic: Ready
+      - generic: 2 batches · 2 requests · 10 ms
+      - generic: Hide
+    - paragraph: Requests in one batch are dispatched concurrently at the planned offset. Recorded scheduler events show how vLLM groups the work.
+    - generic: Display
+    - group "Display times in":
+      - button "ms" [pressed]
+      - button "s"
+    - text: Planned request arrivals
+    - paragraph: One diamond per request · shared arrival time per arrival batch
+    - paragraph: Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch prefix-writer dispatches prefix-writer at 0 ms. Arrival batch prefix-reader dispatches prefix-reader at 10 ms.
+    - region "Planned request arrivals":
+      - img "Request dispatch diamonds":
+        - generic: t=0
+        - generic "prefix-writer"
+        - 'generic "prefix-writer: planned dispatch at 0 ms, arrival batch prefix-writer"'
+        - generic "prefix-reader"
+        - 'generic "prefix-reader: planned dispatch at 10 ms, arrival batch prefix-reader"'
+        - generic "Arrival batch prefix-writer · 0 ms":
+          - generic: prefix-writer
+          - generic: · 0 ms
+        - generic "Arrival batch prefix-reader · 10 ms":
+          - generic: prefix-reader
+          - generic: · 10 ms
+    - img "Planned offset axis in ms":
+      - generic: "0"
+      - generic: "5"
+      - generic: "10"
+      - generic: "15"
+      - generic: Planned offset (ms)
+    - generic: Planned dispatch
+    - generic: Clock origin t = 0
+    - generic: Fresh cache required before dispatch
+    - list "Arrival batches":
+      - generic "prefix-writer · t+0 ms · 1 request":
+        - generic: "1"
+        - text: prefix-writer
+        - generic: · t+0 ms · 1 request
+      - text: Batch label
+      - textbox "Batch label": prefix-writer
+      - text: Planned send offset (ms)
+      - textbox "Planned send offset (ms)": "0"
+      - list "Requests in prefix-writer":
+        - generic: Request label
+        - textbox "Request label": prefix-writer
+        - generic: Prompt
+        - textbox "Prompt": The shared prefix ends
+        - generic: Maximum output tokens
+        - textbox "Maximum output tokens": "1"
+        - generic: Request priority
+        - textbox "Request priority": "0"
+        - button "More options for prefix-writer":
+        - button "Duplicate prefix-writer":
+        - button "Delete prefix-writer":
+      - button "Add request":
+        - text: Add request
+      - button "Duplicate batch"
+      - button "Delete batch":
+        - text: Delete batch
+      - generic "prefix-reader · t+10 ms · 1 request The shared prefix ends with reuse":
+        - generic: "2"
+        - text: prefix-reader
+        - generic: · t+10 ms · 1 request
+        - generic: The shared prefix ends with reuse
+    - button "Add batch":
+      - text: Add batch
+    - generic: 2 / 64 requests
+  - region "Execution host":
+    - heading "Execution host" [level=2]
+    - generic "Execution host Needs GPU host Run on a CUDA-ready Linux machine available to this controller.":
+      - generic: "02"
+      - generic: Execution host
+      - generic: Needs GPU host
+      - generic: Run on a CUDA-ready Linux machine available to this controller.
+      - generic: Show
+  - region "Model configuration":
+    - heading "Model configuration" [level=2]
+    - generic "Model configuration Configured Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · float16":
+      - generic: "03"
+      - generic: Model configuration
+      - generic: Configured
+      - generic: Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · float16
+      - generic: Show
+    - option "Auto"
+    - option "bfloat16"
+    - option "float16" [selected]
+    - option "float32"
+    - option "None" [selected]
+    - option "AWQ (unavailable on this host)" [disabled]
+    - option "GPTQ (unavailable on this host)" [disabled]
+    - option "bitsandbytes (unavailable on this host)" [disabled]
+    - option "FP8 (unavailable on this host)" [disabled]
+  - region "vLLM configuration":
+    - heading "vLLM configuration" [level=2]
+    - generic "vLLM configuration Unavailable 64 context · 2 concurrent · 8 tokens/iteration":
+      - generic: "04"
+      - generic: vLLM configuration
+      - generic: Unavailable
+      - generic: 64 context · 2 concurrent · 8 tokens/iteration
+      - generic: Hide
+    - heading "Continuous batching · built in" [level=3]
+    - paragraph: At each scheduler iteration, vLLM can admit new requests and combine their prefill with ongoing decode work. The recording shows the actual batch membership. Arrival groups do not force execution batches.
+    - text: Maximum context length
+    - textbox "Maximum context length Maximum prompt and generated tokens per request.": "64"
+    - paragraph: Maximum prompt and generated tokens per request.
+    - text: Maximum concurrent sequences
+    - textbox "Maximum concurrent sequences Upper bound for sequences scheduled together.": "2"
+    - paragraph: Upper bound for sequences scheduled together.
+    - text: Tokens per scheduler iteration
+    - textbox "Tokens per scheduler iteration Maximum scheduled tokens across requests in one iteration.": "8"
+    - paragraph: Maximum scheduled tokens across requests in one iteration.
+    - text: Scheduling policy
+    - combobox "Scheduling policy Priority scheduling favors lower request priority numbers; arrival time breaks ties. Edit priorities in each request.":
+      - option "First come, first served" [selected]
+      - option "Request priority"
+    - paragraph: Priority scheduling favors lower request priority numbers; arrival time breaks ties. Edit priorities in each request.
+    - text: Long-prefill chunk threshold (tokens)
+    - textbox "Long-prefill chunk threshold (tokens) Cap tokens assigned to a long prefill in one iteration. 0 disables this cap; the total token budget still applies.": "0"
+    - paragraph: Cap tokens assigned to a long prefill in one iteration. 0 disables this cap; the total token budget still applies.
+    - checkbox "Chunked prefill Allow large prefills to share scheduler iterations with other work." [checked]
+    - generic: Chunked prefill
+    - generic: Allow large prefills to share scheduler iterations with other work.
+    - checkbox "Prefix caching Reuse matching prompt-prefix blocks within this run." [checked]
+    - generic: Prefix caching
+    - generic: Reuse matching prompt-prefix blocks within this run.
+    - generic "Layer and KV diagnostics"
+    - text: Capture mode
+    - combobox "Capture mode":
+      - option "Serving capture"
+      - option "Eager layer and KV diagnostic" [selected]
+    - text: Maximum captured scheduler steps
+    - textbox "Maximum captured scheduler steps 1–16 steps; the default is eight.": "8"
+    - paragraph: 1–16 steps; the default is eight.
+    - paragraph: Diagnostics use one GPU with dense Qwen3 and CUDA graphs disabled. Native GPU intervals describe shared batch operations, including supported layer cache writes. Recording and tensor readback add overhead.
+    - text: Earliest scheduler step
+    - textbox "Earliest scheduler step Step numbering starts at 1. Capture waits until this step and any selected arrival trigger.": "1"
+    - paragraph: Step numbering starts at 1. Capture waits until this step and any selected arrival trigger.
+    - text: Request arrival trigger
+    - combobox "Request arrival trigger Wait for this request to be admitted before starting the diagnostic window.":
+      - option "Start at the earliest step"
+      - option "prefix-writer (prefix-writer)" [selected]
+      - option "prefix-reader (prefix-reader)"
+    - paragraph: Wait for this request to be admitted before starting the diagnostic window.
+    - checkbox "Capture selected numerical K/V slices Choose targets before recording. Values omitted from a recording require a targeted rerun. Native BF16/FP16 slices are supported; other layouts report availability." [checked]
+    - generic: Capture selected numerical K/V slices
+    - generic: Choose targets before recording. Values omitted from a recording require a targeted rerun. Native BF16/FP16 slices are supported; other layouts report availability.
+    - text: Tensor selection
+    - combobox "Tensor selection Select zero-based positions, layers, heads and a bounded range of dimensions below.":
+      - option "Small learning preset"
+      - option "Custom selection" [selected]
+    - paragraph: Select zero-based positions, layers, heads and a bounded range of dimensions below.
+    - text: Request to inspect
+    - combobox "Request to inspect Only selected request positions receive numerical snapshots." [active]:
+      - option "First participating request"
+      - option "prefix-writer (prefix-writer)" [selected]
+      - option "prefix-reader (prefix-reader)"
+    - paragraph: Only selected request positions receive numerical snapshots.
+    - text: Token positions
+    - textbox "Token positions Zero-based indices separated by commas or spaces; empty selects the first four participating positions.": "0"
+    - paragraph: Zero-based indices separated by commas or spaces; empty selects the first four participating positions.
+    - text: Layer indices
+    - textbox "Layer indices Zero-based indices; empty selects the first, middle, and last layer. Layer index 0 is displayed as Layer 1.": "1"
+    - paragraph: Zero-based indices; empty selects the first, middle, and last layer. Layer index 0 is displayed as Layer 1.
+    - text: KV head indices
+    - textbox "KV head indices Zero-based indices separated by commas or spaces.": "0"
+    - paragraph: Zero-based indices separated by commas or spaces.
+    - text: Starting K/V dimension
+    - textbox "Starting K/V dimension Zero-based starting dimension within each head.": "0"
+    - paragraph: Zero-based starting dimension within each head.
+    - text: Dimensions per K/V slice
+    - textbox "Dimensions per K/V slice 1–256 dimensions, limited by the observed head shape.": "16"
+    - paragraph: 1–256 dimensions, limited by the observed head shape.
+    - text: Numerical capture byte limit
+    - textbox "Numerical capture byte limit 64 bytes–16 MiB; default 1 MiB. Capture stops retaining numerical data when this limit is reached.": "1048576"
+    - paragraph: 64 bytes–16 MiB; default 1 MiB. Capture stops retaining numerical data when this limit is reached.
+    - heading "Fresh-cache run contract" [level=3]
+    - paragraph: Preparation must finish model loading, warmup, and a verified cache reset before workload t = 0. The controller must refuse capture when it cannot verify that boundary.
+    - generic "Memory and sampling"
+    - alert:
+      - generic: Unavailable
+      - paragraph: This machine does not have the pinned vLLM 0.30.x CUDA runtime. Use a CUDA-ready SSH host.
+  - complementary "Preflight":
+    - region "Preflight · execution host":
+      - heading "Preflight · execution host" [level=3]
+      - status:
+        - generic: Needs GPU host
+        - generic: This Mac runs the explorer, replay, and live status. A live vLLM 0.30.0 engine needs a CUDA Linux host, so choose an SSH GPU host.
+      - list "Server setup progress":
+        - generic: Reach execution host
+        - generic: Pending
+        - generic: Inspect CUDA and vLLM runtime
+        - generic: Pending
+        - generic: Confirm loopback controller
+        - generic: Pending
+      - button "Check host":
+        - text: Check host
+      - button "Use SSH GPU host":
+        - text: Use SSH GPU host
+      - paragraph: No execution begins until you start capture.
+    - region "Planned launch settings":
+      - heading "Planned launch settings" [level=3]
+      - term: Execution source
+      - definition: Instrumented vLLM
+      - term: Context length
+      - definition: "64"
+      - term: Concurrent sequences
+      - definition: "2"
+      - term: Scheduled-token budget
+      - definition: "8"
+      - term: Chunked prefill
+      - definition: "On"
+      - term: Scheduling policy
+      - definition: fcfs
+      - term: Long-prefill threshold
+      - definition: "0"
+      - term: KV byte budget
+      - definition: Automatic
+      - term: Profiling
+      - definition: eager_diagnostic
+      - term: Prefix cache
+      - definition: "On"
+      - term: Fresh cache contract
+      - definition: Required; verified during preparation
+  - paragraph: Live vLLM capture is blocked on this host
+  - status: This Mac runs the explorer, replay, and live status. A live vLLM 0.30.0 engine needs a CUDA Linux host, so choose an SSH GPU host. Or switch to the synthetic demo fixture.
+  - group "Execution source":
+    - button "Live vLLM" [pressed]:
+      - text: Live vLLM
+    - button "Demo fixture":
+      - text: Demo fixture
+  - button "Prepare and capture" [disabled]:
+    - text: Prepare and capture

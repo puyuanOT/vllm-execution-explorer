@@ -32,6 +32,7 @@ export interface SceneProps {
   trackedRequestId?: string | null
   trackedTokenPosition?: number | null
   measuredProfile?: MeasuredSceneProfile
+  profileAvailable?: boolean
   cameraCommand?: CameraCommand | null
   onSelect: (selection: Selection) => void
   onExplore?: (component: WorkflowComponentId) => void
@@ -43,7 +44,8 @@ const X = { intake: -9.0, scheduler: -4.6, tower: 1.0, output: 6.2 }
 const KV_BANK = { x: -1.95, z: 4.1, width: 4.1, depth: 2.2 }
 
 export function ExecutionScene(props: SceneProps) {
-  const focusKey = `${props.focus ?? "overview"}/${JSON.stringify(props.architectureFocus ?? { kind: "model" })}`
+  const tensorDrill = props.focus === "kv-cache" && props.selection?.kind === "token" && props.selection.kvLayerIndex != null
+  const focusKey = `${props.focus ?? "overview"}/${JSON.stringify(props.architectureFocus ?? { kind: "model" })}/${tensorDrill ? "tensor" : "pool"}`
   return <Canvas camera={{ position: [0, 6, 18], fov: 34 }} frameloop="demand" dpr={[1, 1.75]}
     aria-label={props.focus ? `${componentLabel(props.focus)} focused 3D view` : "vLLM serving workflow and model architecture 3D overview"}>
     <color attach="background" args={[SCENE_COLORS.background]} />
@@ -51,7 +53,7 @@ export function ExecutionScene(props: SceneProps) {
     <hemisphereLight args={["#c3d3e8", "#05080e", 0.75]} />
     <directionalLight position={[6, 12, 9]} intensity={0.75} color="#dfe9f5" />
     <CameraRig focusKey={focusKey} focus={props.focus ?? null} architectureFocus={props.architectureFocus ?? null}
-      poolCount={props.kvCache?.pools.length ?? 1} command={props.cameraCommand ?? null} />
+      poolCount={props.kvCache?.pools.length ?? 1} tensorDrill={tensorDrill} command={props.cameraCommand ?? null} />
     <Invalidate {...props} />
     {import.meta.env.VITE_EXPLORER_SCENE_PROFILE === "1" ? <SceneProfileDiagnostics sceneProps={props} focusKey={focusKey} /> : null}
     {props.focus ? <FocusedStage {...props} focus={props.focus} /> : <WorkflowOverview {...props} />}
@@ -60,21 +62,22 @@ export function ExecutionScene(props: SceneProps) {
 
 interface StageFrame { target: Position3; direction: Position3; width: number; height: number }
 
-function stageFrame(focus: WorkflowComponentId | null, architectureFocus: ArchitectureFocus | null, poolCount: number): StageFrame {
+function stageFrame(focus: WorkflowComponentId | null, architectureFocus: ArchitectureFocus | null, poolCount: number, tensorDrill = false): StageFrame {
   if (!focus) return { target: [-1.3, 0.35, 1.3], direction: [0.16, 0.44, 1], width: 19.5, height: 9.5 }
   if (focus === "model-execution") {
     return architectureFocus && architectureFocus.kind !== "model"
       ? { target: [0.4, -0.55, 0.3], direction: [0.08, 0.2, 1], width: 13.5, height: 11.8 }
       : { target: [0, -0.75, 0.4], direction: [0.12, 0.24, 1], width: 12.5, height: 12.6 }
   }
-  if (focus === "kv-cache") return { target: [0, -0.6, 0.8], direction: [0, 0.85, 1], width: Math.max(14, poolCount * 12.8), height: 12.5 }
+  if (focus === "kv-cache") return tensorDrill ? { target: [0, 0.3, 0], direction: [0, 0.85, 1], width: 11, height: 3.8 }
+    : { target: [0, -0.6, 0.8], direction: [0, 0.85, 1], width: Math.max(14, poolCount * 12.8), height: 12.5 }
   if (focus === "scheduler") return { target: [0, 0.1, 0], direction: [0.04, 0.16, 1], width: 16, height: 11.4 }
   return { target: [0, 0.6, 0], direction: [0.04, 0.14, 1], width: 13, height: 8 }
 }
 
-function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
+function CameraRig({ focusKey, focus, architectureFocus, poolCount, tensorDrill, command }: {
   focusKey: string; focus: WorkflowComponentId | null; architectureFocus: ArchitectureFocus | null;
-  poolCount: number; command: CameraCommand | null
+  poolCount: number; tensorDrill: boolean; command: CameraCommand | null
 }) {
   const camera = useThree((item) => item.camera)
   const gl = useThree((item) => item.gl)
@@ -97,7 +100,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
     return () => { next.removeEventListener("change", onChange); next.dispose(); controls.current = null }
   }, [camera, gl, invalidate])
   useLayoutEffect(() => {
-    resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount), size)
+    resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount, tensorDrill), size)
     invalidate()
   }, [camera, focusKey, poolCount, size.width, size.height, invalidate])
   useEffect(() => {
@@ -105,7 +108,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
     if (!active || !command || command.id === lastCommand.current) return
     lastCommand.current = command.id
     if (command.action === "reset") {
-      resetCamera(camera, active, stageFrame(focus, architectureFocus, poolCount), size)
+      resetCamera(camera, active, stageFrame(focus, architectureFocus, poolCount, tensorDrill), size)
     } else if (command.action.startsWith("pan-")) {
       camera.updateMatrixWorld()
       const horizontal = command.action === "pan-left" || command.action === "pan-right"
@@ -123,7 +126,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, command }: {
       camera.position.copy(active.target).add(offset.setLength(distance)); active.update()
     }
     invalidate()
-  }, [camera, command, focus, architectureFocus, poolCount, size.width, size.height, invalidate])
+  }, [camera, command, focus, architectureFocus, poolCount, tensorDrill, size.width, size.height, invalidate])
   return null
 }
 

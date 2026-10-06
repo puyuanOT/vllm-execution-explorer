@@ -8,7 +8,7 @@ export type Selection =
   | { kind: "layer"; layerIndex: number }
   | { kind: "module"; layerIndex: number; module: "attention" | "ffn" }
   | { kind: "head"; layerIndex: number; headIndex: number; headKind: "query" | "kv" }
-  | { kind: "token"; requestId: string; position: number }
+  | { kind: "token"; requestId: string; position: number; kvLayerIndex?: number; kvHead?: number; kvKind?: "K" | "V"; kvBlockKey?: string }
 
 export type PlaybackMode = "events" | "recorded" | "teaching" | "measured"
 export type WorkspaceView = "timeline" | "spatial"

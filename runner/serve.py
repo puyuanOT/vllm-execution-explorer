@@ -921,6 +921,7 @@ def _manifest_for(
             ("revision_resolution", "revision_resolution"),
             ("observability_record", "observability"),
             ("profiling_record", "profiling"),
+            ("kv_cache_record", "kv_cache"),
         ):
             value = getattr(session, source_name, None)
             if value is not None:

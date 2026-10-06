@@ -1,0 +1,112 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic: Synthetic fixture · not GPU evidence
+  - status "Runner is reachable.":
+    - generic: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - button "Open inspector":
+      - text: Open inspector
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: prefix-reader · token position 0 · block 0 / slot 0
+      - generic: Layer 1 · KV head 0 · cuda:0 · float16
+      - button "Keys · shape [16]"
+      - generic: Structural dimensions
+      - button "Values · shape [16]" [pressed]
+      - generic: Structural dimensions
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - text: Referenced
+    - generic: "2"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "0"
+    - text: Reserved null
+    - generic: "0"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Demo fixture. Teaching pace is synthetic and is not GPU evidence.
+    - region "3D KV tensor slice controls":
+      - navigation "3D KV slice breadcrumb":
+        - button "cuda:0 / pool-0 / group 0 / Block 0"
+        - generic: /
+        - generic: Slot 0
+        - generic: /
+        - generic: Token position 0
+        - generic: /
+        - generic: Layer 1 / KV head 0 / V
+      - text: Layer
+      - combobox "3D cache layer":
+        - option "Layer 1" [selected]
+        - option "Layer 2"
+      - text: KV head index
+      - combobox "3D cache head":
+        - option "0" [selected]
+        - option "1"
+      - group "3D cache keys or values":
+        - button "Keys (K)"
+        - button "Values (V)" [active] [pressed]
+      - button "Inspect token and captured values"
+      - paragraph: One token’s structural K/V slice. Layer, head and K/V choices are shared with the inspector; numerical data appears only for captured snapshots.
+    - generic "Find a physical KV block"
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "23"
+  - paragraph: Event 23, kv_block_binding, 28 ms. Since first recorded event|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

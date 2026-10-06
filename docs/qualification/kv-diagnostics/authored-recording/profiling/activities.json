@@ -1,0 +1,1383 @@
+{
+  "contract_version": 1,
+  "run_id": "authored-kv-diagnostics",
+  "mode": "eager_diagnostic",
+  "execution_mode": "eager",
+  "backend": "torch.profiler",
+  "clock": {
+    "domain": "torch.profiler.chrome_trace",
+    "unit": "microseconds",
+    "origin": "trace_local"
+  },
+  "steps": [
+    {
+      "step_id": "step-1",
+      "mapping_status": "observed",
+      "mapping_observation_boundary": "authored_packed_rows",
+      "unpadded_tokens": 4,
+      "padded_tokens": 4,
+      "padding_status": "observed",
+      "padding_observation_boundary": "authored_padded_dimensions",
+      "packed_rows": [
+        {
+          "row": 0,
+          "request_id": "prefix-writer",
+          "token_position": 0,
+          "is_padding": false
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-writer",
+          "token_position": 1,
+          "is_padding": false
+        },
+        {
+          "row": 2,
+          "request_id": "prefix-writer",
+          "token_position": 2,
+          "is_padding": false
+        },
+        {
+          "row": 3,
+          "request_id": "prefix-writer",
+          "token_position": 3,
+          "is_padding": false
+        }
+      ]
+    },
+    {
+      "step_id": "step-2",
+      "mapping_status": "observed",
+      "mapping_observation_boundary": "authored_packed_rows",
+      "unpadded_tokens": 2,
+      "padded_tokens": 2,
+      "padding_status": "observed",
+      "padding_observation_boundary": "authored_padded_dimensions",
+      "packed_rows": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 4,
+          "is_padding": false
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-reader",
+          "token_position": 5,
+          "is_padding": false
+        }
+      ]
+    },
+    {
+      "step_id": "step-3",
+      "mapping_status": "observed",
+      "mapping_observation_boundary": "authored_packed_rows",
+      "unpadded_tokens": 1,
+      "padded_tokens": 1,
+      "padding_status": "observed",
+      "padding_observation_boundary": "authored_padded_dimensions",
+      "packed_rows": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 6,
+          "is_padding": false
+        }
+      ]
+    }
+  ],
+  "activities": [
+    {
+      "activity_id": "activity-0",
+      "kind": "cpu_scope",
+      "name": "explorer.step/step-1",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 100,
+      "duration": 100,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": null,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-1",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/0",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 110,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 0,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-2",
+      "kind": "cpu_scope",
+      "name": "explorer.component/0/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 110,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-3",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/0/cache-write-0",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 112,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-0"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-4",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 113,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-0"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-5",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 125,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-0",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-4"
+      ]
+    },
+    {
+      "activity_id": "activity-6",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/1",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 150,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 1,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-7",
+      "kind": "cpu_scope",
+      "name": "explorer.component/1/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 150,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-8",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/1/cache-write-1",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 152,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-1"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-9",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 153,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-1"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-10",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 165,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-1",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-1",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-9"
+      ]
+    },
+    {
+      "activity_id": "activity-11",
+      "kind": "cpu_scope",
+      "name": "explorer.step/step-2",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 400,
+      "duration": 100,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": null,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-12",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/0",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 410,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 0,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-13",
+      "kind": "cpu_scope",
+      "name": "explorer.component/0/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 410,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-14",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/0/cache-write-2",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 412,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-2"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-15",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 413,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-2"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-16",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 425,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-2",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-15"
+      ]
+    },
+    {
+      "activity_id": "activity-17",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/1",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 450,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 1,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-18",
+      "kind": "cpu_scope",
+      "name": "explorer.component/1/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 450,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-19",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/1/cache-write-3",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 452,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-3"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-20",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 453,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-3"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-21",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 465,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-2",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-3",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-20"
+      ]
+    },
+    {
+      "activity_id": "activity-22",
+      "kind": "cpu_scope",
+      "name": "explorer.step/step-3",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 700,
+      "duration": 100,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": null,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-23",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/0",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 710,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 0,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-24",
+      "kind": "cpu_scope",
+      "name": "explorer.component/0/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 710,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-25",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/0/cache-write-4",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 712,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-4"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-26",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 713,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-4"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-27",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 725,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 0,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-4",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-26"
+      ]
+    },
+    {
+      "activity_id": "activity-28",
+      "kind": "cpu_scope",
+      "name": "explorer.layer/1",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 750,
+      "duration": 30,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 1,
+        "component": null,
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-29",
+      "kind": "cpu_scope",
+      "name": "explorer.component/1/attention",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 750,
+      "duration": 25,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-30",
+      "kind": "cpu_scope",
+      "name": "explorer.cache_write/1/cache-write-5",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 752,
+      "duration": 8,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-5"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-31",
+      "kind": "cpu_scope",
+      "name": "cudaLaunchKernel",
+      "device": null,
+      "stream": null,
+      "process_id": 1,
+      "thread_id": 1,
+      "start": 753,
+      "duration": 1,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "explicit_scope",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-5"
+      },
+      "related_activity_ids": []
+    },
+    {
+      "activity_id": "activity-32",
+      "kind": "cuda_kernel",
+      "name": "AUTHORED reshape_and_cache example",
+      "device": 0,
+      "stream": 7,
+      "process_id": 2,
+      "thread_id": 7,
+      "start": 765,
+      "duration": 20,
+      "scope": {
+        "step_id": "step-3",
+        "layer_index": 1,
+        "component": "attention",
+        "correlation": "runtime_flow",
+        "operation": "kv_cache_write",
+        "operation_id": "cache-write-5",
+        "correlation_source": "native_correlation_id"
+      },
+      "related_activity_ids": [
+        "activity-31"
+      ]
+    }
+  ],
+  "normalization": {
+    "status": "completed",
+    "source_activity_count": 33,
+    "activity_limit": 250000,
+    "gpu_activity_count": 6,
+    "correlated_gpu_activity_count": 6
+  },
+  "evidence": "Authored synthetic diagnostic contract example. Native normalization code was used; no native activities or numerical tensors were measured.",
+  "cache_writes": [
+    {
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "layer_index": 0,
+      "layer_name": "model.layers.0.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-5"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-writer",
+          "token_position": 0,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 0,
+          "kernel_block_id": 0,
+          "kernel_slot": 0
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-writer",
+          "token_position": 1,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 1,
+          "kernel_block_id": 0,
+          "kernel_slot": 1
+        },
+        {
+          "row": 2,
+          "request_id": "prefix-writer",
+          "token_position": 2,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 2,
+          "kernel_block_id": 0,
+          "kernel_slot": 2
+        },
+        {
+          "row": 3,
+          "request_id": "prefix-writer",
+          "token_position": 3,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 3,
+          "kernel_block_id": 0,
+          "kernel_slot": 3
+        }
+      ]
+    },
+    {
+      "operation_id": "cache-write-1",
+      "step_id": "step-1",
+      "layer_index": 1,
+      "layer_name": "model.layers.1.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-10"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-writer",
+          "token_position": 0,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 0,
+          "kernel_block_id": 0,
+          "kernel_slot": 0
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-writer",
+          "token_position": 1,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 1,
+          "kernel_block_id": 0,
+          "kernel_slot": 1
+        },
+        {
+          "row": 2,
+          "request_id": "prefix-writer",
+          "token_position": 2,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 2,
+          "kernel_block_id": 0,
+          "kernel_slot": 2
+        },
+        {
+          "row": 3,
+          "request_id": "prefix-writer",
+          "token_position": 3,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 0,
+          "allocation_generation": 1,
+          "slot": 3,
+          "kernel_block_id": 0,
+          "kernel_slot": 3
+        }
+      ]
+    },
+    {
+      "operation_id": "cache-write-2",
+      "step_id": "step-2",
+      "layer_index": 0,
+      "layer_name": "model.layers.0.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-16"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 4,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 0,
+          "kernel_block_id": 1,
+          "kernel_slot": 0
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-reader",
+          "token_position": 5,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 1,
+          "kernel_block_id": 1,
+          "kernel_slot": 1
+        }
+      ]
+    },
+    {
+      "operation_id": "cache-write-3",
+      "step_id": "step-2",
+      "layer_index": 1,
+      "layer_name": "model.layers.1.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-21"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 4,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 0,
+          "kernel_block_id": 1,
+          "kernel_slot": 0
+        },
+        {
+          "row": 1,
+          "request_id": "prefix-reader",
+          "token_position": 5,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 1,
+          "kernel_block_id": 1,
+          "kernel_slot": 1
+        }
+      ]
+    },
+    {
+      "operation_id": "cache-write-4",
+      "step_id": "step-3",
+      "layer_index": 0,
+      "layer_name": "model.layers.0.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-27"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 6,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 2,
+          "kernel_block_id": 1,
+          "kernel_slot": 2
+        }
+      ]
+    },
+    {
+      "operation_id": "cache-write-5",
+      "step_id": "step-3",
+      "layer_index": 1,
+      "layer_name": "model.layers.1.self_attn.attn",
+      "cache_group": 0,
+      "pool": "pool-0",
+      "device": "cuda:0",
+      "status": "observed",
+      "observation_boundary": "authored_cache_update_call",
+      "gpu_activity_ids": [
+        "activity-32"
+      ],
+      "participants": [
+        {
+          "row": 0,
+          "request_id": "prefix-reader",
+          "token_position": 6,
+          "is_padding": false,
+          "pool": "pool-0",
+          "cache_group": 0,
+          "block_id": 1,
+          "allocation_generation": 1,
+          "slot": 2,
+          "kernel_block_id": 1,
+          "kernel_slot": 2
+        }
+      ]
+    }
+  ],
+  "tensor_snapshots": [
+    {
+      "snapshot_id": "snapshot-0",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 0,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 0,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "K",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        -1.0,
+        -0.875,
+        -0.75,
+        -0.625,
+        -0.5,
+        -0.375,
+        -0.25,
+        -0.125,
+        0.0,
+        0.125,
+        0.25,
+        0.375,
+        0.5,
+        0.625,
+        0.75,
+        0.875
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-1",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 0,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 0,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "V",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        -0.5,
+        -0.375,
+        -0.25,
+        -0.125,
+        0.0,
+        0.125,
+        0.25,
+        0.375,
+        0.5,
+        0.625,
+        0.75,
+        0.875,
+        1.0,
+        1.125,
+        1.25,
+        1.375
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-2",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 1,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 1,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "K",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        0.0,
+        0.125,
+        0.25,
+        0.375,
+        0.5,
+        0.625,
+        0.75,
+        0.875,
+        1.0,
+        1.125,
+        1.25,
+        1.375,
+        1.5,
+        1.625,
+        1.75,
+        1.875
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-3",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 1,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 1,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "V",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        0.5,
+        0.625,
+        0.75,
+        0.875,
+        1.0,
+        1.125,
+        1.25,
+        1.375,
+        1.5,
+        1.625,
+        1.75,
+        1.875,
+        2.0,
+        2.125,
+        2.25,
+        2.375
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-4",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 2,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 2,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "K",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        1.0,
+        1.125,
+        1.25,
+        1.375,
+        1.5,
+        1.625,
+        1.75,
+        1.875,
+        2.0,
+        2.125,
+        2.25,
+        2.375,
+        2.5,
+        2.625,
+        2.75,
+        2.875
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-5",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 2,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 2,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "V",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        1.5,
+        1.625,
+        1.75,
+        1.875,
+        2.0,
+        2.125,
+        2.25,
+        2.375,
+        2.5,
+        2.625,
+        2.75,
+        2.875,
+        3.0,
+        3.125,
+        3.25,
+        3.375
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-6",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 3,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 3,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "K",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        2.0,
+        2.125,
+        2.25,
+        2.375,
+        2.5,
+        2.625,
+        2.75,
+        2.875,
+        3.0,
+        3.125,
+        3.25,
+        3.375,
+        3.5,
+        3.625,
+        3.75,
+        3.875
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    },
+    {
+      "snapshot_id": "snapshot-7",
+      "operation_id": "cache-write-0",
+      "step_id": "step-1",
+      "request_id": "prefix-writer",
+      "token_position": 3,
+      "layer_index": 0,
+      "cache_group": 0,
+      "pool": "pool-0",
+      "block_id": 0,
+      "allocation_generation": 1,
+      "slot": 3,
+      "device": "cuda:0",
+      "kv_head": 0,
+      "kind": "V",
+      "dtype": "float16",
+      "shape": [
+        16
+      ],
+      "dimension_start": 0,
+      "values": [
+        2.5,
+        2.625,
+        2.75,
+        2.875,
+        3.0,
+        3.125,
+        3.25,
+        3.375,
+        3.5,
+        3.625,
+        3.75,
+        3.875,
+        4.0,
+        4.125,
+        4.25,
+        4.375
+      ],
+      "byte_count": 32,
+      "observation_boundary": "authored_numeric_example_no_tensor_read"
+    }
+  ],
+  "tensor_capture": {
+    "enabled": true,
+    "status": "partial",
+    "reason": "Authored example of the 256-byte budget: first-layer slices retained; second-layer values omitted. No numerical tensor was read.",
+    "max_bytes": 256,
+    "retained_bytes": 256,
+    "selection": {
+      "request_id": "prefix-writer",
+      "token_positions": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "layer_indices": [
+        0,
+        1
+      ],
+      "head_indices": [
+        0
+      ],
+      "dimension_start": 0,
+      "dimension_count": 16
+    },
+    "observation_boundary": "authored_numeric_example_no_tensor_read"
+  }
+}

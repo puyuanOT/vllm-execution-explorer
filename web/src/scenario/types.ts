@@ -50,6 +50,17 @@ export interface EngineSettings {
   kvCacheMemoryBytes: string
   profilingMode: "off" | "eager_diagnostic"
   profilingMaxSteps: string
+  profilingStartStep: string
+  profilingTriggerRequestId: string
+  tensorCapture: boolean
+  tensorPreset: "small" | "custom"
+  tensorRequestId: string
+  tensorTokenPositions: string
+  tensorLayerIndices: string
+  tensorHeadIndices: string
+  tensorDimensionStart: string
+  tensorDimensionCount: string
+  tensorMaxBytes: string
   model: string
   modelRevision: string
   tokenizerRevision: string
@@ -161,7 +172,15 @@ export interface RunRequestBody {
     kv_cache_memory_bytes: number | null
     fresh_prefix_cache: true
   }
-  profiling_configuration: { mode: "off" | "eager_diagnostic"; max_steps: number }
+  profiling_configuration: {
+    mode: "off" | "eager_diagnostic"; max_steps: number
+    start_step?: number; trigger_request_id?: string | null
+    tensor_capture?: {
+      enabled: boolean; preset: "small" | "custom"; request_id: string | null
+      token_positions: number[]; layer_indices: number[]; head_indices: number[]
+      dimension_start: number; dimension_count: number; max_bytes: number
+    }
+  }
   sampling: {
     temperature: number
     top_p: number

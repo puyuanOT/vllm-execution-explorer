@@ -1,9 +1,21 @@
 {
   "recordings": [
     {
+      "id": "gpu-model-batching",
+      "title": "Real GPU: mixed prefill and decode",
+      "summary": "Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-prefix-reuse",
+      "title": "Real GPU: partial prefix reuse",
+      "summary": "A real vLLM 0.30.0 run shows a matching cached prompt prefix, the remaining prefill work and subsequent decoding. Inspect original content and current holders. This historical recording contains step-boundary KV observations, without numerical tensor snapshots.",
+      "evidence": "gpu"
+    },
+    {
       "id": "model-kv-walkthrough",
       "title": "Model and KV walkthrough",
-      "summary": "Six staggered synthetic requests explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. This teaching fixture loads no model weights and contains no GPU timing measurements.",
+      "summary": "Six staggered synthetic requests with authored readable word fragments explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. This teaching fixture loads no model weights and contains no GPU timing measurements.",
       "evidence": "fixture"
     },
     {

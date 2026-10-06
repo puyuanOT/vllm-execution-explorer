@@ -1,0 +1,16 @@
+{
+  "kind": "authored_fixture_validation",
+  "recording": "/Users/pliu/.codex/worktrees/kv-layer-inspection/vllm-execution-explorer/docs/qualification/kv-diagnostics/authored-recording/",
+  "events": 36,
+  "operations": 6,
+  "snapshots": 8,
+  "outcomes": [
+    "alias-safe capacity metadata",
+    "independent-clock active/completed layer states",
+    "prefix reuse",
+    "bounded numerical slices",
+    "missing slice targeted rerun",
+    "prompt/configuration restoration"
+  ],
+  "real_gpu": false
+}

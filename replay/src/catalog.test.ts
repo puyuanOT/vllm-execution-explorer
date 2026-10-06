@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url"
 
 import { explainRequest } from "./explain.ts"
 import { projectArchitecture, projectKvCache, projectRequestTokens } from "./learning.ts"
+import { projectKvConfiguration, projectKvTensorPreview } from "./kv.ts"
+import { parseProfileAttachment, readProfileArtifact } from "./profiling.ts"
 import {
   attachContent,
   createPlayer,
@@ -17,14 +19,16 @@ import {
 
 const catalog = join(dirname(fileURLToPath(import.meta.url)), "../../web/public/recordings")
 
-test("bundled fixture lessons replay without inventing a GPU trace", () => {
+test("bundled lessons preserve real GPU and synthetic provenance with honest historical capture limits", () => {
   const index = JSON.parse(readFileSync(join(catalog, "index.json"), "utf8")) as {
     recordings: Array<{ id: string; evidence: string }>
   }
   const ids = new Set(index.recordings.map((item) => item.id))
-  assert.equal(index.recordings[0].id, "model-kv-walkthrough")
+  assert.equal(index.recordings[0].evidence, "gpu")
   for (const required of [
     "model-kv-walkthrough",
+    "gpu-model-batching",
+    "gpu-prefix-reuse",
     "continuous-batching",
     "single-request",
     "chunked-prefill",
@@ -37,11 +41,10 @@ test("bundled fixture lessons replay without inventing a GPU trace", () => {
     assert.ok(ids.has(required), required)
   }
   for (const item of index.recordings) {
-    assert.equal(item.evidence, "fixture")
     const manifest = JSON.parse(readFileSync(join(catalog, item.id, "manifest.json"), "utf8")) as RecordingManifest
     const events = parseJsonl<TraceEvent>(readFileSync(join(catalog, item.id, "events.jsonl"), "utf8"))
     const content = parseJsonl<ContentRecord>(readFileSync(join(catalog, item.id, "content.jsonl"), "utf8"))
-    assert.equal(manifest.execution_kind, "fixture")
+    assert.equal(manifest.execution_kind, item.evidence)
     const player = createPlayer(events, manifest)
     const state = attachContent(player.at(player.maxSequence), content)
     if (item.id === "incomplete-capture") {
@@ -49,6 +52,22 @@ test("bundled fixture lessons replay without inventing a GPU trace", () => {
       assert.equal(state.incomplete, true)
     } else {
       assert.equal(state.trust, "known")
+    }
+    if (item.evidence === "gpu") {
+      assert.equal((manifest.provenance as { real_gpu?: boolean }).real_gpu, true)
+      assert.equal((manifest.engine as { version?: string }).version, "0.30.0")
+      assert.equal(projectKvCache(state, manifest, content).evidenceKind, "gpu")
+      // Historical measured layers do not supply newly introduced cache tensor observations.
+      assert.equal(projectKvConfiguration(state, manifest).status, "unavailable")
+      assert.equal(projectKvConfiguration(state, manifest).pools[0].layerIndices.length, 36)
+      const artifact = readProfileArtifact(manifest)
+      if (artifact) {
+        const attachment = parseProfileAttachment(readFileSync(join(catalog, item.id, artifact.path), "utf8"), manifest)
+        assert.equal(attachment.cacheWrites.length, 0)
+        assert.equal(projectKvTensorPreview(manifest, attachment).status, "unavailable")
+      }
+      if (item.id === "gpu-model-batching") assert.ok(player.steps.some((step) => step.requests.some((request) => request.promptTokens > 0) && step.requests.some((request) => request.generationTokens > 0)))
+      if (item.id === "gpu-prefix-reuse") assert.ok(Object.values(state.requests).some((request) => (request.matchedPrefixTokens ?? 0) > 0))
     }
     if (item.id === "model-kv-walkthrough") {
       const architecture = projectArchitecture(manifest)

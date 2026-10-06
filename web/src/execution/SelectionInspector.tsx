@@ -1,4 +1,4 @@
-import type { MeasuredProfileProjection, ProfileActivity } from "../../../replay/src/profiling.ts"
+import type { MeasuredProfileProjection, ProfileActivity, ProfileKvObservations } from "../../../replay/src/profiling.ts"
 import { MeasuredProfileDetails } from "./MeasuredProfileDetails.tsx"
 import { explainBlock, explainRequest, explainStep } from "../../../replay/src/explain.ts"
 import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
@@ -13,6 +13,8 @@ import type { EvidenceKind, WorkflowComponentId } from "../explore/model.ts"
 import type { Selection } from "./types.ts"
 import { LearningDetails } from "./LearningDetails.tsx"
 import { EvidenceTag, Readouts } from "../ui/controls.tsx"
+import { KvConfigurationDetails } from "./KvConfigurationDetails.tsx"
+import type { TensorCaptureTarget } from "./KvTensorDetails.tsx"
 
 export function SelectionInspector({
   selection,
@@ -26,6 +28,8 @@ export function SelectionInspector({
   onClose,
   showClose,
   measuredProfile,
+  profileObservations,
+  onCaptureTensor,
   activeProfileActivities = [],
   profileError = "",
   measuredMode = false,
@@ -43,6 +47,9 @@ export function SelectionInspector({
   onSelect: (selection: Selection) => void
   onClose: () => void
   measuredProfile?: MeasuredProfileProjection
+  profileObservations?: ProfileKvObservations | null
+  profileTimeUs?: number | null
+  onCaptureTensor?: (target: TensorCaptureTarget) => void
   activeProfileActivities?: ProfileActivity[]
   profileError?: string
   measuredMode?: boolean
@@ -85,7 +92,7 @@ export function SelectionInspector({
         <p className="m-0 text-pretty text-sm text-muted">Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.</p>
       ) : null}
       {missingSample ? <p>This sample is not in the open view.</p> : null}
-      {component ? <ComponentDetails component={component} state={state} /> : null}
+      {component ? <ComponentDetails component={component} state={state} manifest={manifest} /> : null}
       {sample ? (
         <SampleDetails
           sample={sample}
@@ -101,7 +108,7 @@ export function SelectionInspector({
       {step && state ? (
         <section className="grid gap-3">
           <h3>Execution step</h3>
-          <EvidenceSection kind="observed" lines={explainStep(state, step.id).observed} />
+          <EvidenceSection kind="observed" synthetic={manifest?.execution_kind === "fixture" || manifest?.demo_fixture === true} lines={explainStep(state, step.id).observed} />
           <div className="row-actions">
             {step.requests.map((request) => {
               const label = samples.find((item) => item.sample.id === request.requestId)?.sample.label ?? request.requestId
@@ -117,12 +124,12 @@ export function SelectionInspector({
           </button>
         </section>
       ) : null}
-      <LearningDetails selection={selection} state={state} manifest={manifest} labels={labels} onSelect={onSelect} />
+      <LearningDetails selection={selection} state={state} manifest={manifest} labels={labels} measuredProfile={profileObservations ?? measuredProfile} onSelect={onSelect} onCaptureTensor={onCaptureTensor} />
       {block && state ? (
         <details open={!state.cacheInventory || undefined}>
           <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted">Block lifecycle evidence</summary>
           <div className="mt-2 grid gap-3">
-          <EvidenceSection kind="observed" lines={explainBlock(state, `${block.pool}:${block.blockId}`).observed} />
+          <EvidenceSection kind="observed" synthetic={manifest?.execution_kind === "fixture" || manifest?.demo_fixture === true} lines={explainBlock(state, `${block.pool}:${block.blockId}`).observed} />
           <EvidenceSection kind="explanatory" lines={[block.note]} />
           </div>
         </details>
@@ -137,9 +144,10 @@ export function SelectionInspector({
   )
 }
 
-function ComponentDetails({ component, state }: { component: WorkflowComponentId; state: ReplayState | null }) {
+function ComponentDetails({ component, state, manifest }: { component: WorkflowComponentId; state: ReplayState | null; manifest: RecordingManifest | null }) {
   const definition = workflowComponent(component)
   const snapshot = componentSnapshot(state, component)
+  if (component === "kv-cache" && state) return <KvConfigurationDetails state={state} manifest={manifest} />
   return (
     <div className="inspector-body grid gap-4">
       <p className="m-0 text-pretty text-sm text-muted">{definition.description}</p>
@@ -147,20 +155,20 @@ function ComponentDetails({ component, state }: { component: WorkflowComponentId
         { label: snapshot.metricLabel, value: snapshot.metric },
         { label: "Playhead event", value: String(state?.lastSequence ?? 0) },
       ]} />
-      <EvidenceSection kind="observed" lines={snapshot.evidence.observed} />
+      <EvidenceSection kind="observed" synthetic={manifest?.execution_kind === "fixture" || manifest?.demo_fixture === true} lines={snapshot.evidence.observed} />
       <EvidenceSection kind="derived" lines={snapshot.evidence.derived} />
       <EvidenceSection kind="unknown" lines={snapshot.evidence.unknown} />
-      <EvidenceSection kind="explanatory" lines={[...snapshot.evidence.explanatory, definition.explanation]} />
+      <details><summary className="cursor-pointer text-xs text-muted">Explanation</summary><div className="mt-2"><EvidenceSection kind="explanatory" lines={[...snapshot.evidence.explanatory, definition.explanation]} /></div></details>
     </div>
   )
 }
 
-function EvidenceSection({ kind, lines }: { kind: EvidenceKind; lines: string[] }) {
+function EvidenceSection({ kind, lines, synthetic = false }: { kind: EvidenceKind; lines: string[]; synthetic?: boolean }) {
   if (lines.length === 0) return null
   const labels: Record<EvidenceKind, string> = {
     observed: "Observed",
     derived: "Derived",
-    explanatory: "Explains",
+    explanatory: "Explanation",
     unknown: "Unknown",
   }
   return (
@@ -168,7 +176,7 @@ function EvidenceSection({ kind, lines }: { kind: EvidenceKind; lines: string[] 
       <ul className="cp-evlist m-0 list-none p-0">
         {lines.map((line) => (
           <li key={line}>
-            <span><EvidenceTag kind={kind}>{labels[kind]}</EvidenceTag></span>
+            <span><EvidenceTag kind={kind === "observed" && synthetic ? "synthetic" : kind}>{kind === "observed" && synthetic ? "Synthetic" : labels[kind]}</EvidenceTag></span>
             <span className="text-pretty">{line}</span>
           </li>
         ))}
@@ -287,7 +295,7 @@ function SampleDetails({
         <details>
           <summary>How to read this sample</summary>
           <div className="mt-2 grid gap-3">
-            <EvidenceSection kind="observed" lines={explanation.observed} />
+            <EvidenceSection kind="observed" synthetic={fixture} lines={explanation.observed} />
             <EvidenceSection kind="explanatory" lines={explanation.explanatory} />
           </div>
         </details>

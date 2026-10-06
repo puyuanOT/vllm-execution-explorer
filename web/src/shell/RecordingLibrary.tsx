@@ -2,6 +2,7 @@ import { FileUp, History, Play } from "lucide-react"
 
 import type { CatalogEntry } from "../api.ts"
 import { cn } from "../lib/cn.ts"
+import { EvidenceTag } from "../ui/controls.tsx"
 
 export function RecordingLibrary({
   catalog,
@@ -63,6 +64,7 @@ export function RecordingLibrary({
                   <Play aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-sky-300" />
                   <span className="min-w-0">
                     <strong className="block truncate text-sm text-slate-100">{item.title}</strong>
+                    <span className="mt-1 block"><EvidenceTag kind={item.evidence === "gpu" ? "gpu" : "synthetic"}>{item.evidence === "gpu" ? "Real GPU recording" : "Synthetic lesson"}</EvidenceTag></span>
                     <span className="mt-1 line-clamp-2 block text-pretty text-xs text-slate-400">{item.summary}</span>
                   </span>
                 </button>

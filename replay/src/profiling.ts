@@ -25,6 +25,84 @@ export interface ProfileScope {
   component: "attention" | "ffn" | null
   correlation: ProfileCorrelation
   correlationSource: string | null
+  operation?: "kv_cache_write" | null
+  operationId?: string | null
+}
+
+export interface ProfileCacheParticipant {
+  row: number
+  requestId: string
+  tokenPosition: number
+  pool: string | null
+  cacheGroup: number | null
+  blockId: number | null
+  allocationGeneration: number | null
+  slot: number | null
+  kernelBlockId: number | null
+  kernelSlot: number | null
+}
+
+export interface ProfileCacheWrite {
+  operationId: string
+  stepId: string
+  layerIndex: number
+  layerName: string
+  cacheGroup: number | null
+  pool: string | null
+  device: string | null
+  status: "observed" | "unavailable"
+  reason: string | null
+  participants: ProfileCacheParticipant[]
+  gpuActivityIds: string[]
+  observationBoundary: string
+}
+
+export interface ProfileTensorSnapshot {
+  snapshotId: string
+  operationId: string
+  stepId: string
+  requestId: string
+  tokenPosition: number
+  layerIndex: number
+  cacheGroup: number | null
+  pool: string | null
+  blockId: number | null
+  allocationGeneration: number | null
+  slot: number | null
+  device: string
+  kvHead: number
+  kind: "K" | "V"
+  dtype: string
+  shape: number[]
+  dimensionStart: number
+  values: number[]
+  byteCount: number
+  observationBoundary: string
+}
+
+export interface ProfileTensorCapture {
+  enabled: boolean
+  status: string
+  reason: string | null
+  maxBytes: number
+  retainedBytes: number
+  selection: {
+    requestId: string | null
+    tokenPositions: number[]
+    layerIndices: number[]
+    headIndices: number[]
+    dimensionStart: number
+    dimensionCount: number
+  }
+  observationBoundary: string | null
+}
+
+export interface ProfileKvObservations {
+  activities: ProfileActivity[]
+  steps: ProfileStep[]
+  cacheWrites: ProfileCacheWrite[]
+  tensorSnapshots: ProfileTensorSnapshot[]
+  tensorCapture: ProfileTensorCapture | null
 }
 
 export interface ProfileActivity {
@@ -62,7 +140,7 @@ export interface ProfileStep {
   packedRows: ProfilePackedRow[]
 }
 
-export interface ProfileAttachment {
+export interface ProfileAttachment extends ProfileKvObservations {
   contractVersion: 1
   runId: string
   mode: "eager_diagnostic"
@@ -110,7 +188,7 @@ export interface ProfileLayerSummary {
   devices: ProfileDeviceSummary[]
 }
 
-export interface MeasuredProfileProjection {
+export interface MeasuredProfileProjection extends ProfileKvObservations {
   status: "observed" | "unavailable"
   reason: string | null
   captureStatus: string | null
@@ -163,8 +241,14 @@ export function parseProfileAttachment(text: string, manifest: RecordingManifest
   unique(activities.map((activity) => activity.id), "activity IDs")
   const steps = array(value.steps, "steps").map(parseStep)
   unique(steps.map((step) => step.stepId), "step IDs")
+  const cacheWrites = array(value.cache_writes ?? [], "cache_writes").map(parseCacheWrite)
+  unique(cacheWrites.map((operation) => operation.operationId), "cache-write operation IDs")
+  const tensorSnapshots = array(value.tensor_snapshots ?? [], "tensor_snapshots").map(parseTensorSnapshot)
+  unique(tensorSnapshots.map((snapshot) => snapshot.snapshotId), "tensor snapshot IDs")
+  const tensorCapture = value.tensor_capture == null ? null : parseTensorCapture(value.tensor_capture)
+  validateKvObservations(activities, steps, cacheWrites, tensorSnapshots, tensorCapture)
   return { contractVersion: 1, runId, mode: "eager_diagnostic", executionMode: "eager", backend: "torch.profiler", clock, activities, steps,
-    normalization: structuredClone(record(value.normalization)) }
+    cacheWrites, tensorSnapshots, tensorCapture, normalization: structuredClone(record(value.normalization)) }
 }
 
 /** Profile selection uses native trace-local time, without consulting or shifting the host playhead. */
@@ -180,6 +264,7 @@ export function projectMeasuredProfile(manifest?: RecordingManifest | null, atta
   if (unavailable || !attachment) return {
     ...common, status: "unavailable", reason: unavailable, clock: null, extent: null,
     activities: [], activeActivities: [], layers: [], steps: [], selectedStep: null,
+    cacheWrites: [], tensorSnapshots: [], tensorCapture: null,
     mappingStatus: "unavailable", mappingReason: unavailable, unmappedActivityCount: 0,
   }
   if (manifest?.run_id !== attachment.runId) throw new ProfileError("Profile attachment belongs to a different recording.")
@@ -199,6 +284,13 @@ export function projectMeasuredProfile(manifest?: RecordingManifest | null, atta
       : metadata.status === "partial" || metadata.status === "failed"
       ? "Only the retained profiler intervals are shown; this capture did not complete." : null,
     clock: { ...attachment.clock }, extent: extent(attachment.activities), activities, activeActivities,
+    cacheWrites: structuredClone(attachment.cacheWrites.filter((operation) =>
+      (selection.stepId == null || operation.stepId === selection.stepId)
+      && (selection.layerIndex == null || operation.layerIndex === selection.layerIndex))),
+    tensorSnapshots: structuredClone(attachment.tensorSnapshots.filter((snapshot) =>
+      (selection.stepId == null || snapshot.stepId === selection.stepId)
+      && (selection.layerIndex == null || snapshot.layerIndex === selection.layerIndex))),
+    tensorCapture: attachment.tensorCapture ? structuredClone(attachment.tensorCapture) : null,
     layers: summarizeLayers(activities), steps, selectedStep,
     mappingStatus: selectedStep?.mappingStatus ?? "unavailable", mappingReason,
     unmappedActivityCount: attachment.activities.filter((activity) => activity.scope.correlation === "unmapped").length,
@@ -289,6 +381,11 @@ function parseActivity(input: unknown): ProfileActivity {
   if (correlation === "unmapped" && (stepId != null || layerIndex != null || component != null)) throw new ProfileError("Unmapped activity cannot claim a batch or layer scope.")
   if (correlation !== "unmapped" && stepId == null && layerIndex == null && component == null) throw new ProfileError("Mapped activity requires an observed scope.")
   if (String(kind).startsWith("cuda_") && correlation === "explicit_scope") throw new ProfileError("CUDA scope requires observed runtime flow correlation.")
+  const operation = scope.operation ?? null
+  const operationId = nullableString(scope.operation_id ?? null, "scope.operation_id")
+  if (operation !== null && operation !== "kv_cache_write") throw new ProfileError("Unsupported measured operation scope.")
+  if ((operation === null) !== (operationId === null)) throw new ProfileError("Measured operation requires its operation ID and kind together.")
+  if (operation != null && (stepId == null || layerIndex == null || correlation === "unmapped")) throw new ProfileError("Cache-write activity requires a correlated step and layer.")
   const startUs = timestamp(value.start, "activity.start")
   const durationUs = timestamp(value.duration, "activity.duration")
   if (durationUs < 0 || !Number.isSafeInteger(Math.trunc(startUs + durationUs))) throw new ProfileError("Invalid measured activity duration.")
@@ -301,7 +398,7 @@ function parseActivity(input: unknown): ProfileActivity {
     processId: identity(value.process_id ?? null, "activity.process_id"), threadId: identity(value.thread_id ?? null, "activity.thread_id"),
     startUs, durationUs, endUs: startUs + durationUs,
     scope: { stepId, layerIndex, component, correlation: correlation as ProfileCorrelation,
-      correlationSource: nullableString(scope.correlation_source ?? null, "scope.correlation_source") },
+      correlationSource: nullableString(scope.correlation_source ?? null, "scope.correlation_source"), operation, operationId },
     relatedActivityIds: array(value.related_activity_ids ?? [], "related_activity_ids").map((value) => requiredString(value, "related_activity_id")),
   }
 }
@@ -346,6 +443,127 @@ function parseStep(input: unknown): ProfileStep {
     paddingReason: nullableString(value.padding_reason ?? (paddingStatus === "unavailable" ? value.reason ?? "Padded input dimensions were not observed." : null), "padding_reason"),
     unpaddedTokens, paddedTokens, packedRows,
   }
+}
+
+function parseCacheWrite(input: unknown): ProfileCacheWrite {
+  const value = requiredRecord(input, "cache write")
+  if (value.status !== "observed" && value.status !== "unavailable") throw new ProfileError("Unsupported cache-write observation status.")
+  const participants = array(value.participants, "cache_write.participants").map((input): ProfileCacheParticipant => {
+    const row = requiredRecord(input, "cache-write participant")
+    return {
+      row: integer(row.row, "participant.row"), requestId: requiredString(row.request_id, "participant.request_id"),
+      tokenPosition: integer(row.token_position, "participant.token_position"),
+      pool: nullableString(row.pool ?? null, "participant.pool"), cacheGroup: nullableInteger(row.cache_group ?? null, "participant.cache_group"),
+      blockId: nullableInteger(row.block_id ?? null, "participant.block_id"), allocationGeneration: nullableInteger(row.allocation_generation ?? null, "participant.allocation_generation"),
+      slot: nullableInteger(row.slot ?? null, "participant.slot"), kernelBlockId: nullableInteger(row.kernel_block_id ?? null, "participant.kernel_block_id"),
+      kernelSlot: nullableInteger(row.kernel_slot ?? null, "participant.kernel_slot"),
+    }
+  })
+  unique(participants.map((participant) => String(participant.row)), "cache-write participant rows")
+  unique(participants.map((participant) => JSON.stringify([participant.requestId, participant.tokenPosition])), "cache-write participant tokens")
+  const gpuActivityIds = array(value.gpu_activity_ids, "cache_write.gpu_activity_ids").map((value) => requiredString(value, "cache_write.gpu_activity_id"))
+  unique(gpuActivityIds, "cache-write GPU activity IDs")
+  const reason = nullableString(value.reason ?? null, "cache_write.reason")
+  if (value.status === "unavailable" && reason == null) throw new ProfileError("Unavailable cache-write observation requires a reason.")
+  return {
+    operationId: requiredString(value.operation_id, "cache_write.operation_id"), stepId: requiredString(value.step_id, "cache_write.step_id"),
+    layerIndex: integer(value.layer_index, "cache_write.layer_index"), layerName: requiredString(value.layer_name, "cache_write.layer_name"),
+    cacheGroup: nullableInteger(value.cache_group ?? null, "cache_write.cache_group"), pool: nullableString(value.pool ?? null, "cache_write.pool"),
+    device: nullableString(value.device ?? null, "cache_write.device"), status: value.status, reason, participants, gpuActivityIds,
+    observationBoundary: requiredString(value.observation_boundary, "cache_write.observation_boundary"),
+  }
+}
+
+function parseTensorSnapshot(input: unknown): ProfileTensorSnapshot {
+  const value = requiredRecord(input, "tensor snapshot")
+  if (value.kind !== "K" && value.kind !== "V") throw new ProfileError("Tensor snapshot kind must be K or V.")
+  const shape = array(value.shape, "snapshot.shape").map((dimension) => integer(dimension, "snapshot.shape dimension"))
+  const values = array(value.values, "snapshot.values").map((value) => {
+    if (typeof value !== "number" || !Number.isFinite(value)) throw new ProfileError("Tensor snapshot values must be finite numbers.")
+    return value
+  })
+  if (shape.length !== 1 || shape[0] !== values.length || !values.length) throw new ProfileError("Tensor snapshot shape must describe its nonempty retained dimension slice.")
+  const byteCount = integer(value.byte_count, "snapshot.byte_count")
+  if (!byteCount) throw new ProfileError("Tensor snapshot must account for its retained bytes.")
+  return {
+    snapshotId: requiredString(value.snapshot_id, "snapshot.snapshot_id"), operationId: requiredString(value.operation_id, "snapshot.operation_id"),
+    stepId: requiredString(value.step_id, "snapshot.step_id"), requestId: requiredString(value.request_id, "snapshot.request_id"),
+    tokenPosition: integer(value.token_position, "snapshot.token_position"), layerIndex: integer(value.layer_index, "snapshot.layer_index"),
+    cacheGroup: nullableInteger(value.cache_group ?? null, "snapshot.cache_group"), pool: nullableString(value.pool ?? null, "snapshot.pool"),
+    blockId: nullableInteger(value.block_id ?? null, "snapshot.block_id"), allocationGeneration: nullableInteger(value.allocation_generation ?? null, "snapshot.allocation_generation"),
+    slot: nullableInteger(value.slot ?? null, "snapshot.slot"), device: requiredString(value.device, "snapshot.device"), kvHead: integer(value.kv_head, "snapshot.kv_head"),
+    kind: value.kind, dtype: requiredString(value.dtype, "snapshot.dtype"), shape, dimensionStart: integer(value.dimension_start, "snapshot.dimension_start"), values, byteCount,
+    observationBoundary: requiredString(value.observation_boundary, "snapshot.observation_boundary"),
+  }
+}
+
+function parseTensorCapture(input: unknown): ProfileTensorCapture {
+  const value = requiredRecord(input, "tensor capture")
+  if (typeof value.enabled !== "boolean") throw new ProfileError("Tensor capture requires an explicit enabled flag.")
+  const selection = requiredRecord(value.selection, "tensor_capture.selection")
+  const indices = (value: unknown, name: string) => {
+    const result = array(value, name).map((value) => integer(value, name))
+    unique(result.map(String), name)
+    return result
+  }
+  const maxBytes = integer(value.max_bytes, "tensor_capture.max_bytes")
+  const retainedBytes = integer(value.retained_bytes, "tensor_capture.retained_bytes")
+  if (retainedBytes > maxBytes) throw new ProfileError("Tensor capture exceeds its declared byte budget.")
+  const dimensionCount = integer(selection.dimension_count, "tensor_capture.dimension_count")
+  if (!dimensionCount) throw new ProfileError("Tensor capture dimension count must be positive.")
+  return {
+    enabled: value.enabled, status: requiredString(value.status, "tensor_capture.status"), reason: nullableString(value.reason ?? null, "tensor_capture.reason"), maxBytes, retainedBytes,
+    selection: {
+      requestId: nullableString(selection.request_id ?? null, "tensor_capture.request_id"), tokenPositions: indices(selection.token_positions, "tensor_capture.token_positions"),
+      layerIndices: indices(selection.layer_indices, "tensor_capture.layer_indices"), headIndices: indices(selection.head_indices, "tensor_capture.head_indices"),
+      dimensionStart: integer(selection.dimension_start, "tensor_capture.dimension_start"), dimensionCount,
+    }, observationBoundary: nullableString(value.observation_boundary ?? null, "tensor_capture.observation_boundary"),
+  }
+}
+
+function validateKvObservations(activities: ProfileActivity[], steps: ProfileStep[], writes: ProfileCacheWrite[], snapshots: ProfileTensorSnapshot[], capture: ProfileTensorCapture | null): void {
+  const byActivity = new Map(activities.map((activity) => [activity.id, activity]))
+  const byStep = new Map(steps.map((step) => [step.stepId, step]))
+  const byWrite = new Map(writes.map((write) => [write.operationId, write]))
+  for (const write of writes) {
+    for (const id of write.gpuActivityIds) {
+      const activity = byActivity.get(id)
+      if (!activity || !activity.kind.startsWith("cuda_") || activity.scope.correlation !== "runtime_flow"
+        || activity.scope.operation !== "kv_cache_write" || activity.scope.operationId !== write.operationId
+        || activity.scope.stepId !== write.stepId || activity.scope.layerIndex !== write.layerIndex) {
+        throw new ProfileError("Cache-write GPU references must identify correlated CUDA activities of the same operation, step and layer.")
+      }
+    }
+    const step = byStep.get(write.stepId)
+    for (const participant of write.participants) {
+      if (write.pool != null && participant.pool !== write.pool || write.cacheGroup != null && participant.cacheGroup !== write.cacheGroup) throw new ProfileError("Cache-write participants must belong to the observed operation's pool and group.")
+      const row = step?.packedRows.find((row) => row.row === participant.row)
+      if (!step || step.mappingStatus !== "observed" || !row || row.isPadding
+        || row.requestId !== participant.requestId || row.tokenPosition !== participant.tokenPosition) {
+        throw new ProfileError("Cache-write participants must match observed nonpadding packed rows.")
+      }
+    }
+  }
+  for (const snapshot of snapshots) {
+    const write = byWrite.get(snapshot.operationId)
+    const participant = write?.participants.find((participant) => participant.requestId === snapshot.requestId && participant.tokenPosition === snapshot.tokenPosition)
+    if (!write || !participant || write.stepId !== snapshot.stepId || write.layerIndex !== snapshot.layerIndex || write.device != null && write.device !== snapshot.device
+      || ["pool", "cacheGroup", "blockId", "allocationGeneration", "slot"].some((field) => {
+        const key = field as "pool" | "cacheGroup" | "blockId" | "allocationGeneration" | "slot"
+        return participant[key] != null && snapshot[key] !== participant[key]
+      })) throw new ProfileError("Tensor snapshot must match the observed cache-write token and allocation.")
+    if (capture && (capture.selection.requestId != null && snapshot.requestId !== capture.selection.requestId
+      || capture.selection.tokenPositions.length && !capture.selection.tokenPositions.includes(snapshot.tokenPosition)
+      || capture.selection.layerIndices.length && !capture.selection.layerIndices.includes(snapshot.layerIndex)
+      || capture.selection.headIndices.length && !capture.selection.headIndices.includes(snapshot.kvHead)
+      || snapshot.dimensionStart < capture.selection.dimensionStart
+      || snapshot.dimensionStart + snapshot.values.length > capture.selection.dimensionStart + capture.selection.dimensionCount)) {
+      throw new ProfileError("Tensor snapshot lies outside its declared recording-time selection.")
+    }
+  }
+  const retainedBytes = snapshots.reduce((sum, snapshot) => sum + snapshot.byteCount, 0)
+  if (snapshots.length && (!capture?.enabled || retainedBytes !== capture.retainedBytes)) throw new ProfileError("Tensor snapshots require enabled capture and exact retained-byte accounting.")
+  if (capture && retainedBytes !== capture.retainedBytes) throw new ProfileError("Tensor capture retained bytes do not match its snapshots.")
 }
 
 function summarizeLayers(activities: ProfileActivity[]): ProfileLayerSummary[] {
