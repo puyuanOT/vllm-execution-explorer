@@ -54,10 +54,10 @@ dist/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff          27.50 kB
 dist/assets/jetbrains-mono-latin-600-normal-BfsvjouI.woff          28.18 kB
 dist/assets/jetbrains-mono-latin-500-normal-CJOVTJB7.woff          28.21 kB
 dist/assets/index-DUGmSBIb.css                                     92.43 kB │ gzip:  33.09 kB
-dist/assets/index-BneavYWJ.js                                   1,628.27 kB │ gzip: 459.34 kB
+dist/assets/index-BXlFweh_.js                                   1,628.29 kB │ gzip: 459.35 kB
 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 1.81s
+✓ built in 1.79s

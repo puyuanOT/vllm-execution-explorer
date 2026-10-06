@@ -42,6 +42,7 @@ The 358 tests cover strict optional profile parsing, correlated CUDA endpoints v
 | Compact inspector, keyboard dismissal, focus and horizontal overflow | Passed at390×844. Escape closes dialog and restores Open inspector focus; document width390 | `mobile-inspector-dom.txt`, `mobile-inspector.jpg` |
 | Compact linked slice controls and explicit inspector opening | Passed after repair. Three slice controls update without a modal; explicit Inspect shows the selected V numerical example, and Escape restores that button's focus. Width stays390 | `mobile-tensor-controls-dom.txt`, `mobile-tensor-controls.jpg`, `mobile-tensor-inspect-action-dom.txt` |
 | Keyboard camera pan/reset | Passed through visible controls | Browser interaction; scene tests |
+| Camera after request-lanes → 3D remount | Passed after repair. Existing pan is not replayed on remount (anchor center454px); subsequent new pan moves it485.2px and Reset restores454px | `camera-regression.json`, `camera-remount-before.jpg`, `camera-remount-after.jpg`, `camera-remount-after-dom.txt` |
 | Paused demand-render behavior on full physical pool | Observed113-block pool rendered in10draw calls; retained CPU render submissions commonly0.2–0.4ms after initial transitions. Paused loop is not continuous; controller polling causes isolated frames around2.5s apart | `scene-profile-desktop.json` |
 | Mount/unmount selected tensor slices three times | Passed for these transitions. Two-block pool settles at7draw calls/geometries; selected tensor view settles at38. Geometry counts return to7 on each unmount. Transition CPU submission peaks5.3ms; later isolated slice frames0.3–0.5ms | `slice-mount-cycles-dom.txt`, `scene-profile-slices.json` |
 | Browser console | No captured errors or warnings in either local preview | `browser-console-errors.json` |
@@ -57,6 +58,7 @@ Scene metrics measure synchronous CPU submission and R3F callback-to-render end,
 - Targeted rerun initially reused an old absolute step ordinal. It now starts at the selected original writer's admission; later decode positions require an explicit window adjustment because scheduling may change between captures.
 - Independent correctness review found that a retained automatic tokenizer revision could leave an unrelated old draft commit in place. Restoring the tokenizer locator now clears that revision; regression verifies the submitted revision is null.
 - Compact slice changes initially reopened the inspector on every layer/head/K–V edit. Same-token slice updates now stay in the scene. Explicit Inspect opens the dialog, and Escape restores its focus; the browser regression passed.
+- The last camera pan could replay when Canvas remounted after switching request lanes/3D or refreshing during development. The new camera acknowledges the already-issued command on mount, then executes only subsequent command IDs. Before/after screenshots and a subsequent-pan/reset regression verify the fix. The earlier `authored-slice-final.jpg` retains the shifted pre-repair state; `camera-remount-after.jpg` is the final framing.
 
 ## Remaining GPU release gate
 

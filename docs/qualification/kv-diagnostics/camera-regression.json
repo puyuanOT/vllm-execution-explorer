@@ -1,0 +1,17 @@
+{
+  "evidence": "authored UI geometry; no GPU inference evidence",
+  "results": [
+    {
+      "case": "after_remount",
+      "centerX": 454
+    },
+    {
+      "case": "subsequent_new_pan",
+      "centerX": 485.2000122070313
+    },
+    {
+      "case": "reset",
+      "centerX": 454
+    }
+  ]
+}

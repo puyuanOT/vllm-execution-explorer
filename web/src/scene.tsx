@@ -84,7 +84,7 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, tensorDrill,
   const size = useThree((item) => item.size)
   const invalidate = useThree((item) => item.invalidate)
   const controls = useRef<OrbitControls | null>(null)
-  const lastCommand = useRef<number | null>(null)
+  const lastCommand = useRef<number | null>(command?.id ?? null)
   useLayoutEffect(() => {
     const next = new OrbitControls(camera, gl.domElement)
     const onChange = () => invalidate()
