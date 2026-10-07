@@ -1,0 +1,425 @@
+{
+  "run_id": "run-cb8b01c88cd0",
+  "ok": true,
+  "checks": [
+    {
+      "check": "recording integrity",
+      "ok": true,
+      "detail": []
+    },
+    {
+      "check": "distributed capture source matches assessment source",
+      "ok": true,
+      "detail": {
+        "actual": {
+          "declared_revision": null,
+          "source_file_count": 39,
+          "source_scope": "runner and instrumentation .py/.json files on disk at trace creation",
+          "source_sha256": "46fa2ddb99ea96309a50c07580a70ddaba8ab39241d8b798185ce0ea504fc978"
+        },
+        "expected": {
+          "source_sha256": "46fa2ddb99ea96309a50c07580a70ddaba8ab39241d8b798185ce0ea504fc978",
+          "source_file_count": 39,
+          "source_scope": "runner and instrumentation .py/.json files on disk at trace creation",
+          "declared_revision": null
+        }
+      }
+    },
+    {
+      "check": "real GPU HTTP execution",
+      "ok": true,
+      "detail": {
+        "gpu": "NVIDIA RTX A6000"
+      }
+    },
+    {
+      "check": "pinned model and tokenizer",
+      "ok": true,
+      "detail": {
+        "model": {
+          "dtype": "bfloat16",
+          "id": "Qwen/Qwen3-4B-Instruct-2507",
+          "lora_adapters": [],
+          "note": "Loaded by the in-process vLLM 0.30 engine on this CUDA host.",
+          "quantization": "none",
+          "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+        },
+        "tokenizer": {
+          "id": "Qwen/Qwen3-4B-Instruct-2507",
+          "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+        }
+      }
+    },
+    {
+      "check": "submitted inference settings retained",
+      "ok": true,
+      "detail": {
+        "expected_sha256": "66fe3466e5481f0af0ba22a482c77425a61cf6363e0b0056963512d23d84cd2c",
+        "recorded_sha256": "66fe3466e5481f0af0ba22a482c77425a61cf6363e0b0056963512d23d84cd2c"
+      }
+    },
+    {
+      "check": "canonical configuration hash",
+      "ok": true,
+      "detail": "66fe3466e5481f0af0ba22a482c77425a61cf6363e0b0056963512d23d84cd2c"
+    },
+    {
+      "check": "requested scheduler and cache settings applied by the loaded engine",
+      "ok": true,
+      "detail": {
+        "max_model_len": {
+          "expected": 1024,
+          "actual": 1024
+        },
+        "max_num_seqs": {
+          "expected": 3,
+          "actual": 3
+        },
+        "max_num_scheduled_tokens": {
+          "expected": 64,
+          "actual": 64
+        },
+        "enable_prefix_caching": {
+          "expected": true,
+          "actual": true
+        },
+        "enable_chunked_prefill": {
+          "expected": true,
+          "actual": true
+        },
+        "gpu_memory_utilization": {
+          "expected": 0.8,
+          "actual": 0.8
+        },
+        "scheduling_policy": {
+          "expected": "fcfs",
+          "actual": "fcfs"
+        },
+        "long_prefill_token_threshold": {
+          "expected": 64,
+          "actual": 64
+        },
+        "kv_cache_memory_bytes": {
+          "expected": 268435456,
+          "actual": 268435456
+        }
+      }
+    },
+    {
+      "check": "workload begins after verified fresh-prefix-cache reset",
+      "ok": true,
+      "detail": {
+        "cache_reset_completed_monotonic_ns": 2171449922700,
+        "cache_reset_started_monotonic_ns": 2171449743699,
+        "capture_ready_after_reset": true,
+        "capture_ready_monotonic_ns": 2171451866970,
+        "clock_domain": "engine_process:time.monotonic_ns",
+        "engine_ready_monotonic_ns": 2171348743164,
+        "evidence": "vllm.reset_prefix_cache returned true after warmup",
+        "kind": "fresh",
+        "preparation_started_monotonic_ns": 2150802909304,
+        "reset_required": true,
+        "reset_verified": true,
+        "warmup_completed_before_reset": true,
+        "warmup_completed_monotonic_ns": 2171449736279
+      }
+    },
+    {
+      "check": "loaded dense Qwen3 geometry",
+      "ok": true,
+      "detail": {
+        "source": "loaded_model_config",
+        "model_type": "qwen3",
+        "num_layers": 36,
+        "num_key_value_heads": 8,
+        "head_dim": 128
+      }
+    },
+    {
+      "check": "full authoritative inventory and qualified token mapping",
+      "ok": true,
+      "detail": {
+        "pool_capacities": {
+          "pool-0": 113
+        },
+        "groups": [
+          0
+        ]
+      }
+    },
+    {
+      "check": "all 36 loaded BF16 cuda:0 cache views are observed",
+      "ok": true,
+      "detail": {
+        "layer_count": 36,
+        "invalid_layers": []
+      }
+    },
+    {
+      "check": "all 36 eager FlashAttention cache addresses qualified",
+      "ok": true,
+      "detail": {
+        "layer_count": 36,
+        "invalid_layers": []
+      }
+    },
+    {
+      "check": "unique backing allocations counted once",
+      "ok": true,
+      "detail": {
+        "allocation_count": 1,
+        "unique_storage_bytes": 266600448,
+        "logical_layer_bytes": 266600448
+      }
+    },
+    {
+      "check": "scheduler before/after queues",
+      "ok": true,
+      "detail": 13
+    },
+    {
+      "check": "all requests complete with readable output",
+      "ok": true,
+      "detail": {
+        "mixed-prefill": {
+          "tokens": 4,
+          "text": "The scheduler's first"
+        },
+        "prefix-prime": {
+          "tokens": 4,
+          "text": "The first thing recorded"
+        },
+        "prefix-reader": {
+          "tokens": 4,
+          "text": "A shared prefix can"
+        }
+      }
+    },
+    {
+      "check": "accepted token content agrees with engine outputs",
+      "ok": true,
+      "detail": {
+        "mixed-prefill": 4,
+        "prefix-prime": 4,
+        "prefix-reader": 4
+      }
+    },
+    {
+      "check": "readable tokenizer prompt and KV token content",
+      "ok": true,
+      "detail": 65
+    },
+    {
+      "check": "completed requests' final sampled tokens have no computed KV",
+      "ok": true,
+      "detail": {
+        "mixed-prefill": true,
+        "prefix-prime": true,
+        "prefix-reader": true
+      }
+    },
+    {
+      "check": "real partial-prefix reuse and remaining prefill",
+      "ok": true,
+      "detail": [
+        {
+          "request_id": "prefix-reader",
+          "matched": 160
+        }
+      ]
+    },
+    {
+      "check": "mixed prefill and decode batch",
+      "ok": true,
+      "detail": [
+        "step-10"
+      ]
+    },
+    {
+      "check": "raw and normalized profile hashes and sizes",
+      "ok": true,
+      "detail": {
+        "raw": [
+          {
+            "path": "profiling/raw/explorer-run-cb8b01c88cd0_rank0.1791411030960382402.pt.trace.json.gz",
+            "sha256": "e32d63f03c59e1686b4100c970b3170dbf2dbf507d883696931636d00fde1f1d",
+            "size_bytes": 883262
+          }
+        ],
+        "normalized": {
+          "path": "profiling/activities.json",
+          "sha256": "21458b8abeefd30c792ee8e161e107422c0ad2ca020e0da29ca6a22aa608e073",
+          "size_bytes": 16637763
+        }
+      }
+    },
+    {
+      "check": "native diagnostic profile retains the expected completion status",
+      "ok": true,
+      "detail": {
+        "status": "completed",
+        "normalization": {
+          "status": "completed",
+          "source_activity_count": 42288,
+          "activity_limit": 250000,
+          "gpu_activity_count": 4647,
+          "correlated_gpu_activity_count": 4647
+        },
+        "captured_steps": 8
+      }
+    },
+    {
+      "check": "installed diagnostic boundaries retain source fingerprints",
+      "ok": true,
+      "detail": {
+        "GPUModelRunner._update_states": "326599f31b273b945fd7fc488f5e022c3b2d98d34fb74d2e9ce546e2abcdc892",
+        "GPUModelRunner._prepare_inputs": "c3ee1ab183bfc15e40961207ec303a2a1b76dbbda1af12d61c85b449472f2738",
+        "GPUModelRunner.execute_model": "2e33182e9abd6d2dce5e13786ba327c733cad2260fe0a4f9244fcb83dabdfdac",
+        "FlashAttentionImpl.do_kv_cache_update": "406220a1ba8445df16c8747072393060fc4ce3a360364588569ff8587e025b55"
+      }
+    },
+    {
+      "check": "exact bounded step/request-trigger capture window",
+      "ok": true,
+      "detail": {
+        "expected": [
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4",
+          "step-5",
+          "step-6",
+          "step-7",
+          "step-8"
+        ],
+        "actual": [
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4",
+          "step-5",
+          "step-6",
+          "step-7",
+          "step-8"
+        ],
+        "trigger_request_id": "prefix-prime",
+        "admission_sequence": 9
+      }
+    },
+    {
+      "check": "post-reorder packed rows match exact scheduled logical ranges",
+      "ok": true,
+      "detail": {
+        "invalid_steps": [],
+        "real_rows": 304
+      }
+    },
+    {
+      "check": "one native cache update per layer/step with exact physical participants",
+      "ok": true,
+      "detail": {
+        "operations": 288,
+        "participants": 10944,
+        "invalid_operations": []
+      }
+    },
+    {
+      "check": "cache CUDA timing uses complete native runtime launch flow",
+      "ok": true,
+      "detail": {
+        "operations": 288,
+        "invalid_operations": []
+      }
+    },
+    {
+      "check": "numerical capture status and manifest agree",
+      "ok": true,
+      "detail": {
+        "expected_status": "completed",
+        "status": "completed",
+        "reason": null
+      }
+    },
+    {
+      "check": "numerical selection retains requested request/token/layer/head slice",
+      "ok": true,
+      "detail": {
+        "request_id": "prefix-prime",
+        "token_positions": [
+          3
+        ],
+        "layer_indices": [
+          1
+        ],
+        "head_indices": [
+          0
+        ],
+        "dimension_start": 0,
+        "dimension_count": 16
+      }
+    },
+    {
+      "check": "finite bounded numerical slices preserve native allocation identity",
+      "ok": true,
+      "detail": {
+        "snapshot_count": 2,
+        "retained_bytes": 64,
+        "max_bytes": 1048576,
+        "invalid_snapshots": []
+      }
+    },
+    {
+      "check": "every selected K/V slice is retained",
+      "ok": true,
+      "detail": {
+        "expected_slices": 2,
+        "actual_slices": 2,
+        "expected_bytes": 64
+      }
+    },
+    {
+      "check": "shared-prefix reader maps to the retained original-writer snapshot",
+      "ok": true,
+      "detail": [
+        {
+          "snapshot_id": "snapshot-0",
+          "writer": "prefix-prime",
+          "reader": "prefix-reader",
+          "position": 3,
+          "allocation": [
+            "pool-0",
+            0,
+            1,
+            1
+          ]
+        },
+        {
+          "snapshot_id": "snapshot-1",
+          "writer": "prefix-prime",
+          "reader": "prefix-reader",
+          "position": 3,
+          "allocation": [
+            "pool-0",
+            0,
+            1,
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "check": "structural export omits numerical/content evidence and retains cache geometry",
+      "ok": true,
+      "detail": {
+        "integrity": true,
+        "retains_loaded_cache_metadata": true
+      }
+    }
+  ],
+  "assessment_request": {
+    "kind": "expected",
+    "claim": "Expected configuration derived from the retained workload and independently observed UI selections; the raw submitted HTTP body was not retained."
+  },
+  "limits": "Native input/cache numerical equality, rendered replay interaction and overhead require separate qualification evidence. Shared native CUDA scopes describe batch operations, not individual token or head duration.",
+  "observability_requirement": "LangSmith waived by the user; retained source, native profiler and recording evidence are inspected here."
+}

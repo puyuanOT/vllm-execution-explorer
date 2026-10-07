@@ -1,0 +1,5 @@
+{
+  "run_id": "run-cdd631b64bb2",
+  "engine": "vllm",
+  "configuration_snapshot_sha256": "b33675af1f23d5c88ff8943bea38467416a2154d99802370d06bb3fd920ad697"
+}

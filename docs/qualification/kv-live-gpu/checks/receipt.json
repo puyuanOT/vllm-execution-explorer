@@ -1,0 +1,24 @@
+{
+  "cwd": "/Users/pliu/.codex/worktrees/kv-layer-inspection/vllm-execution-explorer",
+  "python": "/Users/pliu/Documents/vllm-execution-explorer/.venv/bin/python",
+  "node": "/Users/pliu/.local/bin/node",
+  "tests": {
+    "python": 234,
+    "replay": 58,
+    "web": 73
+  },
+  "commands": [
+    "python -m pytest -q",
+    "node --experimental-strip-types --test src/*.test.ts (replay)",
+    "npm test (web)",
+    "npm run build (web)",
+    "python -m compileall -q runner instrumentation tests docs/qualification/kv-live-gpu",
+    "git diff --check"
+  ],
+  "captured_logs_sha256": {
+    "python.txt": "62381403ea69770f7dcf17116002da9878c1e78e6c89949dd5f0cc69b70db7f6",
+    "replay.txt": "b60a0484365093fb3a336a7e424bddd26798206ee5288c304b74437fb56599c7",
+    "web.txt": "1ebf98e3b444cbe431abe9f32af8bb2c03e2e1e5b5b12f4a419de109c1e0648a",
+    "build.txt": "3cb131387a8f5bf2cd83a2db7d71be1b35dcdcedb1f16ab46ca615bbe46fb433"
+  }
+}

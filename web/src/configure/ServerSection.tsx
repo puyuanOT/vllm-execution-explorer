@@ -158,7 +158,7 @@ export function ServerSection({
               <FieldHint id="runner-url-hint">Leave empty when the UI and controller share an origin.</FieldHint>
             </label>
             <p className="m-0 text-pretty text-xs leading-5 text-slate-400 md:pt-6">
-              Choose Live vLLM or the demo fixture in the launch bar. The fixture is labeled as synthetic evidence and cannot certify GPU behavior.
+              Live capture uses this controller and the selected execution host. The recorded GPU demo opens locally without connecting to a host.
             </p>
           </div>
         </details>

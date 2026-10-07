@@ -15,7 +15,7 @@ The explorer labels authored drafts and deterministic fixtures separately from G
 - `runner` owns setup, workload dispatch, the instrumented loopback HTTP boundary, recording, SSH bootstrap, and artifact transfer.
 - `replay` is the deterministic TypeScript reducer and timeline projection.
 - `web` is the React interface for Configure and Explore.
-- `web/public/recordings` contains clearly labeled fixture lessons.
+- `web/public/recordings` contains saved real GPU lessons for the demo library and retained synthetic regression fixtures.
 - `trace-schema` contains the recording schema.
 
 ## Local setup
@@ -38,8 +38,8 @@ uv venv --python 3.11.15 --seed .venv
 npm ci --prefix web
 ```
 
-The teaching fixtures are tracked in Git and need no regeneration. Replay has
-no separate npm dependencies.
+The saved GPU demos and regression fixtures are tracked in Git and need no
+regeneration. Replay has no separate npm dependencies.
 
 Start the local controller and UI in separate terminals:
 
@@ -54,12 +54,13 @@ npm run dev --prefix web -- --strictPort
 Open `http://127.0.0.1:5173`. Leave the controller endpoint blank to use the
 local controller at `http://127.0.0.1:8765` through Vite's `/api` proxy.
 The default draft contains six requests in batches at 0 ms, 100 ms, and 120 ms.
-Nothing executes until **Prepare and capture** is pressed.
+Live execution starts only when **Prepare and capture** is pressed.
 
-A fresh browser selects live vLLM on the local host. For a first run without a
-GPU, open **Visualization Server → Connection details → Execution source**,
-choose **Demo fixture**, retain the local host, and press **Prepare and capture**.
-The fixture remains labeled as synthetic evidence.
+A fresh browser selects live vLLM on the local host. To explore the application
+without connecting a GPU, press **Open real GPU demo** in Configure's launch
+bar, or open **Explore**. This replays a saved GPU run with its original workload
+and settings; it preserves your editable draft and starts no live inference.
+The recording library offers additional saved GPU lessons.
 
 ## Verification
 
@@ -72,7 +73,9 @@ npm run build --prefix web
 git diff --check
 ```
 
-The deterministic fixture exercises the complete local setup, capture, recording, replay, and UI flow without presenting its teaching timings as GPU measurements.
+Deterministic fixtures remain available to regression tests and the controller's
+fixture execution mode. The user-facing demo uses a saved real GPU run;
+synthetic fixture timings never serve as GPU measurements.
 
 ## Live execution
 

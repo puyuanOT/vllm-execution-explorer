@@ -135,7 +135,7 @@ export function ConsoleRail({ modules, loadedExample, disabled, canUndo, storage
             )
           })}
         </ul>
-        <p className="m-0 mt-2 px-0.5 text-pretty text-[11px] leading-4 text-faint">Prefix reuse, synthetic lengths and memory pressure need live vLLM. The demo fixture uses scripted behavior.</p>
+        <p className="m-0 mt-2 px-0.5 text-pretty text-[11px] leading-4 text-faint">Examples build an editable workload for live vLLM. Open the real GPU demo in the launch bar to explore a saved run.</p>
       </div>
 
       {onUndo || onStartEmpty || onReset ? (

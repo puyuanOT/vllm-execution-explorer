@@ -40,7 +40,7 @@ Model and tokenizer revisions are optional overrides. Preparation resolves Huggi
 
 Continuous batching is explained as built-in serving behavior, with actual scheduler batch membership in replay. There is no fictitious enable/disable toggle. Controls include FCFS/priority scheduling, per-request priority, chunked prefill, long-prefill threshold, prefix caching, and KV memory bytes. Editable examples cover staggered arrivals, partial prefix reuse, chunked prefill, and cache pressure. Their live-runtime requirements are explicit.
 
-The library starts with saved real A100 recordings of mixed prefill/decode and partial prefix reuse. They predate cache-write scopes and numerical snapshots; that missing evidence is explicit. Synthetic lessons remain clearly labeled, with authored readable word fragments distinct from actual tokenizer output. A new real GPU lesson with layer-write and numerical evidence is pending qualification on a reachable host.
+The library starts with a real A6000 recording of partial prefix reuse and mixed prefill/decode, including native layer cache-write scopes and selected numerical K/V snapshots. Its bounded BF16 dense-Qwen3 configuration passed [live GPU qualification](qualification/kv-live-gpu/README.md). Two historical A100 recordings remain available with their missing numerical evidence stated. Synthetic lessons remain regression fixtures outside the production demo catalog.
 
 ## Qualification gate
 

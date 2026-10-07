@@ -1,0 +1,6 @@
+{
+  "kind": "expected_targeted_rerun_payload",
+  "source": "Retained original demo request plus UI-selected original-writer/token/layer/head/dimension controls, independently confirmed in final-targeted-rerun-plan-dom.txt. Not a captured HTTP request body.",
+  "original_demo": "run-a413ca908152",
+  "ui_run": "run-cb8b01c88cd0"
+}

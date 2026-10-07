@@ -120,7 +120,7 @@ export function WorkloadSection({
             </label>
             <button type="button" className={buttonClass} onClick={() => loadExample(exampleId)}>Use example</button>
           </div>
-          <p id="learning-example-description" className="mt-2 text-pretty text-xs text-slate-400">{LEARNING_EXAMPLES.find((example) => example.id === exampleId)?.description} Replaces the draft and applies the example’s scheduling/cache settings. All fields remain editable. Prefix reuse, synthetic lengths and memory pressure require live vLLM; the demo fixture uses scripted behavior.</p>
+          <p id="learning-example-description" className="mt-2 text-pretty text-xs text-slate-400">{LEARNING_EXAMPLES.find((example) => example.id === exampleId)?.description} Replaces the draft and applies the example’s scheduling/cache settings. All fields remain editable for live vLLM capture. The recorded GPU demo uses its own saved workload.</p>
         </Details>
 
         {issueFor("sample-count") ? <FieldError id="sample-count-error" message={issueFor("sample-count")} /> : null}

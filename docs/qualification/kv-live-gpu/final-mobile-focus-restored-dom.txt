@@ -1,0 +1,156 @@
+- paragraph: Run run-cb8b01c88cd0 is Completed.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic: Observed GPU recording
+  - status "Runner is reachable.":
+    - generic: 127.0.0.1:8766
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - button "Open inspector":
+      - text: Open inspector
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: prefix-prime · token position 3 · block 1 / slot 3
+      - generic: Layer 2 · KV head 0 · cuda:0 · bfloat16
+      - button "Keys · shape [128]"
+      - generic: 16 visual segments / 128 dimensions
+      - button "Values · shape [128]" [pressed]
+      - generic: 16 visual segments / 128 dimensions
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - text: Referenced
+    - generic: "8"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "104"
+    - text: Reserved null
+    - generic: "1"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - region "3D KV tensor slice controls":
+      - navigation "3D KV slice breadcrumb":
+        - button "cuda:0 / pool-0 / group 0 / Block 1"
+        - generic: /
+        - generic: Slot 3
+        - generic: /
+        - generic: Token position 3
+        - generic: /
+        - generic: Layer 2 / KV head 0 / V
+      - text: Layer
+      - combobox "3D cache layer":
+        - option "Layer 1"
+        - option "Layer 2" [selected]
+        - option "Layer 3"
+        - option "Layer 4"
+        - option "Layer 5"
+        - option "Layer 6"
+        - option "Layer 7"
+        - option "Layer 8"
+        - option "Layer 9"
+        - option "Layer 10"
+        - option "Layer 11"
+        - option "Layer 12"
+        - option "Layer 13"
+        - option "Layer 14"
+        - option "Layer 15"
+        - option "Layer 16"
+        - option "Layer 17"
+        - option "Layer 18"
+        - option "Layer 19"
+        - option "Layer 20"
+        - option "Layer 21"
+        - option "Layer 22"
+        - option "Layer 23"
+        - option "Layer 24"
+        - option "Layer 25"
+        - option "Layer 26"
+        - option "Layer 27"
+        - option "Layer 28"
+        - option "Layer 29"
+        - option "Layer 30"
+        - option "Layer 31"
+        - option "Layer 32"
+        - option "Layer 33"
+        - option "Layer 34"
+        - option "Layer 35"
+        - option "Layer 36"
+      - text: KV head index
+      - combobox "3D cache head":
+        - option "0" [selected]
+        - option "1"
+        - option "2"
+        - option "3"
+        - option "4"
+        - option "5"
+        - option "6"
+        - option "7"
+      - group "3D cache keys or values":
+        - button "Keys (K)"
+        - button "Values (V)" [pressed]
+      - button "Inspect token and captured values"
+      - paragraph: One token’s structural K/V slice. Layer, head and K/V choices are shared with the inspector; numerical data appears only for captured snapshots.
+    - generic "Find a physical KV block"
+    - paragraph: Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+    - generic: cuda:0 / pool-0 · 113 blocks · 16 token slots/block
+    - spinbutton "Physical block ID in pool-0": "1"
+    - button "Inspect block" [active]
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "39"
+  - paragraph: Event 39, step_scheduled, 175 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

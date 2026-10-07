@@ -90,7 +90,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   }, [layout, byId, requestOrder, selectedRequest, selected?.key])
   const viewportWidth = useThree((state) => state.size.width)
   const special = useMemo(() => pool.blocks.filter((block) => block.isNull || block.refCount > 0 || block.hasHash || block.key === selected?.key).slice(0, RIM_LIMIT), [pool.blocks, selected?.key])
-  const rulerColumns = rulerStep(layout.columns)
+  const rulerColumns = Math.max(4, rulerStep(layout.columns))
   const rulerRows = rulerStep(layout.rows)
   const front = layout.depth / 2
   const left = -layout.width / 2

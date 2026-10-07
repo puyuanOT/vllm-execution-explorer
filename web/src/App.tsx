@@ -74,16 +74,21 @@ const EMPTY_STAGES: SetupStage[] = [
   { id: "ready", label: "Confirm loopback controller", status: "pending" },
 ]
 
+const GPU_DEMO_ID = "gpu-kv-layer-diagnostics"
+const GPU_DEMO_LOAD_ERROR = "The recorded GPU demo could not be opened. Check that the recording files are available and try again."
+
 export function App() {
   const { route, navigate } = useAppRoute()
   const draft = useScenarioDraft()
-  const [settings, setSettings] = useState<EngineSettings>(() => loadSettings() ?? defaultSettings())
+  const [settings, setSettings] = useState<EngineSettings>(() => ({ ...(loadSettings() ?? defaultSettings()), engine: "vllm" }))
   const runner = useRunner(settings.runnerUrl)
   const [recording, setRecording] = useState<LoadedRecording | null>(null)
   const [lastCaptured, setLastCaptured] = useState<LoadedRecording | null>(null)
   const [catalog, setCatalog] = useState<CatalogEntry[]>([])
   const [catalogError, setCatalogError] = useState("")
   const [loadError, setLoadError] = useState("")
+  const [openingDemo, setOpeningDemo] = useState(false)
+  const [demoError, setDemoError] = useState("")
   const [runError, setRunError] = useState("")
   const [issues, setIssues] = useState<FieldIssue[]>([])
   const [unit, setUnit] = useState<TimeUnit>("ms")
@@ -163,8 +168,8 @@ export function App() {
   useEffect(() => {
     if (route !== "explore" || recording || expectedRun.current || autoLessonAttempted.current || catalog.length === 0) return
     autoLessonAttempted.current = true
-    void loadBundled(catalog[0].id).then(openLoaded).catch((error: unknown) => {
-      setLoadError(error instanceof Error ? error.message : "Could not open the starter recording.")
+    void loadBundled(catalog.find((item) => item.id === GPU_DEMO_ID)?.id ?? catalog[0].id).then(openLoaded).catch(() => {
+      setLoadError(GPU_DEMO_LOAD_ERROR)
     })
   }, [catalog, recording, route])
 
@@ -528,6 +533,22 @@ export function App() {
     navigate("explore")
   }
 
+  async function openGpuDemo() {
+    if (openingDemo || checkingHost || preparingRun || runIsActive(runner.live?.status)) return
+    setOpeningDemo(true)
+    setDemoError("")
+    setAnnounce("Opening the recorded real GPU demo.")
+    try {
+      openLoaded(await loadBundled(GPU_DEMO_ID))
+      setAnnounce("Real GPU demo opened with its recorded workload. Your editable draft is preserved.")
+    } catch {
+      setDemoError(GPU_DEMO_LOAD_ERROR)
+      setAnnounce(GPU_DEMO_LOAD_ERROR)
+    } finally {
+      setOpeningDemo(false)
+    }
+  }
+
   async function checkHost(runtime: ConfigureRuntimeInputs) {
     if (checkingHost || preparingRun || runIsActive(runner.live?.status)) return
     setCheckingHost(true)
@@ -866,6 +887,9 @@ export function App() {
           runBlockedReason={runBlockedReason}
           runStatus={running ? status : undefined}
           runError={runError}
+          openingDemo={openingDemo}
+          demoError={demoError}
+          onOpenDemo={() => void openGpuDemo()}
           onUnit={setUnit}
           onAction={updateScenario}
           onSettings={updateSettings}
@@ -934,7 +958,6 @@ export function App() {
                 sequence={sequence}
                 measuredProfile={measuredProfile}
                 profileObservations={recording?.profile ?? null}
-                profileTimeUs={mode === "measured" ? nativeProfileTime : null}
                 onCaptureTensor={editableScenario ? prepareTensorRerun : undefined}
                 activeProfileActivities={activeProfileActivities}
                 profileError={recording?.profileError ?? ""}
@@ -1022,7 +1045,6 @@ export function App() {
           sequence={sequence}
           measuredProfile={measuredProfile}
           profileObservations={recording?.profile ?? null}
-          profileTimeUs={mode === "measured" ? nativeProfileTime : null}
           onCaptureTensor={editableScenario ? prepareTensorRerun : undefined}
           activeProfileActivities={activeProfileActivities}
           profileError={recording?.profileError ?? ""}

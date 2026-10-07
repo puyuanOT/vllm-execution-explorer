@@ -1,0 +1,145 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-kv-layer-diagnostics":
+    - generic: gpu-kv-layer-diagnostics
+  - generic: Observed GPU recording
+  - status "Runner is reachable.":
+    - text: 127.0.0.1:8766
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model & serving architecture" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "vLLM serving workflow and model architecture 3D overview":
+      - generic: INT
+      - generic: Intake
+      - generic: "00"
+      - generic: SCH
+      - generic: Scheduler
+      - generic: —
+      - generic: L1
+      - generic: L10
+      - generic: L19
+      - generic: L28
+      - generic: L36
+      - generic: MDL
+      - generic: Qwen3-4B-Instruct-2507
+      - generic: "36"
+      - generic: OUT
+      - generic: Output
+      - generic: "0"
+      - generic: Pool inventory not observed
+      - generic: KV
+      - generic: KV-cache manager
+      - generic: —
+      - generic: Next scheduler cycle
+      - generic: Block table
+      - generic: KV reads
+      - generic: Serving observations connected to captured model structure
+    - paragraph:
+      - text: Overview
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - list "Workflow components":
+      - button "Request intake 00 req":
+        - generic: Request intake
+        - generic "00"
+        - generic: req
+      - button "Explore Request intake":
+      - button "Scheduler 00 steps":
+        - generic: Scheduler
+        - generic "00"
+        - generic: steps
+      - button "Explore Scheduler":
+      - button "KV-cache manager 0 ref":
+        - generic: KV-cache manager
+        - generic "0"
+        - generic: ref
+      - button "Explore KV-cache manager":
+      - button "Model execution 0/0 results":
+        - generic: Model execution
+        - generic "0/0"
+        - generic: results
+      - button "Explore Model execution":
+      - button "Output 0 tokens":
+        - generic: Output
+        - generic "0"
+        - generic: tokens
+      - button "Explore Output":
+  - complementary "Inspector":
+    - paragraph: Inspector
+    - heading "Inspector" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - option "step-5"
+    - option "step-6"
+    - option "step-7"
+    - option "step-8"
+    - option "step-9"
+    - option "step-10"
+    - option "step-11"
+    - option "step-12"
+    - option "step-13"
+    - paragraph: Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "0"
+  - paragraph: Start. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

@@ -1,0 +1,199 @@
+- paragraph
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation:
+    - button:
+      - generic: "01"
+      - text: Configure
+    - button:
+      - generic: "02"
+      - text: Explore
+  - status:
+    - text: 127.0.0.1:8766
+    - generic: · Failed to fetch
+  - button:
+- main:
+  - navigation:
+    - paragraph: Capture console
+    - list:
+      - button:
+        - generic: "01"
+        - generic: Workload
+        - generic: 2 batches · 2 req · 1000 ms
+      - button:
+        - generic: "02"
+        - generic: Execution host
+        - generic: ubuntu@144.24.39.189
+      - button:
+        - generic: "03"
+        - generic: Model
+        - generic: Qwen3-4B-Instruct-2507
+      - button:
+        - generic: "04"
+        - generic: vLLM engine
+        - generic: 4096 ctx · 4 seq · 2048 tok
+    - heading [level=3]: Learning examples
+    - list:
+      - button:
+        - generic: Staggered arrivals
+      - button:
+        - generic: Partial prefix reuse
+      - button:
+        - generic: Chunked prefill
+      - button:
+        - generic: Cache pressure
+    - paragraph: Examples build an editable workload for live vLLM. Open the real GPU demo in the launch bar to explore a saved run.
+    - heading [level=3]: Draft
+    - button [disabled]:
+      - text: Undo deletion
+    - button: Start empty
+    - button: Reset
+    - paragraph: Saved on this device · secrets never stored
+  - paragraph: Configure · capture · explore
+  - heading [level=1]: Build an observed vLLM capture
+  - paragraph: Define timed requests, prepare the serving host, and capture instrumented vLLM boundaries. Opening this page never starts a run.
+  - generic: Draft ready
+  - generic: 2 batches
+  - generic: 2 requests
+  - region:
+    - heading [level=2]: Query batch sequence
+    - generic: "01"
+    - generic: Query batch sequence
+    - generic: Ready
+    - generic: 2 batches · 2 requests · 1000 ms
+    - generic: Hide
+    - paragraph: Requests in one batch are dispatched concurrently at the planned offset. Recorded scheduler events show how vLLM groups the work.
+    - generic: Display
+    - button [pressed]: ms
+    - button: s
+    - text: Planned request arrivals
+    - paragraph: One diamond per request · shared arrival time per arrival batch
+    - paragraph: Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch Prime prefix dispatches prefix-1 at 0 ms. Arrival batch Reuse prefix dispatches prefix-2 at 1000 ms.
+    - region:
+    - generic: Planned dispatch
+    - generic: Clock origin t = 0
+    - generic: Fresh cache required before dispatch
+    - list:
+      - generic: "1"
+      - text: Prime prefix
+      - generic: · t+0 ms · 1 request
+      - text: Batch label
+      - textbox: Prime prefix
+      - text: Planned send offset (ms)
+      - textbox: "0"
+      - list:
+        - generic: Request label
+        - textbox: prefix-1
+        - generic: Prompt
+        - textbox: Read this shared reference before answering. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. Name the three things recorded.
+        - generic: Maximum output tokens
+        - textbox: "8"
+        - generic: Request priority
+        - textbox: "0"
+        - button:
+        - button:
+        - button:
+      - button:
+        - text: Add request
+      - button: Duplicate batch
+      - button:
+        - text: Delete batch
+      - generic: "2"
+      - text: Reuse prefix
+      - generic: · t+1000 ms · 1 request
+      - generic: Read this shared reference before answering. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. Explain why cache blocks are useful.
+    - button:
+      - text: Add batch
+    - generic: 2 requests
+  - region:
+    - heading [level=2]: Execution host
+    - generic: "02"
+    - generic: Execution host
+    - generic: Unchecked
+    - generic: ubuntu@144.24.39.189:22
+    - generic: Show
+  - region:
+    - heading [level=2]: Model configuration
+    - generic: "03"
+    - generic: Model configuration
+    - generic: Configured
+    - generic: Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · auto
+    - generic: Show
+  - region:
+    - heading [level=2]: vLLM configuration
+    - generic: "04"
+    - generic: vLLM configuration
+    - generic: Unchecked
+    - generic: 4096 context · 4 concurrent · 2048 tokens/iteration
+    - generic: Show
+  - complementary:
+    - region:
+      - heading [level=3]: Preflight · execution host
+      - status:
+        - generic: Unchecked
+        - generic: Choose the SSH key and check the selected remote host before capture.
+      - list:
+        - generic: Reach execution host
+        - generic: Pending
+        - generic: Inspect CUDA and vLLM runtime
+        - generic: Pending
+        - generic: Confirm loopback controller
+        - generic: Pending
+      - button:
+        - text: Check host
+      - paragraph: No execution begins until you start capture.
+    - region:
+      - heading [level=3]: Planned launch settings
+      - term: Execution source
+      - definition: Instrumented vLLM
+      - term: Context length
+      - definition: "4096"
+      - term: Concurrent sequences
+      - definition: "4"
+      - term: Scheduled-token budget
+      - definition: "2048"
+      - term: Chunked prefill
+      - definition: "On"
+      - term: Scheduling policy
+      - definition: fcfs
+      - term: Long-prefill threshold
+      - definition: "0"
+      - term: KV byte budget
+      - definition: "1073741824"
+      - term: Profiling
+      - definition: "off"
+      - term: Prefix cache
+      - definition: "On"
+      - term: Fresh cache contract
+      - definition: Required; verified during preparation
+  - paragraph: Ready to prepare and capture
+  - status: Saved on this device
+  - button:
+    - text: Open real GPU demo
+  - button:
+    - text: Prepare and capture
+  - paragraph: The GPU demo replays a saved run with its recorded workload and settings. Your editable draft is preserved.
+- dialog "Recordings":
+  - heading "Recordings" [level=2]
+  - paragraph: Open a bundled lesson or import a captured recording.
+  - button "Close Recordings" [active]:
+  - region "Recorded GPU lessons":
+    - heading "Recorded GPU lessons" [level=3]
+    - list:
+      - 'button "Real GPU: model and KV diagnostics Real GPU recording A saved vLLM 0.30.0 GPU run with its original workload. Inspect request tokens, model layers, the device cache pool and captured K/V diagnostics."':
+        - strong: "Real GPU: model and KV diagnostics"
+        - generic: Real GPU recording
+        - generic: A saved vLLM 0.30.0 GPU run with its original workload. Inspect request tokens, model layers, the device cache pool and captured K/V diagnostics.
+      - 'button "Real GPU: mixed prefill and decode Real GPU recording Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots."':
+        - strong: "Real GPU: mixed prefill and decode"
+        - generic: Real GPU recording
+        - generic: Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots.
+      - 'button "Real GPU: partial prefix reuse Real GPU recording A real vLLM 0.30.0 run shows a matching cached prompt prefix, the remaining prefill work and subsequent decoding. Inspect original content and current holders. This historical recording contains step-boundary KV observations, without numerical tensor snapshots."':
+        - strong: "Real GPU: partial prefix reuse"
+        - generic: Real GPU recording
+        - generic: A real vLLM 0.30.0 run shows a matching cached prompt prefix, the remaining prefill work and subsequent decoding. Inspect original content and current holders. This historical recording contains step-boundary KV observations, without numerical tensor snapshots.
+  - text: Import a recording
+  - generic: Choose manifest.json, events.jsonl, optional content.jsonl, and any declared normalized profile JSON from the same recording.
+  - button "Import a recording Choose manifest.json, events.jsonl, optional content.jsonl, and any declared normalized profile JSON from the same recording."

@@ -47,7 +47,7 @@ export function RecordingLibrary({
       ) : null}
 
       <section aria-labelledby="lesson-heading">
-        <h3 id="lesson-heading" className="text-balance text-sm font-semibold text-slate-200">Bundled lessons</h3>
+        <h3 id="lesson-heading" className="text-balance text-sm font-semibold text-slate-200">Recorded GPU lessons</h3>
         {catalog.length > 0 ? (
           <ul className="mt-2 grid gap-2">
             {catalog.map((item) => (

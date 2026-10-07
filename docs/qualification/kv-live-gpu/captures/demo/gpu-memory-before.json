@@ -1,0 +1,28 @@
+{
+  "clock_domain": "qualification_host:time.monotonic_ns",
+  "observed_monotonic_ns": 849412243588,
+  "status": "observed",
+  "host_scope": "machine executing this qualification helper",
+  "gpus": {
+    "fields": [
+      "uuid",
+      "memory.used",
+      "memory.free",
+      "memory.total"
+    ],
+    "units": "memory in MiB",
+    "returncode": 0,
+    "rows": [
+      "GPU-7b3e1df6-4a1a-09e4-5e30-80f0fda011bf, 1, 48539, 49140"
+    ]
+  },
+  "compute_apps": {
+    "fields": [
+      "pid",
+      "used_memory"
+    ],
+    "units": "memory in MiB",
+    "returncode": 0,
+    "rows": []
+  }
+}

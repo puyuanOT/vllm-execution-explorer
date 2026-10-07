@@ -74,6 +74,38 @@ def drive_run(
             return
         on_status({request_id: "".join(value) for request_id, value in text.items()})
 
+    def consume(chunks: list[ObservedChunk]) -> None:
+        for chunk in chunks:
+            start = len(tokens[chunk.request_id])
+            tokens[chunk.request_id].extend(chunk.new_token_ids)
+            if chunk.text_delta:
+                index = emissions.get(chunk.request_id, 0)
+                end = len(tokens[chunk.request_id])
+                recording.text_emitted(
+                    chunk.request_id,
+                    emission_index=index,
+                    text_delta=chunk.text_delta,
+                    token_range=(start, end) if chunk.new_token_ids else None,
+                )
+                text[chunk.request_id] += chunk.text_delta
+                emissions[chunk.request_id] = index + 1
+        publish()
+
+    def stop(status: str, message: str | None = None) -> tuple[str, dict[str, list[int]], list[dict[str, object]]]:
+        try:
+            session.cancel()
+        except Exception as exc:
+            # Preserve any chunks the engine returned before cancellation or
+            # finalization failed; the caller still receives a failed capture.
+            status = "failed"
+            message = f"Cancellation did not finalize: {exc}"
+        drain = getattr(session, "drain_cancelled_chunks", None)
+        if callable(drain):
+            consume(drain())
+        if notes is not None and message:
+            notes["message"] = message
+        return status, tokens, arrivals
+
     def remember_prompt(request: WorkRequest) -> None:
         if request.request_id in prompted_ids:
             return
@@ -100,13 +132,9 @@ def drive_run(
 
     while True:
         if cancelled():
-            session.cancel()
-            return "cancelled", tokens, arrivals
+            return stop("cancelled")
         if deadline_reached():
-            session.cancel()
-            if notes is not None:
-                notes["message"] = f"Stopped: the run exceeded {max_run_seconds:.0f}s."
-            return "failed", tokens, arrivals
+            return stop("failed", f"Stopped: the run exceeded {max_run_seconds:.0f}s.")
         extra = pull_extra()
         for request in extra:
             tokens.setdefault(request.request_id, [])
@@ -201,29 +229,11 @@ def drive_run(
             if on_arrival is not None:
                 on_arrival(dict(arrival))
         if cancelled():
-            session.cancel()
-            return "cancelled", tokens, arrivals
+            return stop("cancelled")
         if deadline_reached():
-            session.cancel()
-            if notes is not None:
-                notes["message"] = f"Stopped: the run exceeded {max_run_seconds:.0f}s."
-            return "failed", tokens, arrivals
+            return stop("failed", f"Stopped: the run exceeded {max_run_seconds:.0f}s.")
         if session.has_unfinished():
-            for chunk in session.step():
-                start = len(tokens[chunk.request_id])
-                tokens[chunk.request_id].extend(chunk.new_token_ids)
-                if chunk.text_delta:
-                    index = emissions.get(chunk.request_id, 0)
-                    end = len(tokens[chunk.request_id])
-                    recording.text_emitted(
-                        chunk.request_id,
-                        emission_index=index,
-                        text_delta=chunk.text_delta,
-                        token_range=(start, end) if chunk.new_token_ids else None,
-                    )
-                    text[chunk.request_id] += chunk.text_delta
-                    emissions[chunk.request_id] = index + 1
-            publish()
+            consume(session.step())
             continue
         if pending:
             delay_ms = pending[0].arrival_offset_ms - elapsed_ms()

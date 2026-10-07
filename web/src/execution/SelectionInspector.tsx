@@ -48,7 +48,6 @@ export function SelectionInspector({
   onClose: () => void
   measuredProfile?: MeasuredProfileProjection
   profileObservations?: ProfileKvObservations | null
-  profileTimeUs?: number | null
   onCaptureTensor?: (target: TensorCaptureTarget) => void
   activeProfileActivities?: ProfileActivity[]
   profileError?: string

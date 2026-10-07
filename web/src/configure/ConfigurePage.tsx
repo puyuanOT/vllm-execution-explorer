@@ -1,4 +1,4 @@
-import { Cpu, FlaskConical, Radio } from "lucide-react"
+import { Play, Radio } from "lucide-react"
 import { useState } from "react"
 
 import type { FeatureCapability, Limits } from "../api.ts"
@@ -9,7 +9,7 @@ import type { EngineSettings, ScenarioDraft, TimeUnit } from "../scenario/types.
 import type { FieldIssue } from "../scenario/validate.ts"
 import { resolveWorkloadFields } from "../scenario/workloadFields.ts"
 import { ConfirmDialog } from "../shell/ConfirmDialog.tsx"
-import { Chip, Led, Segmented } from "../ui/controls.tsx"
+import { Chip, Led } from "../ui/controls.tsx"
 import { ConsoleRail, openConfigureSection, type ConsoleModule } from "./ConsoleRail.tsx"
 import { focusValidationField } from "./focusValidation.ts"
 import { ModelSection } from "./ModelSection.tsx"
@@ -39,6 +39,9 @@ export interface ConfigurePageProps {
   runBlockedReason?: string
   runStatus?: string
   runError?: string
+  openingDemo?: boolean
+  demoError?: string
+  onOpenDemo: () => void
   onUnit: (unit: TimeUnit) => void
   onAction: (action: ScenarioAction) => void
   onSettings: (settings: EngineSettings) => void
@@ -74,6 +77,9 @@ export function ConfigurePage({
   runBlockedReason,
   runStatus,
   runError,
+  openingDemo = false,
+  demoError,
+  onOpenDemo,
   onUnit,
   onAction,
   onSettings,
@@ -94,8 +100,7 @@ export function ConfigurePage({
     sshIdentity,
     huggingFaceToken,
   }
-  const fixture = settings.engine === "fixture"
-  const busy = running || checkingHost
+  const busy = running || checkingHost || openingDemo
   const requestCount = scenario.batches.reduce((sum, batch) => sum + batch.samples.length, 0)
   const latest = scenario.batches.reduce((value, batch) => Math.max(value, batch.arrivalOffsetMs), 0)
   const workloadIssue = issues.some((issue) => WORKLOAD_FIELDS.some((prefix) => issue.fieldId === prefix || issue.fieldId.startsWith(prefix)))
@@ -105,17 +110,16 @@ export function ConfigurePage({
     { number: 1, title: "Workload", summary: `${scenario.batches.length} batch${scenario.batches.length === 1 ? "" : "es"} · ${requestCount} req · ${formatTime(latest, unit)} ${unit}`, tone: workloadIssue || requestCount === 0 ? "warning" : "ready" },
     { number: 2, title: "Execution host", summary: settings.hostKind === "local" ? `Local machine${hostReadiness?.tone === "warning" ? " · needs GPU" : ""}` : `${settings.sshUser || "user"}@${settings.sshHost || "remote host"}`, tone: hostReadiness?.tone ?? "neutral" },
     { number: 3, title: "Model", summary: modelName, tone: modelReadiness?.tone ?? "neutral" },
-    { number: 4, title: "vLLM engine", summary: fixture ? "Demo fixture · synthetic" : `${settings.maxModelLen} ctx · ${settings.maxNumSeqs} seq · ${settings.tokenBudget} tok`, tone: vllmReadiness?.tone ?? "neutral" },
+    { number: 4, title: "vLLM engine", summary: `${settings.maxModelLen} ctx · ${settings.maxNumSeqs} seq · ${settings.tokenBudget} tok`, tone: vllmReadiness?.tone ?? "neutral" },
   ]
-  const launchTone = running ? "accent" : runError ? "error" : runBlockedReason ? "warning" : fixture ? "synthetic" : "ready"
-  const launchTitle = running ? runStatus || "Preparing capture"
+  const launchTone = running || openingDemo ? "accent" : runError ? "error" : runBlockedReason ? "warning" : "ready"
+  const launchTitle = openingDemo ? "Opening the recorded GPU demo"
+    : running ? runStatus || "Preparing capture"
     : runBlockedReason ? "Live vLLM capture is blocked on this host"
-      : fixture ? "Ready to run the synthetic demo fixture"
-        : "Ready to prepare and capture"
+      : "Ready to prepare and capture"
   const launchDetail = runBlockedReason
-    ? `${runBlockedReason} Or switch to the synthetic demo fixture.`
-    : fixture ? "Scripted events exercise the UI and replay path. The recording is labeled synthetic and is never GPU evidence."
-      : storageError || storageNote || "Your non-secret draft is saved on this device."
+    ? `${runBlockedReason} You can open the recorded GPU demo below.`
+    : storageError || storageNote || "Your non-secret draft is saved on this device."
 
   function applyExample(id: LearningExampleId) {
     const example = learningExample(id, settings)
@@ -269,10 +273,10 @@ export function ConfigurePage({
           readiness={hostReadiness}
           stages={setupStages}
           checking={checkingHost}
-          disabled={running}
+          disabled={running || openingDemo}
           effectiveSettings={effectiveSettings}
           onCheck={() => onCheckHost?.(runtime)}
-          onUseSsh={settings.hostKind === "local" && !fixture && hostReadiness?.tone !== "ready" ? () => {
+          onUseSsh={settings.hostKind === "local" && hostReadiness?.tone !== "ready" ? () => {
             onSettings({ ...settings, hostKind: "ssh" })
             window.requestAnimationFrame(() => openConfigureSection(2))
           } : undefined}
@@ -293,25 +297,22 @@ export function ConfigurePage({
               <Chip>{scenario.batches.length} batches</Chip>
               <Chip className="max-w-40"><span>{modelName}</span></Chip>
             </div>
-            <Segmented<EngineSettings["engine"]>
-              label="Execution source"
-              value={settings.engine}
-              onChange={(engine) => onSettings({ ...settings, engine, prefixCaching: engine === "fixture" ? false : settings.prefixCaching })}
-              options={[
-                { value: "vllm", label: <><Cpu className="size-3.5" aria-hidden="true" />Live vLLM</>, disabled: busy, title: "Instrumented vLLM server on the selected execution host" },
-                { value: "fixture", label: <><FlaskConical className="size-3.5" aria-hidden="true" />Demo fixture</>, disabled: busy, title: "Synthetic fixture: exercises the UI and replay path, never GPU evidence" },
-              ]}
-            />
+            <button className={buttonClass} type="button" disabled={busy} onClick={onOpenDemo} aria-describedby="recorded-demo-description">
+              <Play className="size-3.5" aria-hidden="true" />
+              {openingDemo ? "Opening demo…" : "Open real GPU demo"}
+            </button>
             {running && onCancel ? (
               <button className={buttonClass} type="button" onClick={onCancel}>
                 Cancel capture
               </button>
             ) : null}
             <button className={primaryButtonClass} type="submit" disabled={busy || Boolean(runBlockedReason)} aria-describedby={runBlockedReason ? "capture-blocked-reason" : undefined}>
-              {fixture ? <FlaskConical className="size-3.5" aria-hidden="true" /> : <Radio className="size-3.5" aria-hidden="true" />}
-              {running ? "Capture in progress…" : fixture ? "Run demo fixture" : "Prepare and capture"}
+              <Radio className="size-3.5" aria-hidden="true" />
+              {running ? "Capture in progress…" : "Prepare and capture"}
             </button>
           </div>
+          <p id="recorded-demo-description" className="m-0 mt-2 text-pretty text-xs text-slate-400">The GPU demo replays a saved run with its recorded workload and settings. Your editable draft is preserved.</p>
+          {demoError ? <p className="m-0 mt-1 text-pretty text-xs text-red-300" role="alert">{demoError}</p> : null}
         </footer>
       </form>
 

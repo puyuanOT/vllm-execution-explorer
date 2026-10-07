@@ -1,0 +1,58 @@
+{
+  "engine": "vllm",
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "dtype": "bfloat16",
+  "quantization": "none",
+  "sampling": {
+    "temperature": 0,
+    "top_p": 1,
+    "seed": 0,
+    "stop": []
+  },
+  "max_model_len": 1024,
+  "max_num_seqs": 3,
+  "token_budget": 64,
+  "prefix_caching": true,
+  "chunked_prefill": true,
+  "gpu_memory_utilization": 0.8,
+  "kv_cache_memory_bytes": 268435456,
+  "scheduling_policy": "fcfs",
+  "long_prefill_token_threshold": 64,
+  "requests": [
+    {
+      "request_id": "cancel-long",
+      "prompt": "<|im_start|>user\nRead this shared reference before answering. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. Explain every item in detail.<|im_end|>\n<|im_start|>assistant\n",
+      "arrival_offset_ms": 0,
+      "max_output_tokens": 128,
+      "priority": 0
+    }
+  ],
+  "profiling_configuration": {
+    "mode": "eager_diagnostic",
+    "max_steps": 16,
+    "tensor_capture": {
+      "enabled": true,
+      "preset": "custom",
+      "request_id": "cancel-long",
+      "token_positions": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "layer_indices": [
+        0,
+        18,
+        35
+      ],
+      "head_indices": [
+        0
+      ],
+      "dimension_start": 0,
+      "dimension_count": 16,
+      "max_bytes": 1048576
+    }
+  }
+}
