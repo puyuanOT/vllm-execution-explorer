@@ -33,7 +33,8 @@ export function CacheStage({ cache, requestOrder, requestLabels, selection, trac
   )) : [], [blocks, tokenRequestId, tokenPosition])
   if (!cache.pools.length) return <group><FloorGrid y={DIE_Y - 0.25} /><SceneEmpty label="Full KV pool inventory not observed" detail={cache.reason ?? "Capture a new run with pool inventory enabled."} /></group>
   const selected = selection?.kind === "block" ? blocks.find((block) => blockMatches(block, selection.key))
-    : tokenBlocks.find((block) => activeToken?.kvBlockKey != null && blockMatches(block, activeToken.kvBlockKey)) ?? tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
+    : selection?.kind === "token" ? tokenBlocks.find((block) => activeToken?.kvBlockKey != null && blockMatches(block, activeToken.kvBlockKey)) ?? tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
+      : undefined
   const tensorLayers = (cache as KvCacheProjection & { tensorLayers?: KvLayerConfiguration[] }).tensorLayers?.filter((layer) => layer.pool === selected?.pool) ?? []
   if (activeToken?.kvLayerIndex != null && selected?.trust === "known" && selection?.kind !== "block" && tensorLayers.length) return <CacheTensorStage block={selected} layers={tensorLayers} selection={activeToken} labels={requestLabels} onSelect={onSelect} />
   const span = cache.pools.length > 1 ? 9 : 11

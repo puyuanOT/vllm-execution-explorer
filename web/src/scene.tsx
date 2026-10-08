@@ -242,7 +242,7 @@ function WorkflowOverview(props: SceneProps) {
   const bankRight = KV_BANK.x + KV_BANK.width / 2 + 0.25
   const caption = props.measuredProfile ? "Profiler clock · serving and KV nodes follow host replay"
     : props.state.trust === "unknown" ? "Trace gap · counts describe only the trusted prefix"
-      : architecture.supported ? "Serving observations connected to captured model structure"
+      : architecture.supported ? null
         : "Model architecture is unknown until a supported recording is captured"
   return <group>
     <FloorGrid y={FLOOR} />
@@ -293,7 +293,7 @@ function WorkflowOverview(props: SceneProps) {
     <SceneText text="Next scheduler cycle" position={[X.scheduler + 1.6, towerTop + 0.5, -0.4]} muted />
     <SceneText text="Block table" position={[X.scheduler + 0.5, FLOOR + 0.02, 2.4]} muted />
     <SceneText text="KV reads" position={[X.tower, FLOOR + 0.02, 2.6]} muted />
-    <SceneText text={caption} position={[-1.3, FLOOR + 0.02, 6.1]} muted />
+    {caption ? <SceneText text={caption} position={[-1.3, FLOOR + 0.02, 6.1]} muted /> : null}
   </group>
 }
 

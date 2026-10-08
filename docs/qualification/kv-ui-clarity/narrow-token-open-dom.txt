@@ -1,0 +1,175 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic: Observed GPU recording
+  - status "Failed to fetch":
+    - generic: 127.0.0.1:8766
+    - generic: · Failed to fetch
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - button "Open inspector":
+      - text: Open inspector
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: Column 0
+      - generic: Column 4
+      - generic: Column 8
+      - generic: Blocks 0–11
+      - generic: Blocks 12–23
+      - generic: Blocks 24–35
+      - generic: Blocks 36–47
+      - generic: Blocks 48–59
+      - generic: Blocks 60–71
+      - generic: Blocks 72–83
+      - generic: Blocks 84–95
+      - generic: Blocks 96–107
+      - generic: Blocks 108–112
+      - generic: cuda:0 / pool-0 · 113 blocks · 16 token slots/block
+      - generic: Block 3
+      - generic: Token slots
+      - generic: pool-0 · gen 1 · 1 ref · 0/16 computed
+      - generic: Observed
+      - button "Close token slots for block 3":
+      - list "Token slots in block 3":
+        - 'button "Slot 0: reserved, prefix-prime position 32"':
+          - generic: Pos 32
+          - generic: Slot 0
+          - generic: reserved
+        - 'button "Slot 1: reserved, prefix-prime position 33"':
+          - generic: Pos 33
+          - generic: Slot 1
+          - generic: reserved
+        - 'button "Slot 2: reserved, prefix-prime position 34"':
+          - generic: Pos 34
+          - generic: Slot 2
+          - generic: reserved
+        - 'button "Slot 3: reserved, prefix-prime position 35"':
+          - generic: Pos 35
+          - generic: Slot 3
+          - generic: reserved
+        - 'button "Slot 4: reserved, prefix-prime position 36"':
+          - generic: Pos 36
+          - generic: Slot 4
+          - generic: reserved
+        - 'button "Slot 5: reserved, prefix-prime position 37"':
+          - generic: Pos 37
+          - generic: Slot 5
+          - generic: reserved
+        - 'button "Slot 6: reserved, prefix-prime position 38"':
+          - generic: Pos 38
+          - generic: Slot 6
+          - generic: reserved
+        - 'button "Slot 7: reserved, prefix-prime position 39"':
+          - generic: Pos 39
+          - generic: Slot 7
+          - generic: reserved
+        - 'button "Slot 8: reserved, prefix-prime position 40"':
+          - generic: Pos 40
+          - generic: Slot 8
+          - generic: reserved
+        - 'button "Slot 9: reserved, prefix-prime position 41"':
+          - generic: Pos 41
+          - generic: Slot 9
+          - generic: reserved
+        - 'button "Slot 10: reserved, prefix-prime position 42"':
+          - generic: Pos 42
+          - generic: Slot 10
+          - generic: reserved
+        - 'button "Slot 11: reserved, prefix-prime position 43"':
+          - generic: Pos 43
+          - generic: Slot 11
+          - generic: reserved
+        - 'button "Slot 12: reserved, prefix-prime position 44"':
+          - generic: Pos 44
+          - generic: Slot 12
+          - generic: reserved
+        - 'button "Slot 13: reserved, prefix-prime position 45"':
+          - generic: Pos 45
+          - generic: Slot 13
+          - generic: reserved
+        - 'button "Slot 14: reserved, prefix-prime position 46" [active]':
+          - generic: Pos 46
+          - generic: Slot 14
+          - generic: reserved
+        - 'button "Slot 15: reserved, prefix-prime position 47"':
+          - generic: Pos 47
+          - generic: Slot 15
+          - generic: reserved
+      - generic: Holder prefix-prime
+      - generic: Referenced · Rim identifies holder · inspect token for tensor details
+      - button "Explore layer / KV head / K–V slice"
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - text: Referenced
+    - generic: "4"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "108"
+    - text: Reserved null
+    - generic: "1"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic "Find a physical KV block"
+    - paragraph: Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+    - generic: cuda:0 / pool-0 · 113 blocks · 16 token slots/block
+    - spinbutton "Physical block ID in pool-0": "3"
+    - button "Inspect block"
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "25"
+  - paragraph: Event 25, step_submitted, 10 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

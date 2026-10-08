@@ -1,0 +1,568 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-kv-layer-diagnostics":
+    - generic: gpu-kv-layer-diagnostics
+  - generic: Observed GPU recording
+  - status "Failed to fetch":
+    - text: 127.0.0.1:8766
+    - generic: · Failed to fetch
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: Column 0
+      - generic: Column 4
+      - generic: Column 8
+      - generic: Blocks 0–11
+      - generic: Blocks 12–23
+      - generic: Blocks 24–35
+      - generic: Blocks 36–47
+      - generic: Blocks 48–59
+      - generic: Blocks 60–71
+      - generic: Blocks 72–83
+      - generic: Blocks 84–95
+      - generic: Blocks 96–107
+      - generic: Blocks 108–112
+      - generic: cuda:0 / pool-0 · 113 blocks · 16 token slots/block
+      - generic: Block 3
+      - generic: Token slots
+      - generic: pool-0 · gen 1 · 1 ref · 0/16 computed
+      - generic: Observed
+      - button "Close token slots for block 3":
+      - list "Token slots in block 3":
+        - 'button "Slot 0: reserved, prefix-prime position 32"':
+          - generic: Pos 32
+          - generic: Slot 0
+          - generic: reserved
+        - 'button "Slot 1: reserved, prefix-prime position 33"':
+          - generic: Pos 33
+          - generic: Slot 1
+          - generic: reserved
+        - 'button "Slot 2: reserved, prefix-prime position 34"':
+          - generic: Pos 34
+          - generic: Slot 2
+          - generic: reserved
+        - 'button "Slot 3: reserved, prefix-prime position 35"':
+          - generic: Pos 35
+          - generic: Slot 3
+          - generic: reserved
+        - 'button "Slot 4: reserved, prefix-prime position 36"':
+          - generic: Pos 36
+          - generic: Slot 4
+          - generic: reserved
+        - 'button "Slot 5: reserved, prefix-prime position 37"':
+          - generic: Pos 37
+          - generic: Slot 5
+          - generic: reserved
+        - 'button "Slot 6: reserved, prefix-prime position 38"':
+          - generic: Pos 38
+          - generic: Slot 6
+          - generic: reserved
+        - 'button "Slot 7: reserved, prefix-prime position 39"':
+          - generic: Pos 39
+          - generic: Slot 7
+          - generic: reserved
+        - 'button "Slot 8: reserved, prefix-prime position 40"':
+          - generic: Pos 40
+          - generic: Slot 8
+          - generic: reserved
+        - 'button "Slot 9: reserved, prefix-prime position 41"':
+          - generic: Pos 41
+          - generic: Slot 9
+          - generic: reserved
+        - 'button "Slot 10: reserved, prefix-prime position 42"':
+          - generic: Pos 42
+          - generic: Slot 10
+          - generic: reserved
+        - 'button "Slot 11: reserved, prefix-prime position 43"':
+          - generic: Pos 43
+          - generic: Slot 11
+          - generic: reserved
+        - 'button "Slot 12: reserved, prefix-prime position 44"':
+          - generic: Pos 44
+          - generic: Slot 12
+          - generic: reserved
+        - 'button "Slot 13: reserved, prefix-prime position 45"':
+          - generic: Pos 45
+          - generic: Slot 13
+          - generic: reserved
+        - 'button "Slot 14: reserved, prefix-prime position 46" [active]':
+          - generic: Pos 46
+          - generic: Slot 14
+          - generic: reserved
+        - 'button "Slot 15: reserved, prefix-prime position 47"':
+          - generic: Pos 47
+          - generic: Slot 15
+          - generic: reserved
+      - generic: Holder prefix-prime
+      - generic: Referenced · Rim identifies holder · inspect token for tensor details
+      - button "Explore layer / KV head / K–V slice"
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 25
+    - generic: step_submitted
+    - generic: step-1
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - text: Referenced
+    - generic: "4"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "108"
+    - text: Reserved null
+    - generic: "1"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic "Find a physical KV block"
+    - paragraph: Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+    - generic: cuda:0 / pool-0 · 113 blocks · 16 token slots/block
+    - spinbutton "Physical block ID in pool-0": "3"
+    - button "Inspect block"
+  - complementary "Inspector":
+    - paragraph: Token position
+    - heading "Request token" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - option "step-5"
+    - option "step-6"
+    - option "step-7"
+    - option "step-8"
+    - option "step-9"
+    - option "step-10"
+    - option "step-11"
+    - option "step-12"
+    - option "step-13"
+    - heading "Token at position 46" [level=3]
+    - term: Token ID
+    - definition: "10010"
+    - term: Decoded fragment
+    - definition: Unavailable
+    - term: KV state now
+    - definition: reserved
+    - term: Previously computed
+    - definition: "No"
+    - button "pool-0 block 3 · generation 1 · group 0 · slot 14"
+    - region "Token KV tensor inspection":
+      - heading "KV tensors for token position 46" [level=3]
+      - navigation "KV tensor breadcrumb":
+        - button "cuda:0"
+        - generic: /
+        - generic: pool-0 · group 0
+        - generic: /
+        - button "Block 3"
+        - generic: /
+        - generic: Slot 14
+        - generic: /
+        - generic: Token position 46
+        - generic: /
+        - generic: Layer 1
+        - generic: /
+        - generic: KV head 0
+        - generic: /
+        - generic: K
+      - text: Layer slice
+      - combobox "KV tensor layer":
+        - option "Layer 1" [selected]
+        - option "Layer 2"
+        - option "Layer 3"
+        - option "Layer 4"
+        - option "Layer 5"
+        - option "Layer 6"
+        - option "Layer 7"
+        - option "Layer 8"
+        - option "Layer 9"
+        - option "Layer 10"
+        - option "Layer 11"
+        - option "Layer 12"
+        - option "Layer 13"
+        - option "Layer 14"
+        - option "Layer 15"
+        - option "Layer 16"
+        - option "Layer 17"
+        - option "Layer 18"
+        - option "Layer 19"
+        - option "Layer 20"
+        - option "Layer 21"
+        - option "Layer 22"
+        - option "Layer 23"
+        - option "Layer 24"
+        - option "Layer 25"
+        - option "Layer 26"
+        - option "Layer 27"
+        - option "Layer 28"
+        - option "Layer 29"
+        - option "Layer 30"
+        - option "Layer 31"
+        - option "Layer 32"
+        - option "Layer 33"
+        - option "Layer 34"
+        - option "Layer 35"
+        - option "Layer 36"
+      - text: KV head index
+      - combobox "KV tensor head":
+        - option "Head 0 (zero-based)" [selected]
+        - option "Head 1 (zero-based)"
+        - option "Head 2 (zero-based)"
+        - option "Head 3 (zero-based)"
+        - option "Head 4 (zero-based)"
+        - option "Head 5 (zero-based)"
+        - option "Head 6 (zero-based)"
+        - option "Head 7 (zero-based)"
+      - group "KV tensor kind":
+        - button "Keys (K)" [pressed]
+        - button "Values (V)"
+      - term: Request / token
+      - definition: prefix-prime · Fragment not captured · ID 10010
+      - term: Current holder
+      - definition: prefix-prime
+      - term: Contents written by
+      - definition: Not observed
+      - term: Actual datatype
+      - definition: bfloat16
+      - term: Actual quantization
+      - definition: NONE
+      - term: K quantization scale
+      - definition: float32 · [] · cuda:0
+      - term: Backing tensor shape
+      - definition: "[113, 8, 16, 256]"
+      - term: Token/head slice shape
+      - definition: "[128] per K or V"
+      - term: Tensor layout
+      - definition: kernel_block,kv_head,token_slot,concatenated_K_V
+      - term: Backing storage
+      - definition: storage-0
+      - term: Manager / kernel block size
+      - definition: 16 / 16 slots
+      - term: Allocation generation
+      - definition: "1"
+      - paragraph: Layer/head slices share the block’s allocation. They do not increase the pool’s block count. These keys and values are attention state, separate from the token ID.
+      - heading "Recorded numerical slice" [level=4]
+      - generic: Not captured
+      - paragraph: This token/layer/head slice was not captured. Select targets before recording or run a targeted capture.
+      - paragraph: "Target a new diagnostic capture: prefix-prime, token position 46, layer 1, KV head 0. Choose a small dimension slice and byte limit before recording."
+      - button "Prepare targeted rerun"
+    - paragraph: A sampled output token may not yet have been processed by the model. Reserved slots are distinct from computed KV data.
+    - button "Previous tokens" [disabled]
+    - generic: 0–63 of 173
+    - button "Next tokens"
+    - list "Request token positions":
+      - button "Position 0, prompt, token 151644, KV reserved":
+        - generic: "0"
+        - generic: "151644"
+        - generic: reserved
+      - button "Position 1, prompt, token 872, KV reserved":
+        - generic: "1"
+        - generic: "872"
+        - generic: reserved
+      - button "Position 2, prompt, token 198, KV reserved":
+        - generic: "2"
+        - generic: "198"
+        - generic: reserved
+      - button "Position 3, prompt, token 4418, KV reserved":
+        - generic: "3"
+        - generic: "4418"
+        - generic: reserved
+      - button "Position 4, prompt, token 419, KV reserved":
+        - generic: "4"
+        - generic: "419"
+        - generic: reserved
+      - button "Position 5, prompt, token 6094, KV reserved":
+        - generic: "5"
+        - generic: "6094"
+        - generic: reserved
+      - button "Position 6, prompt, token 5785, KV reserved":
+        - generic: "6"
+        - generic: "5785"
+        - generic: reserved
+      - button "Position 7, prompt, token 1573, KV reserved":
+        - generic: "7"
+        - generic: "1573"
+        - generic: reserved
+      - button "Position 8, prompt, token 35764, KV reserved":
+        - generic: "8"
+        - generic: "35764"
+        - generic: reserved
+      - button "Position 9, prompt, token 13, KV reserved":
+        - generic: "9"
+        - generic: "13"
+        - generic: reserved
+      - button "Position 10, prompt, token 576, KV reserved":
+        - generic: "10"
+        - generic: "576"
+        - generic: reserved
+      - button "Position 11, prompt, token 52967, KV reserved":
+        - generic: "11"
+        - generic: "52967"
+        - generic: reserved
+      - button "Position 12, prompt, token 7424, KV reserved":
+        - generic: "12"
+        - generic: "7424"
+        - generic: reserved
+      - button "Position 13, prompt, token 1681, KV reserved":
+        - generic: "13"
+        - generic: "1681"
+        - generic: reserved
+      - button "Position 14, prompt, token 69047, KV reserved":
+        - generic: "14"
+        - generic: "69047"
+        - generic: reserved
+      - button "Position 15, prompt, token 11, KV reserved":
+        - generic: "15"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 16, prompt, token 28809, KV reserved":
+        - generic: "16"
+        - generic: "28809"
+        - generic: reserved
+      - button "Position 17, prompt, token 11181, KV reserved":
+        - generic: "17"
+        - generic: "11181"
+        - generic: reserved
+      - button "Position 18, prompt, token 11, KV reserved":
+        - generic: "18"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 19, prompt, token 3950, KV reserved":
+        - generic: "19"
+        - generic: "3950"
+        - generic: reserved
+      - button "Position 20, prompt, token 9892, KV reserved":
+        - generic: "20"
+        - generic: "9892"
+        - generic: reserved
+      - button "Position 21, prompt, token 11, KV reserved":
+        - generic: "21"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 22, prompt, token 1614, KV reserved":
+        - generic: "22"
+        - generic: "1614"
+        - generic: reserved
+      - button "Position 23, prompt, token 13617, KV reserved":
+        - generic: "23"
+        - generic: "13617"
+        - generic: reserved
+      - button "Position 24, prompt, token 11, KV reserved":
+        - generic: "24"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 25, prompt, token 323, KV reserved":
+        - generic: "25"
+        - generic: "323"
+        - generic: reserved
+      - button "Position 26, prompt, token 6500, KV reserved":
+        - generic: "26"
+        - generic: "6500"
+        - generic: reserved
+      - button "Position 27, prompt, token 10010, KV reserved":
+        - generic: "27"
+        - generic: "10010"
+        - generic: reserved
+      - button "Position 28, prompt, token 13, KV reserved":
+        - generic: "28"
+        - generic: "13"
+        - generic: reserved
+      - button "Position 29, prompt, token 576, KV reserved":
+        - generic: "29"
+        - generic: "576"
+        - generic: reserved
+      - button "Position 30, prompt, token 52967, KV reserved":
+        - generic: "30"
+        - generic: "52967"
+        - generic: reserved
+      - button "Position 31, prompt, token 7424, KV reserved":
+        - generic: "31"
+        - generic: "7424"
+        - generic: reserved
+      - button "Position 32, prompt, token 1681, KV reserved":
+        - generic: "32"
+        - generic: "1681"
+        - generic: reserved
+      - button "Position 33, prompt, token 69047, KV reserved":
+        - generic: "33"
+        - generic: "69047"
+        - generic: reserved
+      - button "Position 34, prompt, token 11, KV reserved":
+        - generic: "34"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 35, prompt, token 28809, KV reserved":
+        - generic: "35"
+        - generic: "28809"
+        - generic: reserved
+      - button "Position 36, prompt, token 11181, KV reserved":
+        - generic: "36"
+        - generic: "11181"
+        - generic: reserved
+      - button "Position 37, prompt, token 11, KV reserved":
+        - generic: "37"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 38, prompt, token 3950, KV reserved":
+        - generic: "38"
+        - generic: "3950"
+        - generic: reserved
+      - button "Position 39, prompt, token 9892, KV reserved":
+        - generic: "39"
+        - generic: "9892"
+        - generic: reserved
+      - button "Position 40, prompt, token 11, KV reserved":
+        - generic: "40"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 41, prompt, token 1614, KV reserved":
+        - generic: "41"
+        - generic: "1614"
+        - generic: reserved
+      - button "Position 42, prompt, token 13617, KV reserved":
+        - generic: "42"
+        - generic: "13617"
+        - generic: reserved
+      - button "Position 43, prompt, token 11, KV reserved":
+        - generic: "43"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 44, prompt, token 323, KV reserved":
+        - generic: "44"
+        - generic: "323"
+        - generic: reserved
+      - button "Position 45, prompt, token 6500, KV reserved":
+        - generic: "45"
+        - generic: "6500"
+        - generic: reserved
+      - button "Position 46, prompt, token 10010, KV reserved":
+        - generic: "46"
+        - generic: "10010"
+        - generic: reserved
+      - button "Position 47, prompt, token 13, KV reserved":
+        - generic: "47"
+        - generic: "13"
+        - generic: reserved
+      - button "Position 48, prompt, token 576, KV reserved":
+        - generic: "48"
+        - generic: "576"
+        - generic: reserved
+      - button "Position 49, prompt, token 52967, KV reserved":
+        - generic: "49"
+        - generic: "52967"
+        - generic: reserved
+      - button "Position 50, prompt, token 7424, KV reserved":
+        - generic: "50"
+        - generic: "7424"
+        - generic: reserved
+      - button "Position 51, prompt, token 1681, KV reserved":
+        - generic: "51"
+        - generic: "1681"
+        - generic: reserved
+      - button "Position 52, prompt, token 69047, KV reserved":
+        - generic: "52"
+        - generic: "69047"
+        - generic: reserved
+      - button "Position 53, prompt, token 11, KV reserved":
+        - generic: "53"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 54, prompt, token 28809, KV reserved":
+        - generic: "54"
+        - generic: "28809"
+        - generic: reserved
+      - button "Position 55, prompt, token 11181, KV reserved":
+        - generic: "55"
+        - generic: "11181"
+        - generic: reserved
+      - button "Position 56, prompt, token 11, KV reserved":
+        - generic: "56"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 57, prompt, token 3950, KV reserved":
+        - generic: "57"
+        - generic: "3950"
+        - generic: reserved
+      - button "Position 58, prompt, token 9892, KV reserved":
+        - generic: "58"
+        - generic: "9892"
+        - generic: reserved
+      - button "Position 59, prompt, token 11, KV reserved":
+        - generic: "59"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 60, prompt, token 1614, KV reserved":
+        - generic: "60"
+        - generic: "1614"
+        - generic: reserved
+      - button "Position 61, prompt, token 13617, KV reserved":
+        - generic: "61"
+        - generic: "13617"
+        - generic: reserved
+      - button "Position 62, prompt, token 11, KV reserved":
+        - generic: "62"
+        - generic: "11"
+        - generic: reserved
+      - button "Position 63, prompt, token 323, KV reserved":
+        - generic: "63"
+        - generic: "323"
+        - generic: reserved
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "25"
+  - paragraph: Event 25, step_submitted, 10 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion
