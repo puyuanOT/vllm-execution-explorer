@@ -1,0 +1,53 @@
+{
+  "engine": "vllm",
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "model_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "tokenizer_revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "dtype": "bfloat16",
+  "quantization": "none",
+  "sampling": {
+    "temperature": 0,
+    "top_p": 1,
+    "seed": 0,
+    "stop": []
+  },
+  "max_model_len": 1024,
+  "max_num_seqs": 3,
+  "token_budget": 64,
+  "prefix_caching": true,
+  "chunked_prefill": true,
+  "gpu_memory_utilization": 0.8,
+  "kv_cache_memory_bytes": 268435456,
+  "scheduling_policy": "fcfs",
+  "long_prefill_token_threshold": 64,
+  "requests": [
+    {
+      "request_id": "prefix-prime",
+      "prompt": "<|im_start|>user\nRead this shared reference before answering. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. Name the first thing recorded.<|im_end|>\n<|im_start|>assistant\n",
+      "arrival_offset_ms": 0,
+      "max_output_tokens": 4,
+      "priority": 0
+    },
+    {
+      "request_id": "prefix-reader",
+      "prompt": "<|im_start|>user\nRead this shared reference before answering. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. The explorer records request arrivals, scheduler decisions, token positions, model layers, and cache blocks. Explain why a shared prefix can save prefill work.<|im_end|>\n<|im_start|>assistant\n",
+      "arrival_offset_ms": 6000,
+      "max_output_tokens": 4,
+      "priority": 0
+    },
+    {
+      "request_id": "mixed-prefill",
+      "prompt": "<|im_start|>user\nExplain this independent reference. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. Name the scheduler's first action.<|im_end|>\n<|im_start|>assistant\n",
+      "arrival_offset_ms": 6000,
+      "max_output_tokens": 4,
+      "priority": 0
+    }
+  ],
+  "profiling_configuration": {
+    "mode": "off",
+    "max_steps": 8,
+    "tensor_capture": {
+      "enabled": false
+    }
+  }
+}

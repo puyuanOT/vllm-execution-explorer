@@ -1,0 +1,13 @@
+Recording report
+
+[pass] sequences: 90 recorded events are ordered
+[pass] event_types: every event type is in the v1 contract
+[pass] content_separated: prompt text, token ids, and text deltas stay in the content attachment
+[pass] step_identity: 3 steps keep their own result association
+[pass] cursors: scheduled ranges meet the previous cursor, including after preemption
+[pass] blocks: 32 block transitions; a zero-reference block that still has a hash stays cached
+[pass] arrivals: planned dispatch, client dispatch, HTTP receipt, and engine admission remain named observations
+[pass] completeness: event stream is complete
+[pass] kv_observations: Physical generations and token ranges match observed inventories, scheduler work, and returned results.
+
+Result: pass

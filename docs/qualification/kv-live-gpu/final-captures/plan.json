@@ -1,0 +1,21 @@
+{
+  "cases": [
+    "demo",
+    "trigger",
+    "partial-budget",
+    "off",
+    "cancel-profile"
+  ],
+  "execute_requested": true,
+  "capture_source_identity": {
+    "source_sha256": "46fa2ddb99ea96309a50c07580a70ddaba8ab39241d8b798185ce0ea504fc978",
+    "source_file_count": 39,
+    "source_scope": "runner and instrumentation .py/.json files on disk at trace creation",
+    "declared_revision": null
+  },
+  "notes": [
+    "Actual GPU API runs, readable prompts and immutable model/tokenizer revisions.",
+    "Separate independent native-input observer run verifies numerical values.",
+    "Diagnostic profiling and numerical clones change execution overhead; recorded times are not production benchmarks."
+  ]
+}

@@ -19,14 +19,19 @@ MAX_TRACE_BYTES = 64 * 1024 * 1024
 def profile_record(configuration: dict[str, Any] | None) -> dict[str, Any]:
     config = configuration or {"mode": "off", "max_steps": 8}
     enabled = config.get("mode") == "eager_diagnostic"
+    from vllm_030.cache_tensors import CacheWriteCapture
+    tensor_configuration = config.get("tensor_capture") or {"enabled": False, "preset": "small", "max_bytes": 1048576}
+    tensor_record = CacheWriteCapture(None, {}, tensor_configuration).capture_record()
     return {
         "contract_version": 1, "mode": config.get("mode", "off"), "enabled": enabled,
         "execution_mode": "eager" if enabled else None, "backend": "torch.profiler" if enabled else None,
         "max_steps": config.get("max_steps", 8), "status": "unavailable" if enabled else "disabled",
+        "start_step": config.get("start_step", 1), "trigger_request_id": config.get("trigger_request_id"),
+        "tensor_capture_configuration": tensor_configuration, "tensor_capture": tensor_record,
         "completeness": "unknown", "qualification": "unverified",
         "clock": dict(PROFILE_CLOCK) if enabled else None, "runtime": {},
         "raw_artifacts": [], "normalized_artifact": None, "attachment_status": "unavailable",
-        "evidence": "Diagnostic profiling changes execution to eager mode. It records batch/layer CPU scopes and CUDA activities, with no per-token or per-head duration claims.",
+        "evidence": "Diagnostic profiling changes execution to eager mode. It records batch/layer/cache-update CPU scopes and CUDA activities. Optional numerical snapshots add gather/copy overhead; no per-token or per-head duration is claimed.",
     }
 
 
@@ -43,7 +48,7 @@ def engine_profiler_config(directory: Path, max_steps: int) -> Any:
 
 
 class DiagnosticProfile:
-    def __init__(self, engine: Any, core: Any, recording: Any, configuration: dict[str, Any], architecture: dict[str, Any]) -> None:
+    def __init__(self, engine: Any, core: Any, recording: Any, configuration: dict[str, Any], architecture: dict[str, Any], adapter: Any = None) -> None:
         self.engine = engine
         self.recording = recording
         self.record = profile_record(configuration)
@@ -51,6 +56,8 @@ class DiagnosticProfile:
         self._worker: Any = None
         self._started = False
         self._finished = False
+        self._step_count = 0
+        self._arrived_requests: set[str] = set()
         if not self.record["enabled"]:
             return
         if not architecture.get("supported") or architecture.get("model_type") != "qwen3":
@@ -71,7 +78,12 @@ class DiagnosticProfile:
         import torch
 
         self.record["runtime"] = {"vllm": importlib.metadata.version("vllm"), "torch": torch.__version__, "cuda": torch.version.cuda}
-        self.hooks = DiagnosticHooks(runner, torch.profiler.record_function, int(self.record["max_steps"]))
+        from vllm_030.cache_tensors import loaded_cache_tensors
+        _metadata, records = loaded_cache_tensors(runner, getattr(adapter, "cache_inventory", None))
+        generations = getattr(adapter, "_generations", None)
+        lookup = generations.current if generations is not None else None
+        self.hooks = DiagnosticHooks(runner, torch.profiler.record_function, int(self.record["max_steps"]),
+                                     cache_records=records, tensor_capture=configuration.get("tensor_capture"), generation_lookup=lookup)
         try:
             self.hooks.install()
             self.record["hook_sources"] = self.hooks.source_fingerprints
@@ -82,6 +94,21 @@ class DiagnosticProfile:
     def start(self) -> None:
         if not self.record["enabled"]:
             return
+        if self.record["start_step"] > 1 or self.record["trigger_request_id"] is not None:
+            self.record["reason"] = "Diagnostic capture is armed and awaiting the selected step/request arrival."
+            return
+        self._start_native()
+
+    def note_request_arrival(self, request_id: str) -> None:
+        self._arrived_requests.add(request_id)
+
+    def before_step(self) -> None:
+        self._step_count += 1
+        trigger = self.record["trigger_request_id"]
+        if self.record["enabled"] and not self._started and not self._finished and self._step_count >= self.record["start_step"] and (trigger is None or trigger in self._arrived_requests):
+            self._start_native()
+
+    def _start_native(self) -> None:
         try:
             self.engine.start_profile(profile_prefix=f"explorer-{self.recording.run_id}")
             profiler = getattr(self._worker, "profiler", None)
@@ -90,6 +117,8 @@ class DiagnosticProfile:
             self._started = True
             self.hooks.active = True
             self.record["status"] = "recording"
+            self.record.pop("reason", None)
+            self.record["capture_start_step"] = max(1, self._step_count)
         except Exception:
             self.hooks.uninstall()
             raise
@@ -99,7 +128,14 @@ class DiagnosticProfile:
             self.finish(bounded=True)
 
     def finish(self, *, bounded: bool = False, cancelled: bool = False, failed: bool = False) -> None:
-        if not self._started or self._finished:
+        if self._finished:
+            return
+        if not self._started:
+            self._finished = True
+            if self.hooks is not None:
+                self.hooks.uninstall()
+            if self.record["enabled"]:
+                self.record["reason"] = "The selected capture step/request arrival was not reached; a targeted rerun is required."
             return
         self._finished = True
         try:
@@ -128,6 +164,21 @@ class DiagnosticProfile:
             self.record.update(status="partial", completeness="bounded", reason="Native trace exceeds the 64 MiB normalization bound; raw evidence is retained.")
             return
         normalized = normalize_trace(json.loads(payload), run_id=self.recording.run_id, steps=self.hooks.steps)
+        cache_capture = getattr(self.hooks, "cache_capture", None)
+        if cache_capture is not None:
+            cache_capture.finalize()
+            for write in cache_capture.writes:
+                gpu = [activity for activity in normalized["activities"] if activity["kind"].startswith("cuda_")
+                       and activity["scope"].get("operation_id") == write["operation_id"] and activity["scope"]["correlation"] == "runtime_flow"]
+                write["gpu_activity_ids"] = [activity["activity_id"] for activity in gpu]
+                launches = {activity["activity_id"] for activity in normalized["activities"]
+                            if activity["scope"].get("operation_id") == write["operation_id"]
+                            and not activity["kind"].startswith("cuda_") and activity["name"].startswith(("cudaLaunch", "cuLaunch"))}
+                correlated = {identity for activity in gpu for identity in activity["related_activity_ids"]}
+                if normalized["normalization"]["status"] != "completed" or not launches.issubset(correlated):
+                    write.update(status="unavailable", reason="The retained profiler trace does not cover every observed GPU launch for this cache update; completion timing is unknown.")
+            normalized.update(cache_writes=cache_capture.writes, tensor_snapshots=cache_capture.snapshots, tensor_capture=cache_capture.capture_record())
+            self.record["tensor_capture"] = normalized["tensor_capture"]
         destination = self.recording.directory / "profiling" / "activities.json"
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(json.dumps(normalized, separators=(",", ":")) + "\n", encoding="utf-8")

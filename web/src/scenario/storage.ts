@@ -106,6 +106,7 @@ function isSettings(value: unknown): value is EngineSettings {
     quantization: ["none", "awq", "gptq", "bitsandbytes", "fp8"],
     schedulingPolicy: ["fcfs", "priority"],
     profilingMode: ["off", "eager_diagnostic"],
+    tensorPreset: ["small", "custom"],
   }
   for (const [key, options] of Object.entries(choices)) {
     if (key in value && !options.includes(value[key] as string)) return false

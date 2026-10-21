@@ -1,0 +1,221 @@
+{
+  "run_id": "native-reference-final-2026-10-07",
+  "kind": "independent_saved_native_reference_audit",
+  "ok": true,
+  "checks": [
+    {
+      "check": "observer and loaded production source match repaired assessment source",
+      "ok": true,
+      "detail": {
+        "declared_revision": null,
+        "source_file_count": 39,
+        "source_scope": "runner and instrumentation .py/.json files on disk at trace creation",
+        "source_sha256": "46fa2ddb99ea96309a50c07580a70ddaba8ab39241d8b798185ce0ea504fc978"
+      }
+    },
+    {
+      "check": "observer helper source retained",
+      "ok": true,
+      "detail": "e9a4bc5a5ebd2cc138ddd803513070edac6e851a35f5ffffe459349dfd6d23a2"
+    },
+    {
+      "check": "direct native observer retains its distinct evidence boundary",
+      "ok": true,
+      "detail": {
+        "cleanup_failure": null,
+        "failure": null,
+        "kind": "native_source_kv_reference",
+        "separate_from_unmodified_api_demo": true,
+        "source_input_clone_boundary": "before_production_cache_write_scope"
+      }
+    },
+    {
+      "check": "native observer retains pinned model/tokenizer",
+      "ok": true,
+      "detail": {
+        "model": {
+          "dtype": "bfloat16",
+          "id": "Qwen/Qwen3-4B-Instruct-2507",
+          "lora_adapters": [],
+          "note": "Loaded by the in-process vLLM 0.30 engine on this CUDA host.",
+          "quantization": "none",
+          "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+        },
+        "tokenizer": {
+          "id": "Qwen/Qwen3-4B-Instruct-2507",
+          "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+        }
+      }
+    },
+    {
+      "check": "native observer loads all 36 qualified BF16 cache layers",
+      "ok": true,
+      "detail": 36
+    },
+    {
+      "check": "raw and normalized profile hashes and sizes",
+      "ok": true,
+      "detail": {
+        "raw": [
+          {
+            "path": "profiling/raw/explorer-native-reference-final-2026-10-07_rank0.1791410957983882177.pt.trace.json.gz",
+            "sha256": "08f47c26281c5f1846bbdb0871a080e91991f57b69ed7b9475bcfae6e22f2c2b",
+            "size_bytes": 478864
+          }
+        ],
+        "normalized": {
+          "path": "profiling/activities.json",
+          "sha256": "0ac22290c2f5417b39a95db60b8266deaefe7088f1eac12e49aa5717d7cf53ea",
+          "size_bytes": 8142840
+        }
+      }
+    },
+    {
+      "check": "native diagnostic profile retains the expected completion status",
+      "ok": true,
+      "detail": {
+        "status": "completed",
+        "normalization": {
+          "status": "completed",
+          "source_activity_count": 23247,
+          "activity_limit": 250000,
+          "gpu_activity_count": 2400,
+          "correlated_gpu_activity_count": 2400
+        },
+        "captured_steps": 4
+      }
+    },
+    {
+      "check": "installed diagnostic boundaries retain source fingerprints",
+      "ok": true,
+      "detail": {
+        "GPUModelRunner._update_states": "326599f31b273b945fd7fc488f5e022c3b2d98d34fb74d2e9ce546e2abcdc892",
+        "GPUModelRunner._prepare_inputs": "c3ee1ab183bfc15e40961207ec303a2a1b76dbbda1af12d61c85b449472f2738",
+        "GPUModelRunner.execute_model": "2e33182e9abd6d2dce5e13786ba327c733cad2260fe0a4f9244fcb83dabdfdac",
+        "FlashAttentionImpl.do_kv_cache_update": "406220a1ba8445df16c8747072393060fc4ce3a360364588569ff8587e025b55"
+      }
+    },
+    {
+      "check": "exact bounded step/request-trigger capture window",
+      "ok": true,
+      "detail": {
+        "expected": [
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4"
+        ],
+        "actual": [
+          "step-1",
+          "step-2",
+          "step-3",
+          "step-4"
+        ],
+        "trigger_request_id": null,
+        "admission_sequence": null
+      }
+    },
+    {
+      "check": "post-reorder packed rows match exact scheduled logical ranges",
+      "ok": true,
+      "detail": {
+        "invalid_steps": [],
+        "real_rows": 36
+      }
+    },
+    {
+      "check": "one native cache update per layer/step with exact physical participants",
+      "ok": true,
+      "detail": {
+        "operations": 144,
+        "participants": 1296,
+        "invalid_operations": []
+      }
+    },
+    {
+      "check": "cache CUDA timing uses complete native runtime launch flow",
+      "ok": true,
+      "detail": {
+        "operations": 144,
+        "invalid_operations": []
+      }
+    },
+    {
+      "check": "numerical capture status and manifest agree",
+      "ok": true,
+      "detail": {
+        "expected_status": "completed",
+        "status": "completed",
+        "reason": null
+      }
+    },
+    {
+      "check": "numerical selection retains requested request/token/layer/head slice",
+      "ok": true,
+      "detail": {
+        "request_id": "native-reference",
+        "token_positions": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "layer_indices": [
+          0,
+          18,
+          35
+        ],
+        "head_indices": [
+          0
+        ],
+        "dimension_start": 0,
+        "dimension_count": 16
+      }
+    },
+    {
+      "check": "finite bounded numerical slices preserve native allocation identity",
+      "ok": true,
+      "detail": {
+        "snapshot_count": 24,
+        "retained_bytes": 768,
+        "max_bytes": 1048576,
+        "invalid_snapshots": []
+      }
+    },
+    {
+      "check": "every selected K/V slice is retained",
+      "ok": true,
+      "detail": {
+        "expected_slices": 24,
+        "actual_slices": 24,
+        "expected_bytes": 768
+      }
+    },
+    {
+      "check": "all 24 saved native-input slices equal actual production snapshots bitwise with exact native addresses",
+      "ok": true,
+      "detail": {
+        "comparisons": 24,
+        "invalid_snapshots": []
+      }
+    },
+    {
+      "check": "source-input clone CPU annotations are outside native cache-update scopes",
+      "ok": true,
+      "detail": [
+        "qualification.reference_inputs/0/cache-write-0",
+        "qualification.reference_inputs/18/cache-write-18",
+        "qualification.reference_inputs/35/cache-write-35"
+      ]
+    },
+    {
+      "check": "native source-clone CUDA flow stays outside cache-write timing",
+      "ok": true,
+      "detail": {
+        "reference_launches": 36,
+        "correlated_reference_gpu_activities": 36
+      }
+    }
+  ],
+  "limits": "This separately instrumented direct-engine observer validates selected numerical slices and their addresses. Its extra clone overhead and timings are distinct from the unmodified API demo; it does not verify HTTP or browser behavior."
+}

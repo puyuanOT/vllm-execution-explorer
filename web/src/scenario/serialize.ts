@@ -1,4 +1,5 @@
 import { createId } from "./ids.ts"
+import { diagnosticConfiguration } from "./diagnostics.ts"
 import type {
   ArtifactSourcePayload,
   EngineSettings,
@@ -104,7 +105,7 @@ export function toRunBody(scenario: ScenarioDraft, settings: EngineSettings): Ru
       kv_cache_memory_bytes: settings.kvCacheMemoryBytes.trim() ? Number(settings.kvCacheMemoryBytes) : null,
       fresh_prefix_cache: true,
     },
-    profiling_configuration: { mode: settings.profilingMode, max_steps: Number(settings.profilingMaxSteps) },
+    profiling_configuration: diagnosticConfiguration(settings),
     sampling: {
       temperature: Number(settings.temperature),
       top_p: Number(settings.topP),

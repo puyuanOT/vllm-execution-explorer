@@ -417,64 +417,64 @@
   },
   "engine_output_token_ids": {
     "sample-1": [
-      1000,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009,
-      1010
+      14,
+      15,
+      16,
+      3,
+      17,
+      18,
+      19,
+      20
     ],
     "sample-2": [
-      1000,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009,
-      1010
+      21,
+      15,
+      2,
+      5,
+      22,
+      18,
+      19,
+      20
     ],
     "sample-3": [
-      1000,
-      1003,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009
+      23,
+      24,
+      25,
+      24,
+      26,
+      18,
+      27,
+      20
     ],
     "sample-4": [
-      1000,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009,
-      1010
+      28,
+      15,
+      2,
+      10,
+      29,
+      18,
+      19,
+      20
     ],
     "sample-5": [
-      1000,
-      1003,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009
+      30,
+      15,
+      2,
+      31,
+      18,
+      32,
+      33,
+      18
     ],
     "sample-6": [
-      1000,
-      1003,
-      1004,
-      1005,
-      1006,
-      1007,
-      1008,
-      1009
+      34,
+      15,
+      2,
+      35,
+      18,
+      32,
+      33,
+      18
     ]
   },
   "engine_settings": {
@@ -515,7 +515,7 @@
   },
   "lesson": {
     "evidence": "fixture",
-    "summary": "Six staggered synthetic requests explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. This teaching fixture loads no model weights and contains no GPU timing measurements.",
+    "summary": "Six staggered synthetic requests explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. Readable words and token IDs use an authored teaching vocabulary, not the Qwen tokenizer or model output. This fixture loads no weights and contains no GPU timing measurements.",
     "title": "Model and KV walkthrough"
   },
   "model": {
@@ -737,5 +737,48 @@
     ],
     "synthesized": false,
     "version": 1
+  },
+  "synthetic_token_vocabulary": {
+    "source": "authored_teaching_words",
+    "is_model_tokenizer": false,
+    "is_model_output": false,
+    "description": "Consistent authored word fragments identify synthetic positions. Token counts and execution events retain the fixture schedule; no tokenizer or model is invoked.",
+    "token_pieces": {
+      "1": "Name",
+      "2": " a",
+      "3": " primary",
+      "4": " color.",
+      "5": " European",
+      "6": " capital.",
+      "14": " Red",
+      "21": " Paris",
+      "15": " is",
+      "16": " one",
+      "7": "Count",
+      "8": " to",
+      "9": " three.",
+      "10": " common",
+      "11": " fruit.",
+      "12": " weekday.",
+      "13": " season.",
+      "23": " One",
+      "28": " Apple",
+      "17": " color",
+      "22": " capital",
+      "24": ",",
+      "18": ".",
+      "25": " two",
+      "19": " Yes",
+      "20": "!",
+      "26": " three",
+      "29": " fruit",
+      "30": " Monday",
+      "34": " Spring",
+      "27": " Done",
+      "31": " weekday",
+      "35": " season",
+      "32": " For",
+      "33": " example"
+    }
   }
 }

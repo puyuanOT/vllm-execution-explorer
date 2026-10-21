@@ -1,0 +1,24 @@
+{
+  "archives": [
+    {
+      "path": "previous-attempts.tar.gz",
+      "sha256": "e11f462b1396276b841623d19ab222bb10c6cea35b4e5e2e12728ca7a1ba90f6",
+      "contents": [
+        "captures",
+        "boundary-captures",
+        "native-reference"
+      ],
+      "purpose": "Preceding captures, raw artifacts and the failed cancellation regression before the production repair. Final-source captures are separate."
+    },
+    {
+      "path": "final-artifacts.tar.gz",
+      "sha256": "fcd918f2c78e24243da41228f27ad16d0e28763eb3560490da880f60f3e99af1",
+      "contents": [
+        "final-captures",
+        "final-native-reference",
+        "ui-targeted-rerun"
+      ],
+      "purpose": "Final-source API and UI recordings, original native traces, numerical observer inputs/comparisons, full structural exports and per-case assessments."
+    }
+  ]
+}

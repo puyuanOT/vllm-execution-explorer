@@ -1,0 +1,186 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-kv-layer-diagnostics":
+    - generic: gpu-kv-layer-diagnostics
+  - generic: Observed GPU recording
+  - status "Failed to fetch":
+    - text: 127.0.0.1:8766
+    - generic: · Failed to fetch
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model & serving architecture" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "vLLM serving workflow and model architecture 3D overview":
+      - generic: INT
+      - generic: Intake
+      - generic: "01"
+      - generic: SCH
+      - generic: Scheduler
+      - generic: step-1
+      - generic: L1
+      - generic: L10
+      - generic: L19
+      - generic: L28
+      - generic: L36
+      - generic: MDL
+      - generic: Qwen3-4B-Instruct-2507
+      - generic: "36"
+      - generic: OUT
+      - generic: Output
+      - generic: "0"
+      - generic: KV
+      - generic: KV-cache manager
+      - generic: 4/113
+      - generic: Next scheduler cycle
+      - generic: Block table
+      - generic: KV reads
+    - paragraph:
+      - text: Overview
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 25
+    - generic: step_submitted
+    - generic: step-1
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - generic: In step-1
+    - generic: prefix-prime
+    - generic: 0 waiting
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - list "Workflow components":
+      - button "Request intake 01 req":
+        - generic: Request intake
+        - generic "01"
+        - generic: req
+      - button "Explore Request intake":
+      - button "Scheduler 01 steps":
+        - generic: Scheduler
+        - generic "01"
+        - generic: steps
+      - button "Explore Scheduler":
+      - button "KV-cache manager 4/113 ref" [pressed]:
+        - generic: KV-cache manager
+        - generic "4/113"
+        - generic: ref
+      - button "Explore KV-cache manager":
+      - button "Model execution 0/1 results":
+        - generic: Model execution
+        - generic "0/1"
+        - generic: results
+      - button "Explore Model execution":
+      - button "Output 0 tokens":
+        - generic: Output
+        - generic "0"
+        - generic: tokens
+      - button "Explore Output":
+  - complementary "Inspector":
+    - paragraph: Component
+    - heading "KV-cache manager" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - option "step-5"
+    - option "step-6"
+    - option "step-7"
+    - option "step-8"
+    - option "step-9"
+    - option "step-10"
+    - option "step-11"
+    - option "step-12"
+    - option "step-13"
+    - region "KV cache configuration and occupancy":
+      - heading "Configuration" [level=3]
+      - generic: Observed
+      - term: Unique physical KV storage
+      - definition: 254.25 MiB
+      - term: Actual KV datatype
+      - definition: bfloat16
+      - term: Actual KV quantization
+      - definition: NONE
+      - term: Requested cache datatype
+      - definition: auto
+      - term: Prefix caching
+      - definition: Enabled
+      - term: Context length limit per request
+      - definition: 1,024 tokens
+      - region "pool-0 capacity and current state":
+        - heading "cuda:0 / pool-0" [level=3]
+        - term: Physical / usable blocks
+        - definition: 113 / 112
+        - term: Token slots per block
+        - definition: "16"
+        - term: Usable token capacity
+        - definition: 1,792 slots
+        - term: Physical storage bytes
+        - definition: 254.25 MiB
+        - term: Layers using this pool
+        - definition: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
+        - term: Cache groups
+        - definition: 0 (16 slots/block)
+        - heading "Current allocation state" [level=4]
+        - generic: "4"
+        - generic: Referenced
+        - generic: "0"
+        - generic: Reusable prefix
+        - generic: "108"
+        - generic: Uncached available
+        - paragraph: 108 blocks can be reassigned, including 0 reusable prefix blocks.
+      - generic "Explanation"
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "25"
+  - paragraph: Event 25, step_submitted, 10 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

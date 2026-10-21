@@ -1,0 +1,219 @@
+- paragraph: Real GPU demo opened with its recorded workload. Your editable draft is preserved.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure" [active]:
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - status "Failed to fetch":
+    - text: 127.0.0.1:8766
+    - generic: · Failed to fetch
+  - button "Open recordings":
+- main:
+  - navigation "Capture console":
+    - paragraph: Capture console
+    - list:
+      - 'button "Workload Workload: ready 2 batches · 2 req · 1000 ms"':
+        - generic: "01"
+        - generic: Workload
+        - 'img "Workload: ready"'
+        - generic: 2 batches · 2 req · 1000 ms
+      - 'button "Execution host Execution host: unchecked ubuntu@144.24.39.189"':
+        - generic: "02"
+        - generic: Execution host
+        - 'img "Execution host: unchecked"'
+        - generic: ubuntu@144.24.39.189
+      - 'button "Model Model: ready Qwen3-4B-Instruct-2507"':
+        - generic: "03"
+        - generic: Model
+        - 'img "Model: ready"'
+        - generic: Qwen3-4B-Instruct-2507
+      - 'button "vLLM engine vLLM engine: unchecked 4096 ctx · 4 seq · 2048 tok"':
+        - generic: "04"
+        - generic: vLLM engine
+        - 'img "vLLM engine: unchecked"'
+        - generic: 4096 ctx · 4 seq · 2048 tok
+    - heading "Learning examples" [level=3]
+    - list:
+      - button "Staggered arrivals":
+        - generic: Staggered arrivals
+      - button "Partial prefix reuse":
+        - generic: Partial prefix reuse
+      - button "Chunked prefill":
+        - generic: Chunked prefill
+      - button "Cache pressure":
+        - generic: Cache pressure
+    - paragraph: Examples build an editable workload for live vLLM. Open the real GPU demo in the launch bar to explore a saved run.
+    - heading "Draft" [level=3]
+    - button "Undo deletion" [disabled]:
+      - text: Undo deletion
+    - button "Start empty"
+    - button "Reset"
+    - paragraph: Saved on this device · secrets never stored
+  - paragraph: Configure · capture · explore
+  - heading "Build an observed vLLM capture" [level=1]
+  - paragraph: Define timed requests, prepare the serving host, and capture instrumented vLLM boundaries. Opening this page never starts a run.
+  - generic "Draft summary":
+    - generic: Draft ready
+    - generic: 2 batches
+    - generic: 2 requests
+  - region "Query batch sequence":
+    - heading "Query batch sequence" [level=2]
+    - generic "Query batch sequence Ready 2 batches · 2 requests · 1000 ms":
+      - generic: "01"
+      - generic: Query batch sequence
+      - generic: Ready
+      - generic: 2 batches · 2 requests · 1000 ms
+      - generic: Hide
+    - paragraph: Requests in one batch are dispatched concurrently at the planned offset. Recorded scheduler events show how vLLM groups the work.
+    - generic: Display
+    - group "Display times in":
+      - button "ms" [pressed]
+      - button "s"
+    - text: Planned request arrivals
+    - paragraph: One diamond per request · shared arrival time per arrival batch
+    - paragraph: Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch Draft retention check dispatches prefix-1 at 0 ms. Arrival batch Reuse prefix dispatches prefix-2 at 1000 ms.
+    - region "Planned request arrivals":
+      - img "Request dispatch diamonds":
+        - generic: t=0
+        - generic "prefix-1"
+        - 'generic "prefix-1: planned dispatch at 0 ms, arrival batch Draft retention check"'
+        - generic "prefix-2"
+        - 'generic "prefix-2: planned dispatch at 1000 ms, arrival batch Reuse prefix"'
+        - generic "Arrival batch Draft retention check · 0 ms":
+          - generic: Draft retention check
+          - generic: · 0 ms
+        - generic "Arrival batch Reuse prefix · 1000 ms":
+          - generic: Reuse prefix
+          - generic: · 1000 ms
+    - img "Planned offset axis in ms":
+      - generic: "0"
+      - generic: "500"
+      - generic: "1000"
+      - generic: "1500"
+      - generic: Planned offset (ms)
+    - generic: Planned dispatch
+    - generic: Clock origin t = 0
+    - generic: Fresh cache required before dispatch
+    - list "Arrival batches":
+      - generic "Draft retention check · t+0 ms · 1 request":
+        - generic: "1"
+        - text: Draft retention check
+        - generic: · t+0 ms · 1 request
+      - text: Batch label
+      - textbox "Batch label": Draft retention check
+      - text: Planned send offset (ms)
+      - textbox "Planned send offset (ms)": "0"
+      - list "Requests in Draft retention check":
+        - generic: Request label
+        - textbox "Request label": prefix-1
+        - generic: Prompt
+        - textbox "Prompt": Read this shared reference before answering. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. Name the three things recorded.
+        - generic: Maximum output tokens
+        - textbox "Maximum output tokens": "8"
+        - generic: Request priority
+        - textbox "Request priority": "0"
+        - button "More options for prefix-1":
+        - button "Duplicate prefix-1":
+        - button "Delete prefix-1":
+      - button "Add request":
+        - text: Add request
+      - button "Duplicate batch"
+      - button "Delete batch":
+        - text: Delete batch
+      - generic: "2"
+      - text: Reuse prefix
+      - generic: · t+1000 ms · 1 request
+      - generic: Read this shared reference before answering. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. Explain why cache blocks are useful.
+    - button "Add batch":
+      - text: Add batch
+    - generic: 2 requests
+  - region "Execution host":
+    - heading "Execution host" [level=2]
+    - generic "Execution host Unchecked ubuntu@144.24.39.189:22":
+      - generic: "02"
+      - generic: Execution host
+      - generic: Unchecked
+      - generic: ubuntu@144.24.39.189:22
+      - generic: Show
+  - region "Model configuration":
+    - heading "Model configuration" [level=2]
+    - generic "Model configuration Configured Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · auto":
+      - generic: "03"
+      - generic: Model configuration
+      - generic: Configured
+      - generic: Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · auto
+      - generic: Show
+    - option "Auto" [selected]
+    - option "bfloat16"
+    - option "float16"
+    - option "float32"
+    - option "None" [selected]
+    - option "AWQ"
+    - option "GPTQ"
+    - option "bitsandbytes"
+    - option "FP8"
+  - region "vLLM configuration":
+    - heading "vLLM configuration" [level=2]
+    - generic "vLLM configuration Unchecked 4096 context · 4 concurrent · 2048 tokens/iteration":
+      - generic: "04"
+      - generic: vLLM configuration
+      - generic: Unchecked
+      - generic: 4096 context · 4 concurrent · 2048 tokens/iteration
+      - generic: Show
+    - option "First come, first served" [selected]
+    - option "Request priority"
+    - option "Serving capture" [selected]
+    - option "Eager layer and KV diagnostic"
+  - complementary "Preflight":
+    - region "Preflight · execution host":
+      - heading "Preflight · execution host" [level=3]
+      - status:
+        - generic: Unchecked
+        - generic: Choose the SSH key and check the selected remote host before capture.
+      - list "Server setup progress":
+        - generic: Reach execution host
+        - generic: Pending
+        - generic: Inspect CUDA and vLLM runtime
+        - generic: Pending
+        - generic: Confirm loopback controller
+        - generic: Pending
+      - button "Check host":
+        - text: Check host
+      - paragraph: No execution begins until you start capture.
+    - region "Planned launch settings":
+      - heading "Planned launch settings" [level=3]
+      - term: Execution source
+      - definition: Instrumented vLLM
+      - term: Context length
+      - definition: "4096"
+      - term: Concurrent sequences
+      - definition: "4"
+      - term: Scheduled-token budget
+      - definition: "2048"
+      - term: Chunked prefill
+      - definition: "On"
+      - term: Scheduling policy
+      - definition: fcfs
+      - term: Long-prefill threshold
+      - definition: "0"
+      - term: KV byte budget
+      - definition: "1073741824"
+      - term: Profiling
+      - definition: "off"
+      - term: Prefix cache
+      - definition: "On"
+      - term: Fresh cache contract
+      - definition: Required; verified during preparation
+  - paragraph: Ready to prepare and capture
+  - status: Saved on this device
+  - button "Open real GPU demo":
+    - text: Open real GPU demo
+  - button "Prepare and capture":
+    - text: Prepare and capture
+  - paragraph: The GPU demo replays a saved run with its recorded workload and settings. Your editable draft is preserved.

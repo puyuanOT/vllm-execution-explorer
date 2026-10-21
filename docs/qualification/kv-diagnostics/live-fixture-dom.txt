@@ -1,0 +1,144 @@
+- paragraph: Run run-fcf034caeade is Completed.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "run-fcf034caeade":
+    - generic: run-fcf034caeade
+  - generic: Synthetic fixture · not GPU evidence
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: Block 0
+      - generic: Block 1
+      - generic: Block 2
+      - generic: Block 3
+      - generic: Block 4
+      - generic: Block 5
+      - generic: Block 6
+      - generic: Block 7
+      - generic: Device not captured / pool-0 · 8 blocks · 16 token slots/block
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 14
+    - generic: step_scheduled
+    - generic: step-1
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - text: Referenced
+    - generic: "2"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "6"
+    - text: Reserved null
+    - generic: "0"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Demo fixture. Teaching pace is synthetic and is not GPU evidence.
+    - generic "Find a physical KV block"
+  - complementary "Inspector":
+    - paragraph: Component
+    - heading "KV-cache manager" [level=2]
+    - generic "Measured diagnostic profile"
+    - region "KV cache configuration and occupancy":
+      - heading "Configuration" [level=3]
+      - generic: Synthetic
+      - term: Unique physical KV storage
+      - definition: Not captured
+      - term: Actual KV datatype
+      - definition: Not captured
+      - term: Actual KV quantization
+      - definition: Not captured
+      - term: Requested cache datatype
+      - definition: Not captured
+      - term: Prefix caching
+      - definition: Disabled
+      - term: Context length limit per request
+      - definition: Not captured
+      - paragraph: Actual KV tensor placement, dtype and storage were not captured in this recording.
+      - region "pool-0 capacity and current state":
+        - heading "Device not captured / pool-0" [level=3]
+        - term: Physical / usable blocks
+        - definition: 8 / 8
+        - term: Token slots per block
+        - definition: "16"
+        - term: Usable token capacity
+        - definition: 128 slots
+        - term: Physical storage bytes
+        - definition: Not captured
+        - term: Layers using this pool
+        - definition: Not captured
+        - term: Cache groups
+        - definition: 0 (16 slots/block)
+        - heading "Current allocation state" [level=4]
+        - generic: "2"
+        - generic: Referenced
+        - generic: "0"
+        - generic: Reusable prefix
+        - generic: "6"
+        - generic: Uncached available
+        - paragraph: 6 blocks can be reassigned, including 0 reusable prefix blocks.
+      - generic "Explanation"
+    - generic: Synthetic
+    - generic: Demo fixture
+    - paragraph: Authored arrivals ran on the local demo fixture. Teaching pace is synthetic and is not a GPU measurement.
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "14"
+  - paragraph: Event 14, step_scheduled, 45 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile" [disabled]
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

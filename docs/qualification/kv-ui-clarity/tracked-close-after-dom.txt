@@ -1,0 +1,163 @@
+Browser tab: 1, Title: "Explore · vLLM Execution Explorer", URL: "http://127.0.0.1:5173/explore".
+0 AXWebArea Explore · vLLM Execution Explorer, URL: 127.0.0.1:5173/explore
+	1 container root
+		2 text Recording opened.
+		3 container
+			4 text vLLM  Execution Explorer VLLM 0.30.0  · OBSERVED SERVING MECHANICS
+			5 container Primary
+				6 button 01 CONFIGURE
+					7 text 01
+					8 text CONFIGURE
+				9 button 02 EXPLORE
+					10 text 02
+					11 text EXPLORE
+			12 text gpu-kv-layer-diagnostics Observed GPU recording
+			13 container Failed to fetch
+				14 text 127.0.0.1:8766 · Failed to fetch
+			15 button Description: Open recordings, Help: Recordings
+		16 container
+			17 container Execution explorer
+				18 container
+					19 heading KV-cache manager, Value: 1
+						20 text KV-cache manager
+					21 text Controller execution time, after preparation
+					22 container
+						23 text Find a request
+						24 combo box (collapsed, settable) Find a request, Secondary Actions: Expand
+					25 container Execution view
+						26 checkbox 3D ARCHITECTURE, Value: 1
+						27 checkbox REQUEST LANES, Value: 0
+					28 button EDIT AS NEW
+				29 container
+					30 text The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+					31 container KV-cache manager focused 3D view
+						130 text COLUMN 0
+						131 text COLUMN 4
+						132 text COLUMN 8
+						133 text BLOCKS 0–11
+						134 text BLOCKS 12–23
+						135 text BLOCKS 24–35
+						136 text BLOCKS 36–47
+						137 text BLOCKS 48–59
+						138 text BLOCKS 60–71
+						139 text BLOCKS 72–83
+						140 text BLOCKS 84–95
+						141 text BLOCKS 96–107
+						142 text BLOCKS 108–112
+						143 text CUDA:0 / POOL-0 · 113 BLOCKS · 16 TOKEN SLOTS/BLOCK
+					51 container
+						144 container Component breadcrumb
+							145 button Overview
+							146 text KV-cache manager
+						147 text Click  to inspect ·  double-click  to drill in ·  drag  to orbit ·  right-drag  to pan ·  scroll  to zoom
+					53 container 3D camera controls
+						54 button Description: Orbit camera left, Help: Orbit camera left · or left-drag
+						55 button Description: Orbit camera right, Help: Orbit camera right · or left-drag
+						56 button Description: Zoom camera in, Help: Zoom camera in · or scroll
+						57 button Description: Zoom camera out, Help: Zoom camera out · or scroll
+						58 button Description: Pan camera left, Help: Pan camera left · or right-drag / Ctrl-drag
+						59 button Description: Pan camera right, Help: Pan camera right · or right-drag / Ctrl-drag
+						60 button Description: Pan camera up, Help: Pan camera up · or right-drag / Ctrl-drag
+						61 button Description: Pan camera down, Help: Pan camera down · or right-drag / Ctrl-drag
+						62 button Reset camera
+					129 container
+						148 text Referenced 4 Reusable prefix 0 Available 108 Reserved null 1 Fill = allocation state · rim = request holder OBSERVED GPU RECORDING. HOST INTERVALS ARE NOT GPU KERNEL DURATIONS.
+					149 button (expanded) FIND A PHYSICAL KV BLOCK, Secondary Actions: Collapse
+						150 text FIND A PHYSICAL KV BLOCK
+					208 text Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+					209 container
+						210 text cuda:0  /  pool-0  ·  113  blocks ·  16 token slots/block
+						211 stepper (settable, integer) Description: Physical block ID in pool-0, Value: 3
+						212 button INSPECT BLOCK
+			95 container Inspector
+				96 container
+					97 text COMPONENT
+					98 heading KV-cache manager, Value: 2
+						99 text KV-cache manager
+				100 button (collapsed) MEASURED DIAGNOSTIC PROFILE, Secondary Actions: Expand
+					101 text MEASURED DIAGNOSTIC PROFILE
+				301 container KV cache configuration and occupancy
+					302 heading CONFIGURATION, Value: 3
+						303 text CONFIGURATION
+					304 text OBSERVED
+					305 definition list
+						306 container Unique physical KV storage
+							307 text Unique physical KV storage
+						308 text 254.25 MiB
+						309 container Actual KV datatype
+							310 text Actual KV datatype
+						311 text bfloat16
+						312 container Actual KV quantization
+							313 text Actual KV quantization
+						314 text NONE
+						315 container Requested cache datatype
+							316 text Requested cache datatype
+						317 text auto
+						318 container Prefix caching
+							319 text Prefix caching
+						320 text Enabled
+						321 container Context length limit per request
+							322 text Context length limit per request
+						323 text 1,024 tokens
+					324 container pool-0 capacity and current state
+						325 heading CUDA:0 / POOL-0, Value: 3
+							326 text CUDA:0  /  POOL-0
+						327 definition list
+							328 container Physical / usable blocks
+								329 text Physical / usable blocks
+							330 container
+								331 text 113  /  112
+							332 container Token slots per block
+								333 text Token slots per block
+							334 text 16
+							335 container Usable token capacity
+								336 text Usable token capacity
+							337 text 1,792 slots
+							338 container Physical storage bytes
+								339 text Physical storage bytes
+							340 text 254.25 MiB
+							341 container Layers using this pool
+								342 text Layers using this pool
+							343 text 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36
+							344 container Cache groups
+								345 text Cache groups
+							346 text 0 (16 slots/block)
+						347 heading Current allocation state, Value: 4
+							348 text Current allocation state
+						349 text 4
+						350 text REFERENCED
+						351 text 0
+						352 text REUSABLE PREFIX
+						353 text 108
+						354 text UNCACHED AVAILABLE
+						355 text 108 blocks can be reassigned, including 0 reusable prefix blocks.
+					356 button (collapsed) Explanation, Secondary Actions: Expand
+						357 text Explanation
+		103 container Recording playback
+			104 button Description: Restart recording, Help: Restart
+			105 button Description: Previous scheduler step, Help: Previous scheduler step [
+			106 button Description: Previous recorded event, Help: Previous recorded event ←
+			107 checkbox Description: Play, Help: Play Space, Value: 0
+			108 button Description: Next recorded event, Help: Next recorded event →
+			109 button Description: Next scheduler step, Help: Next scheduler step ]
+			110 slider (settable, integer) Description: Playhead, Value: 25
+			111 container Event 25, step_submitted, 10 ms. Controller execution time, after preparation Event clock advances through recorded observations at a teaching pace.
+				112 text Event 25, step_submitted, 10 ms. Controller execution time, after preparation Event clock advances through recorded observations at a teaching pace.
+			113 text EVENT ORDER · NOT ELAPSED TIME CLOCK
+			114 container Playback mode
+				115 checkbox EVENTS, Value: 1
+				116 checkbox WALKTHROUGH, Help: Layer walkthrough · explanatory time, Value: 0
+				117 checkbox REC TIME, Help: Recorded host intervals, Value: 0
+				118 checkbox PROFILE, Help: Measured profile · profiler clock, Value: 0
+			119 container
+				120 text SPEED
+				121 pop up button (collapsed, settable) SPEED, Value: 1×, Secondary Actions: Expand
+					122 menu
+						123 (disabled) 0.25×
+						124 (disabled) 0.5×
+						125 (disabled) 1×
+						126 (disabled) 2×
+						127 (disabled) 4×
+			128 checkbox (settable, integer) Description: Reduce motion, Value: 0
+
+The focused UI element is 0 AXWebArea Explore · vLLM Execution Explorer, URL: 127.0.0.1:5173/explore

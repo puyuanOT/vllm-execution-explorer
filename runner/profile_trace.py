@@ -13,6 +13,7 @@ MAX_ACTIVITIES = 250_000
 _STEP = re.compile(r"^explorer\.step/(step-[0-9]+)$")
 _LAYER = re.compile(r"^explorer\.layer/([0-9]+)$")
 _COMPONENT = re.compile(r"^explorer\.component/([0-9]+)/(attention|ffn)$")
+_CACHE_WRITE = re.compile(r"^explorer\.cache_write/([0-9]+)/(cache-write-[0-9]+)$")
 
 
 def normalize_trace(trace: dict[str, Any], *, run_id: str, steps: list[dict[str, Any]], max_activities: int = MAX_ACTIVITIES) -> dict[str, Any]:
@@ -92,6 +93,8 @@ def _explicit_scope(name: str) -> dict[str, Any] | None:
         return {"layer_index": int(match[1]), "component": None}
     if match := _COMPONENT.fullmatch(name):
         return {"layer_index": int(match[1]), "component": match[2]}
+    if match := _CACHE_WRITE.fullmatch(name):
+        return {"layer_index": int(match[1]), "component": "attention", "operation": "kv_cache_write", "operation_id": match[2]}
     return None
 
 
@@ -99,8 +102,8 @@ def _empty_scope() -> dict[str, Any]:
     return {"step_id": None, "layer_index": None, "component": None, "correlation": "unmapped"}
 
 
-def _scope_identity(scope: dict[str, Any]) -> tuple[Any, Any, Any]:
-    return scope["step_id"], scope["layer_index"], scope["component"]
+def _scope_identity(scope: dict[str, Any]) -> tuple[Any, ...]:
+    return scope["step_id"], scope["layer_index"], scope["component"], scope.get("operation"), scope.get("operation_id")
 
 
 def _gpu_kind(event: dict[str, Any]) -> str | None:

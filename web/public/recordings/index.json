@@ -1,58 +1,22 @@
 {
   "recordings": [
     {
-      "id": "model-kv-walkthrough",
-      "title": "Model and KV walkthrough",
-      "summary": "Six staggered synthetic requests explore a full eight-block KV pool and pinned public Qwen3 architecture geometry. This teaching fixture loads no model weights and contains no GPU timing measurements.",
-      "evidence": "fixture"
+      "id": "gpu-kv-layer-diagnostics",
+      "title": "Real GPU: model and KV diagnostics",
+      "summary": "A saved vLLM 0.30.0 GPU run with its original workload. Inspect request tokens, model layers, the device cache pool and captured K/V diagnostics.",
+      "evidence": "gpu"
     },
     {
-      "id": "continuous-batching",
-      "title": "Continuous batching",
-      "summary": "Request B is admitted after A has accepted an output token. A later step lists both request ids. This file was produced by the fixture engine.",
-      "evidence": "fixture"
+      "id": "gpu-model-batching",
+      "title": "Real GPU: mixed prefill and decode",
+      "summary": "Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots.",
+      "evidence": "gpu"
     },
     {
-      "id": "single-request",
-      "title": "Single request",
-      "summary": "One request keeps a single scheduled cursor, accepted token ids, emitted text, and a terminal status.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "chunked-prefill",
-      "title": "Chunked prefill",
-      "summary": "The long prompt is scheduled as two ranges. The second step also gives the short request a generation token.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "prefix-reuse",
-      "title": "Prefix reuse",
-      "summary": "The second request matches four prefix tokens, so this step starts at token 4. Matching a prefix skips that prompt work. It does not skip ordinary decoding.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "prefix-miss",
-      "title": "Prefix miss",
-      "summary": "A changed prefix matches zero tokens, so the full prompt range is scheduled.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "preemption",
-      "title": "Preemption and recomputation",
-      "summary": "The scheduled cursor returns to 0 and the same block id comes back as a new allocation generation. The trace records the transition. It does not record a decision reason.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "cancellation",
-      "title": "Cancellation",
-      "summary": "One request completes. The other is cancelled. Those are different terminal events.",
-      "evidence": "fixture"
-    },
-    {
-      "id": "incomplete-capture",
-      "title": "Incomplete capture",
-      "summary": "The collector filled its buffer, wrote one trace gap, and kept the events already queued. State after the gap is unknown.",
-      "evidence": "fixture"
+      "id": "gpu-prefix-reuse",
+      "title": "Real GPU: partial prefix reuse",
+      "summary": "A real vLLM 0.30.0 run shows a matching cached prompt prefix, the remaining prefill work and subsequent decoding. Inspect original content and current holders. This historical recording contains step-boundary KV observations, without numerical tensor snapshots.",
+      "evidence": "gpu"
     }
   ]
 }

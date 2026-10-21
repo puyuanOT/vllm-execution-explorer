@@ -9,8 +9,10 @@ import { requestLabel } from "../explore/model.ts"
 import { cn } from "../lib/cn.ts"
 import { requestColor } from "../theme.ts"
 import { EvidenceTag } from "../ui/controls.tsx"
-import { dieCellPosition, dieLayout, mappedBlockSlot } from "./model.ts"
+import { BLOCK_STATE_COLORS, dieCellPosition, dieLayout, mappedBlockSlot, physicalBlockState, physicalBlockStateLabel } from "./model.ts"
 import { createDieRaycast } from "./poolPicking.ts"
+import { CacheTensorStage } from "./CacheTensorStage.tsx"
+import type { KvLayerConfiguration } from "../../../replay/src/kv.ts"
 import { BoxEdges, FloorGrid, SceneEmpty, SceneLabel, SceneText, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./primitives.tsx"
 
 const DIE_Y = -1.0
@@ -23,28 +25,36 @@ export function CacheStage({ cache, requestOrder, requestLabels, selection, trac
   const lastBlock = useRef<string | null>(null)
   useLayoutEffect(() => { if (selection?.kind === "block") lastBlock.current = selection.key }, [selection])
   const blocks = useMemo(() => cache.pools.flatMap((pool) => pool.blocks), [cache.pools])
-  const tokenBlocks = useMemo(() => selection?.kind === "token" ? blocks.filter((block) => [...block.contents, ...block.bindings].some((span) =>
-    span.requestId === selection.requestId && selection.position >= span.tokenStart && selection.position < span.tokenEnd,
-  )) : [], [blocks, selection])
+  const tokenRequestId = selection?.kind === "token" ? selection.requestId : trackedRequestId
+  const tokenPosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
+  const activeToken: Extract<Selection, { kind: "token" }> | null = selection?.kind === "token" ? selection : tokenRequestId && tokenPosition != null ? { kind: "token", requestId: tokenRequestId, position: tokenPosition } : null
+  const tokenBlocks = useMemo(() => tokenRequestId && tokenPosition != null ? blocks.filter((block) => [...block.contents, ...block.bindings].some((span) =>
+    span.requestId === tokenRequestId && tokenPosition >= span.tokenStart && tokenPosition < span.tokenEnd,
+  )) : [], [blocks, tokenRequestId, tokenPosition])
   if (!cache.pools.length) return <group><FloorGrid y={DIE_Y - 0.25} /><SceneEmpty label="Full KV pool inventory not observed" detail={cache.reason ?? "Capture a new run with pool inventory enabled."} /></group>
   const selected = selection?.kind === "block" ? blocks.find((block) => blockMatches(block, selection.key))
-    : tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
+    : selection?.kind === "token" ? tokenBlocks.find((block) => activeToken?.kvBlockKey != null && blockMatches(block, activeToken.kvBlockKey)) ?? tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
+      : undefined
+  const tensorLayers = (cache as KvCacheProjection & { tensorLayers?: KvLayerConfiguration[] }).tensorLayers?.filter((layer) => layer.pool === selected?.pool) ?? []
+  if (activeToken?.kvLayerIndex != null && selected?.trust === "known" && selection?.kind !== "block" && tensorLayers.length) return <CacheTensorStage block={selected} layers={tensorLayers} selection={activeToken} labels={requestLabels} onSelect={onSelect} />
   const span = cache.pools.length > 1 ? 9 : 11
   const offset = (index: number) => (index - (cache.pools.length - 1) / 2) * (span + 2.5)
   return <group>
     <FloorGrid y={DIE_Y - 0.25} />
     {cache.pools.map((pool, index) => (
-      <PoolDie key={pool.pool} pool={pool} span={span} x={offset(index)} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection}
+      <PoolDie key={pool.pool} pool={pool} span={span} x={offset(index)} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection?.kind === "block" ? selection : activeToken ?? selection}
         selected={selected?.pool === pool.pool ? selected : null}
-        trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} onSelect={onSelect} />
+        trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} evidenceKind={cache.evidenceKind} tensorSliceAvailable={tensorLayers.length > 0} onInspectTensor={() => { if (activeToken && selected && tensorLayers[0]) onSelect({ ...activeToken, kvLayerIndex: tensorLayers[0].layerIndex, kvHead: 0, kvKind: "K", kvBlockKey: selected.key }) }} onSelect={onSelect} />
     ))}
     {cache.status === "unknown" ? <SceneText text="Trace gap: inventory is frozen; current slot state is unknown" position={[0, DIE_Y, 7.4]} /> : null}
   </group>
 }
 
-function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, selected, trackedRequestId, trackedTokenPosition, onSelect }: {
+function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, selected, trackedRequestId, trackedTokenPosition, evidenceKind, tensorSliceAvailable, onInspectTensor, onSelect }: {
   pool: KvPoolProjection; span: number; x: number; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null; selected: KvBlockProjection | null;
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
+  evidenceKind?: string
+  tensorSliceAvailable: boolean; onInspectTensor: () => void
 }) {
   const layout = useMemo(() => dieLayout(pool.capacity, span), [pool.capacity, span])
   const raycast = useMemo(() => createDieRaycast(layout), [layout])
@@ -72,7 +82,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
       transform.scale.set(layout.pitch * 0.78, height, layout.pitch * 0.78)
       transform.updateMatrix()
       instance.setMatrixAt(index, transform.matrix)
-      instance.setColorAt(index, tint.set(cellColor(block, requestOrder, selectedRequest, selected?.key ?? null)))
+      instance.setColorAt(index, tint.set(BLOCK_STATE_COLORS[physicalBlockState(block)]))
     }
     instance.instanceMatrix.needsUpdate = true
     if (instance.instanceColor) instance.instanceColor.needsUpdate = true
@@ -81,7 +91,7 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   }, [layout, byId, requestOrder, selectedRequest, selected?.key])
   const viewportWidth = useThree((state) => state.size.width)
   const special = useMemo(() => pool.blocks.filter((block) => block.isNull || block.refCount > 0 || block.hasHash || block.key === selected?.key).slice(0, RIM_LIMIT), [pool.blocks, selected?.key])
-  const rulerColumns = rulerStep(layout.columns)
+  const rulerColumns = Math.max(4, rulerStep(layout.columns))
   const rulerRows = rulerStep(layout.rows)
   const front = layout.depth / 2
   const left = -layout.width / 2
@@ -113,32 +123,40 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
       const [cx, cz] = dieCellPosition(block.blockId, layout)
       const height = heightFor(block)
       const isSelected = block.key === selected?.key
-      const origin = block.contents.at(-1)?.requestId ?? block.bindings.at(-1)?.requestId ?? null
-      const rim = isSelected ? SCENE_COLORS.accentSoft : block.isNull ? "#8494ad" : block.refCount === 0 ? SCENE_COLORS.cached : origin ? requestColor(requestOrder, origin) : SCENE_COLORS.edge
+      const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
+      const focused = selectedRequest ?? trackedRequestId
+      const rim = isSelected ? SCENE_COLORS.accentSoft : focused && holders.includes(focused) ? requestColor(requestOrder, focused)
+        : holders.length === 1 ? requestColor(requestOrder, holders[0]) : holders.length > 1 ? SCENE_COLORS.accent : SCENE_COLORS.edgeMarker
       return <BoxEdges key={block.key} size={[layout.pitch * 0.8, height, layout.pitch * 0.8]} position={[cx, height / 2, cz]} color={rim} />
     })}
-    {Array.from({ length: Math.ceil(layout.columns / rulerColumns) }, (_, step) => {
+    {pool.capacity <= 64 ? pool.blocks.map((block) => {
+      const [cx, cz] = dieCellPosition(block.blockId, layout)
+      return <SceneText key={`block-label-${block.blockId}`} text={`Block ${block.blockId}`} position={[cx, heightFor(block) + 0.04, cz + layout.pitch * 0.42]} muted />
+    }) : null}
+    {pool.capacity > 64 ? Array.from({ length: Math.ceil(layout.columns / rulerColumns) }, (_, step) => {
       const column = step * rulerColumns
       const [cx] = dieCellPosition(column, layout)
-      return <SceneText key={`c-${column}`} text={`+${column}`} position={[cx, -0.15, front + 0.55]} muted />
-    })}
-    {Array.from({ length: Math.ceil(layout.rows / rulerRows) }, (_, step) => {
+      return <SceneText key={`c-${column}`} text={`Column ${column}`} position={[cx, -0.15, front + 0.55]} muted />
+    }) : null}
+    {pool.capacity > 64 ? Array.from({ length: Math.ceil(layout.rows / rulerRows) }, (_, step) => {
       const row = step * rulerRows
       const [, cz] = dieCellPosition(row * layout.columns, layout)
-      return <SceneText key={`r-${row}`} text={String(row * layout.columns).padStart(4, "0")} position={[left - 0.75, -0.15, cz]} muted />
-    })}
-    <SceneText text={`${pool.pool} · ${pool.capacity.toLocaleString()} physical blocks · ${pool.tokenOccupancyStatus !== "observed" ? "token-slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} slots each`}`} position={[0, -0.15, -front - 0.75]} muted />
+      return <SceneText key={`r-${row}`} text={`Blocks ${row * layout.columns}–${Math.min(pool.capacity - 1, (row + 1) * layout.columns - 1)}`} position={[left - 1, -0.15, cz]} muted />
+    }) : null}
+    <SceneText text={`${poolDeviceLabel(pool)} / ${pool.pool} · ${pool.capacity.toLocaleString()} blocks · ${pool.tokenOccupancyStatus !== "observed" ? "slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} token slots/block`}`} position={[0, -0.15, -front - 0.75]} muted />
     {selected && selectedPosition ? (
       <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp={cartridgeInsets}>
-        <BlockCartridge key={selected.key} block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
+        <BlockCartridge key={selected.key} block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} evidenceKind={evidenceKind} tensorSliceAvailable={tensorSliceAvailable} onInspectTensor={onInspectTensor} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
       </SceneLabel>
     ) : null}
   </group>
 }
 
-function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, narrow = false, short = false, onSelect }: {
+function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, evidenceKind, tensorSliceAvailable, onInspectTensor, narrow = false, short = false, onSelect }: {
   block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
   trackedRequestId?: string | null; trackedTokenPosition?: number | null; narrow?: boolean; short?: boolean; onSelect: (selection: Selection) => void
+  evidenceKind?: string
+  tensorSliceAvailable: boolean; onInspectTensor: () => void
 }) {
   const nameOf = (requestId: string) => requestLabel(requestLabels, requestId)
   const groups = new Set([...block.contents, ...block.bindings].map((span) => span.cacheGroup))
@@ -148,10 +166,10 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
   const activePosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
   const header = (
     <div className="mb-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1">
-      <span className="grid h-[18px] shrink-0 place-items-center whitespace-nowrap border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">BLK {block.blockId}</span>
+      <span className="grid h-[18px] shrink-0 place-items-center whitespace-nowrap border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">Block {block.blockId}</span>
       <span className="min-w-0 truncate font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
       <span className="col-span-2 row-start-2 min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
-      <span className="col-start-3 row-start-2 justify-self-end"><EvidenceTag kind={block.trust === "unknown" ? "unknown" : "observed"}>{block.trust === "unknown" ? "Unknown" : "Observed"}</EvidenceTag></span>
+      <span className="col-start-3 row-start-2 justify-self-end"><EvidenceTag kind={block.trust === "unknown" ? "unknown" : evidenceKind === "fixture" ? "synthetic" : "observed"}>{block.trust === "unknown" ? "Unknown" : evidenceKind === "fixture" ? "Synthetic" : "Observed"}</EvidenceTag></span>
       <button
         type="button"
         className="-mr-1 col-start-3 row-start-1 grid size-6 min-h-0 shrink-0 place-items-center justify-self-end rounded-none border-0 bg-transparent p-0 text-faint hover:text-ink"
@@ -172,8 +190,8 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
   if (block.tokenOccupancyStatus !== "observed") return shell(<p className="m-0 text-pretty text-xs text-muted">{block.tokenOccupancyReason ?? `Token contents ${block.tokenOccupancyStatus === "unknown" ? "unknown" : "unavailable"} for this cache layout.`}</p>)
   if (groups.size > 1 || pool.groups.filter((group) => group.pool === pool.pool).length > 1) return shell(<p className="m-0 text-xs text-muted">Multiple cache groups have separate slot contents; see their captured bindings in the inspector.</p>)
   if (!blockSize) return shell(<p className="m-0 text-xs text-muted">This pool has no single captured token-slot geometry.</p>)
-  const columns = Math.max(1, Math.min(8, Math.ceil(Math.sqrt(blockSize))))
-  const holder = block.bindings.at(-1)?.requestId ?? null
+  const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(blockSize))))
+  const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
   const origin = block.contents.at(-1)?.requestId ?? null
   return shell(<>
     <ol className="m-0 grid min-h-0 list-none gap-[5px] overflow-y-auto p-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }} aria-label={`Token slots in block ${block.blockId}`}>
@@ -191,7 +209,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
             className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left focus-visible:[outline-offset:-2px] disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
             style={{
               borderColor: status === "computed" || status === "reserved" ? `color-mix(in srgb, ${holderColor} 35%, transparent)` : "#1c2a41",
-              background: status === "computed" ? `color-mix(in srgb, ${holderColor} 9%, #080d16)` : status === "unknown" ? undefined : "#080d16",
+              background: status === "computed" ? "#14243b" : status === "reserved" ? "#181a27" : status === "unknown" ? undefined : "#080d16",
               boxShadow: status === "computed" ? `inset 3px 0 0 ${originColor}` : undefined,
               outline: isSelected ? "1.5px solid var(--accent)" : undefined,
               outlineOffset: isSelected ? -2 : undefined,
@@ -201,21 +219,25 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
             onClick={() => { if (mapped.requestId && mapped.position != null) onSelect({ kind: "token", requestId: mapped.requestId, position: mapped.position }) }}
           >
             {status === "unknown" ? <span className="cp-hatch absolute inset-0 opacity-40" aria-hidden="true" /> : null}
-            <span className="relative flex justify-between font-mono text-[9px] text-faint"><span>{mapped.position == null ? "—" : `P${mapped.position}`}</span><span>S{slot}</span></span>
+            <span className="relative flex justify-between font-mono text-[9px] text-muted"><span>{mapped.position == null ? "—" : `Pos ${mapped.position}`}</span><span>Slot {slot}</span></span>
             <span className="relative mt-0.5 block truncate whitespace-pre font-mono text-xs text-ink [font-variant-ligatures:none]">
               {piece == null ? <span className="text-faint">{status}</span> : <>{piece.startsWith(" ") ? <span className="text-faint">·</span> : null}{piece.startsWith(" ") ? piece.slice(1) : piece}</>}
             </span>
-            <span className="relative block truncate font-mono text-[9px] text-faint">{mapped.tokenId ?? ""}</span>
+            <span className="relative block truncate font-mono text-[9px] text-muted">{mapped.tokenId == null ? "" : `ID ${mapped.tokenId}`}{piece != null ? ` · ${status}` : ""}</span>
           </button>
         </li>
       })}
     </ol>
     <div className="mt-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] text-faint">
-      {holder ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span> : null}
+      {holders.map((holder) => <span key={holder} className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span>)}
       {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {nameOf(origin)}</span> : null}
       <span className="flex-1" />
-      <span>Rim = origin · fill = holder · no tensor values</span>
+      <span>{physicalBlockStateLabel(physicalBlockState(block))} · {holders.length > 1 ? "Shared by holders" : "Rim identifies holder"} · inspect token for tensor details</span>
     </div>
+    {selection?.kind === "token" ? <div className="mt-2 grid gap-1">
+      <button type="button" className="min-h-7 text-xs" disabled={!tensorSliceAvailable || block.trust === "unknown"} onClick={onInspectTensor}>Explore layer / KV head / K–V slice</button>
+      {!tensorSliceAvailable ? <p className="m-0 text-[10px] text-muted">Runtime layer-to-pool mapping was not captured.</p> : null}
+    </div> : null}
   </>)
 }
 
@@ -230,16 +252,7 @@ function blockMatches(block: KvBlockProjection, key: string): boolean {
   return key === block.key || key === `${block.pool}:${block.blockId}` || key === `${block.pool}:${block.blockId}:${block.generation}`
 }
 
-function cellColor(block: KvBlockProjection | undefined, requestOrder: string[], selectedRequest: string | null, selectedKey: string | null): string {
-  if (!block) return SCENE_COLORS.unknown
-  if (block.key === selectedKey) return "#2f6f80"
-  if (block.isNull) return SCENE_COLORS.reserved
-  if (block.trust === "unknown") return SCENE_COLORS.unknown
-  if (block.refCount > 0) {
-    const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
-    if (selectedRequest && holders.includes(selectedRequest)) return SCENE_COLORS.accentSoft
-    const color = new THREE.Color(holders.length === 1 ? requestColor(requestOrder, holders[0]) : SCENE_COLORS.accent).multiplyScalar(0.5)
-    return `#${color.getHexString()}`
-  }
-  return block.hasHash ? "#3a2e18" : SCENE_COLORS.free
+function poolDeviceLabel(pool: KvPoolProjection): string {
+  const devices = (pool as KvPoolProjection & { devices?: string[] }).devices
+  return devices?.length ? devices.join(", ") : "Device not captured"
 }

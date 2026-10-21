@@ -1,0 +1,199 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "authored-kv-diagnostics":
+    - generic: authored-kv-diagnostics
+  - generic: Synthetic fixture · not GPU evidence
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model architecture" [level=1]
+    - paragraph: Native profiler clock · 0.025 ms since trace start · host replay at event 0
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "Model execution focused 3D view":
+      - generic: Authored 2-layer dense decoder
+      - generic: Synthetic batch/layer activity · fixture profiler clock
+      - generic: L1
+      - generic: L2
+      - generic: Token embeddings
+      - generic: Norm → LM head → sampling
+      - generic: "Profiler activity: L1"
+      - generic: Fixture packed rows
+      - generic: 1 requests · whole packed batch
+      - generic: "step-1: 4 observed packed inputs / padding excluded"
+      - generic: 4 real input rows · padding excluded
+      - generic: Batch/layer timing · no token or head duration
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: Model execution
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - generic: Selected
+    - generic: Walkthrough position
+    - generic: Profiler activity
+    - generic: Tensor values not captured
+    - paragraph:
+      - generic: Demo fixture. Teaching pace is synthetic and is not GPU evidence.
+    - generic "Model structure controls"
+    - option "Layer 1" [selected]
+    - option "Layer 2"
+    - region "Layer and token participation":
+      - heading "Layer × requests · step-1" [level=2]
+      - generic: Synthetic
+      - paragraph: Synthetic participation; these are not measured GPU intervals.
+      - generic "Layer matrix legend":
+        - generic: S
+        - text: Scheduled
+        - generic: W
+        - text: KV write operation active
+        - generic: C
+        - text: KV write operation completed
+        - generic: R
+        - text: Existing prefix KV reused
+        - generic: —
+        - text: Outside this step
+        - generic: "?"
+        - text: Unknown
+      - button "Previous columns" [disabled]
+      - generic: 1–1 of 1
+      - button "Next columns" [disabled]
+      - generic: Select a request to inspect its tokens
+      - table "Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.":
+        - caption: Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.
+        - rowgroup:
+          - row "Layer prefix-writer 4 positions":
+            - columnheader "Layer"
+            - columnheader "prefix-writer 4 positions":
+              - button "prefix-writer 4 positions":
+                - generic: prefix-writer
+                - generic: 4 positions
+        - rowgroup:
+          - 'row "Layer 1 prefix-writer, layer 1: 4 kv write operation active"':
+            - rowheader "Layer 1":
+              - button "Layer 1"
+            - 'cell "prefix-writer, layer 1: 4 kv write operation active"':
+              - 'button "prefix-writer, layer 1: 4 kv write operation active"':
+                - generic: W 4
+          - 'row "Layer 2 prefix-writer, layer 2: 4 scheduled"':
+            - rowheader "Layer 2":
+              - button "Layer 2"
+            - 'cell "prefix-writer, layer 2: 4 scheduled"':
+              - 'button "prefix-writer, layer 2: 4 scheduled"':
+                - generic: S 4
+  - complementary "Inspector":
+    - paragraph: Inspector
+    - heading "Inspector" [level=2]
+    - generic "Measured diagnostic profile"
+    - paragraph: Eager execution with profiler overhead. Native profiler time is independent of the host replay playhead. Measurements apply to packed batch activities; individual token and head durations remain unknown.
+    - paragraph: "Capture: completed · coverage: bounded · qualification: authored_fixture_not_gpu_qualified"
+    - paragraph: Synthetic profiler fixture; these intervals are not GPU measurements.
+    - text: Profiled batch
+    - combobox "Profiled batch":
+      - option "Outside mapped batch intervals"
+      - option "step-1" [selected]
+      - option "step-2"
+      - option "step-3"
+    - paragraph: 4 active recorded activities · 0 activities have no batch/layer correlation.
+    - heading "Layer measurements for step-1" [level=3]
+    - list:
+      - button "Layer 1 · attention"
+      - paragraph: "CPU scope span: 25.000 µs"
+      - paragraph: "Device 0: activity span 20.000 µs · busy interval union 20.000 µs · 1 activities on 1 streams"
+      - button "Layer 1"
+      - paragraph: "CPU scope span: 30.000 µs"
+      - paragraph: CUDA activity correlation unavailable.
+      - button "Layer 2 · attention"
+      - paragraph: "CPU scope span: 25.000 µs"
+      - paragraph: "Device 0: activity span 20.000 µs · busy interval union 20.000 µs · 1 activities on 1 streams"
+      - button "Layer 2"
+      - paragraph: "CPU scope span: 30.000 µs"
+      - paragraph: CUDA activity correlation unavailable.
+    - heading "KV cache-write operations" [level=3]
+    - paragraph: These are shared batch operations for one layer. Participant membership and correlated GPU activity establish which positions are involved; they do not assign individual token durations.
+    - list "Measured layer cache writes":
+      - button "Layer 1 · cuda:0"
+      - paragraph: 4 participating positions · 1 correlated GPU activities · authored_cache_update_call
+      - button "prefix-writer · position 0"
+      - button "prefix-writer · position 1"
+      - button "prefix-writer · position 2"
+      - button "prefix-writer · position 3"
+      - button "Layer 2 · cuda:0"
+      - paragraph: 4 participating positions · 1 correlated GPU activities · authored_cache_update_call
+      - button "prefix-writer · position 0"
+      - button "prefix-writer · position 1"
+      - button "prefix-writer · position 2"
+      - button "prefix-writer · position 3"
+    - heading "Packed input token rows" [level=3]
+    - paragraph: 4 actual rows; 4 including padding. Observed at authored_packed_rows. Row order can differ from scheduler order.
+    - button "Previous rows" [disabled]
+    - generic: 0–3 of 4
+    - button "Next rows" [disabled]
+    - list "Measured packed input rows":
+      - button "Row 0 · prefix-writer · position 0"
+      - button "Row 1 · prefix-writer · position 1"
+      - button "Row 2 · prefix-writer · position 2"
+      - button "Row 3 · prefix-writer · position 3"
+    - paragraph: Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.
+- group "Recording playback":
+  - button "Restart profiler playback":
+  - button "Previous profiled batch":
+  - button "Previous measured activity":
+  - button "Play":
+    - text: Play
+  - button "Next measured activity" [active]:
+  - button "Next profiled batch":
+  - slider "Profiler clock": "25"
+  - paragraph: "Profiler clock: 0.025 ms since trace start. Host replay remains at event 0.|Profiler clock. Host replay stays at its own playhead; no cross-clock alignment or token/head duration is inferred."
+  - generic: Profiler clock · separate from replay
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events"
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile" [pressed]
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.001×" [selected]
+    - option "0.0025×"
+    - option "0.005×"
+    - option "0.01×"
+    - option "0.025×"
+    - option "0.05×"
+    - option "0.1×"
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×"
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

@@ -1,5 +1,6 @@
 import type { FeatureCapability, Limits } from "../api.ts"
 import { sampleCount } from "./reducer.ts"
+import { captureIndices } from "./diagnostics.ts"
 import type { EngineSettings, ScenarioDraft } from "./types.ts"
 
 export interface FieldIssue {
@@ -79,6 +80,11 @@ export function validateScenario(
     }
   }
   issues.push(...validateSettings(settings))
+  if (settings.profilingMode !== "off") {
+    for (const [fieldId, selected] of [["setting-profiling-trigger", settings.profilingTriggerRequestId], ["setting-profiling-tensor-request", settings.tensorCapture ? settings.tensorRequestId : ""]]) {
+      if (selected && !ids.has(selected)) issues.push({ fieldId, message: "Choose a request that still exists in this workload." })
+    }
+  }
   const quantizationCapability = quantizationCapabilities?.[settings.quantization]
   if (settings.engine === "vllm" && quantizationCapability?.selectable === false) {
     issues.push({ fieldId: "model-quantization", message: quantizationCapability.message })
@@ -158,6 +164,18 @@ export function validateSettings(settings: EngineSettings): FieldIssue[] {
   if (settings.profilingMode !== "off") {
     if (settings.engine === "fixture") issues.push({ fieldId: "setting-profiling-mode", message: "Measured profiling requires live vLLM on a GPU host." })
     if (!isPositiveInteger(settings.profilingMaxSteps, 16)) issues.push({ fieldId: "setting-profiling-steps", message: "Profile between 1 and 16 scheduler steps." })
+    if (!isPositiveInteger(settings.profilingStartStep, 1_000_000)) issues.push({ fieldId: "setting-profiling-start", message: "Starting scheduler step must be between 1 and 1000000." })
+    if (settings.tensorCapture) {
+      if (!["small", "custom"].includes(settings.tensorPreset)) issues.push({ fieldId: "setting-profiling-tensor-preset", message: "Choose a tensor capture preset." })
+      if (!isPositiveInteger(settings.tensorMaxBytes, 16 * 1024 * 1024) || Number(settings.tensorMaxBytes) < 64) issues.push({ fieldId: "setting-profiling-tensor-bytes", message: "Tensor byte limit must be between 64 and 16777216." })
+      if (settings.tensorPreset === "custom") {
+        for (const [fieldId, value, limit] of [["setting-profiling-tensor-positions", settings.tensorTokenPositions, 64], ["setting-profiling-tensor-layers", settings.tensorLayerIndices, 64], ["setting-profiling-tensor-heads", settings.tensorHeadIndices, 32]] as const) {
+          if (captureIndices(value, limit) == null || fieldId.endsWith("heads") && !captureIndices(value, limit)?.length) issues.push({ fieldId, message: `Enter up to ${limit} zero-based indices, separated by commas or spaces.${fieldId.endsWith("heads") ? " Select at least one head." : " Leave empty for the preset selection."}` })
+        }
+        if (!/^\d+$/.test(settings.tensorDimensionStart.trim()) || Number(settings.tensorDimensionStart) > 65535) issues.push({ fieldId: "setting-profiling-tensor-dimension-start", message: "Starting dimension must be between 0 and 65535." })
+        if (!isPositiveInteger(settings.tensorDimensionCount, 256)) issues.push({ fieldId: "setting-profiling-tensor-dimension-count", message: "Capture between 1 and 256 dimensions." })
+      }
+    }
   }
   return issues
 }

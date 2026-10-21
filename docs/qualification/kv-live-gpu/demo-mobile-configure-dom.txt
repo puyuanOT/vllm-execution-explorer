@@ -1,0 +1,209 @@
+- paragraph: The local execution host check finished.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - status "Runner is reachable.":
+    - generic: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - paragraph: Configure · capture · explore
+  - heading "Build an observed vLLM capture" [level=1]
+  - paragraph: Define timed requests, prepare the serving host, and capture instrumented vLLM boundaries. Opening this page never starts a run.
+  - generic "Draft summary":
+    - generic: Draft ready
+    - generic: 2 batches
+    - generic: 2 requests
+  - generic "Draft actions":
+    - button "Undo deletion" [disabled]
+    - button "Start empty"
+    - button "Reset example"
+  - status: Saved on this device
+  - region "Query batch sequence":
+    - heading "Query batch sequence" [level=2]
+    - generic "Query batch sequence Ready 2 batches · 2 requests · 1000 ms":
+      - generic: "01"
+      - generic: Query batch sequence
+      - generic: Ready
+      - generic: 2 batches · 2 requests · 1000 ms
+      - generic: Hide
+    - paragraph: Requests in one batch are dispatched concurrently at the planned offset. Recorded scheduler events show how vLLM groups the work.
+    - generic: Display
+    - group "Display times in":
+      - button "ms" [pressed]
+      - button "s"
+    - text: Planned request arrivals
+    - paragraph: One diamond per request · shared arrival time per arrival batch
+    - paragraph: Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. Arrival batch Prime prefix dispatches prefix-1 at 0 ms. Arrival batch Reuse prefix dispatches prefix-2 at 1000 ms.
+    - region "Planned request arrivals":
+      - img "Request dispatch diamonds":
+        - generic: t=0
+        - generic "prefix-1"
+        - 'generic "prefix-1: planned dispatch at 0 ms, arrival batch Prime prefix"'
+        - generic "prefix-2"
+        - 'generic "prefix-2: planned dispatch at 1000 ms, arrival batch Reuse prefix"'
+        - generic "Arrival batch Prime prefix · 0 ms":
+          - generic: Prime prefix
+          - generic: · 0 ms
+        - generic "Arrival batch Reuse prefix · 1000 ms":
+          - generic: Reuse prefix
+          - generic: · 1000 ms
+    - img "Planned offset axis in ms":
+      - generic: "0"
+      - generic: "500"
+      - generic: "1000"
+      - generic: "1500"
+      - generic: Planned offset (ms)
+    - generic: Planned dispatch
+    - generic: Clock origin t = 0
+    - generic: Fresh cache required before dispatch
+    - generic "Editable learning examples"
+    - option "Staggered arrivals" [selected]
+    - option "Partial prefix reuse"
+    - option "Chunked prefill"
+    - option "Cache pressure"
+    - list "Arrival batches":
+      - generic "Prime prefix · t+0 ms · 1 request":
+        - generic: "1"
+        - text: Prime prefix
+        - generic: · t+0 ms · 1 request
+      - text: Batch label
+      - textbox "Batch label": Prime prefix
+      - text: Planned send offset (ms)
+      - textbox "Planned send offset (ms)": "0"
+      - list "Requests in Prime prefix":
+        - generic: Request label
+        - textbox "Request label": prefix-1
+        - generic: Prompt
+        - textbox "Prompt": Read this shared reference before answering. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. The explorer records requests, scheduler steps and cache blocks. Name the three things recorded.
+        - generic: Maximum output tokens
+        - textbox "Maximum output tokens": "8"
+        - generic: Request priority
+        - textbox "Request priority": "0"
+        - button "More options for prefix-1":
+        - button "Duplicate prefix-1":
+        - button "Delete prefix-1":
+      - button "Add request":
+        - text: Add request
+      - button "Duplicate batch"
+      - button "Delete batch":
+        - text: Delete batch
+      - generic "Reuse prefix · t+1000 ms · 1 request":
+        - generic: "2"
+        - text: Reuse prefix
+        - generic: · t+1000 ms · 1 request
+    - button "Add batch":
+      - text: Add batch
+    - generic: 2 / 64 requests
+  - region "Execution host":
+    - heading "Execution host" [level=2]
+    - generic "Execution host Needs GPU host Run on a CUDA-ready Linux machine available to this controller.":
+      - generic: "02"
+      - generic: Execution host
+      - generic: Needs GPU host
+      - generic: Run on a CUDA-ready Linux machine available to this controller.
+      - generic: Hide
+    - group "Where vLLM runs":
+      - generic: Where vLLM runs
+      - paragraph: Choose the CUDA-ready Linux host where vLLM and the timed workload driver will run.
+      - radio "Local machine Use a local CUDA host reachable by the controller. Capability is checked before setup." [checked]
+      - generic: Local machine
+      - generic: Use a local CUDA host reachable by the controller. Capability is checked before setup.
+      - radio "Remote GPU host Connect to an existing CUDA-ready Linux machine through SSH."
+      - generic: Remote GPU host
+      - generic: Connect to an existing CUDA-ready Linux machine through SSH.
+    - paragraph: The capability check verifies Linux, NVIDIA drivers, CUDA visibility, storage, and required tools.
+    - paragraph: Cloud provisioning and driver installation are outside this workflow.
+    - checkbox "Set up the execution environment automatically Create an isolated runtime, install pinned dependencies and instrumentation, obtain artifacts, and start the loopback endpoint."
+    - generic: Set up the execution environment automatically
+    - generic: Create an isolated runtime, install pinned dependencies and instrumentation, obtain artifacts, and start the loopback endpoint.
+    - generic "Connection details"
+  - region "Model configuration":
+    - heading "Model configuration" [level=2]
+    - generic "Model configuration Configured Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · auto":
+      - generic: "03"
+      - generic: Model configuration
+      - generic: Configured
+      - generic: Hugging Face · Qwen/Qwen3-4B-Instruct-2507 · auto
+      - generic: Show
+    - option "Auto" [selected]
+    - option "bfloat16"
+    - option "float16"
+    - option "float32"
+    - option "None" [selected]
+    - option "AWQ (unavailable on this host)" [disabled]
+    - option "GPTQ (unavailable on this host)" [disabled]
+    - option "bitsandbytes (unavailable on this host)" [disabled]
+    - option "FP8 (unavailable on this host)" [disabled]
+  - region "vLLM configuration":
+    - heading "vLLM configuration" [level=2]
+    - generic "vLLM configuration Unavailable 4096 context · 4 concurrent · 2048 tokens/iteration":
+      - generic: "04"
+      - generic: vLLM configuration
+      - generic: Unavailable
+      - generic: 4096 context · 4 concurrent · 2048 tokens/iteration
+      - generic: Show
+    - option "First come, first served" [selected]
+    - option "Request priority"
+    - option "Serving capture" [selected]
+    - option "Eager layer and KV diagnostic"
+  - complementary "Preflight":
+    - region "Preflight · execution host":
+      - heading "Preflight · execution host" [level=3]
+      - status:
+        - generic: Needs GPU host
+        - generic: This Mac runs the explorer, replay, and live status. A live vLLM 0.30.0 engine needs a CUDA Linux host, so choose an SSH GPU host.
+      - list "Server setup progress":
+        - generic: Reach execution host
+        - generic: Complete
+        - generic: Local controller
+        - generic: Inspect CUDA and vLLM runtime
+        - generic: Failed
+        - generic: This Mac runs the explorer, replay, and live status. A live vLLM 0.30.0 engine needs a CUDA Linux host, so choose an SSH GPU host.
+        - generic: Confirm loopback controller
+        - generic: Complete
+        - generic: Runner is reachable.
+      - button "Check host":
+        - text: Check host
+      - button "Use SSH GPU host":
+        - text: Use SSH GPU host
+      - paragraph: No execution begins until you start capture.
+    - region "Planned launch settings":
+      - heading "Planned launch settings" [level=3]
+      - term: Execution source
+      - definition: Instrumented vLLM
+      - term: Context length
+      - definition: "4096"
+      - term: Concurrent sequences
+      - definition: "4"
+      - term: Scheduled-token budget
+      - definition: "2048"
+      - term: Chunked prefill
+      - definition: "On"
+      - term: Scheduling policy
+      - definition: fcfs
+      - term: Long-prefill threshold
+      - definition: "0"
+      - term: KV byte budget
+      - definition: "1073741824"
+      - term: Profiling
+      - definition: "off"
+      - term: Prefix cache
+      - definition: "On"
+      - term: Fresh cache contract
+      - definition: Required; verified during preparation
+  - paragraph: Live vLLM capture is blocked on this host
+  - status: This Mac runs the explorer, replay, and live status. A live vLLM 0.30.0 engine needs a CUDA Linux host, so choose an SSH GPU host. You can open the recorded GPU demo below.
+  - button "Open real GPU demo":
+    - text: Open real GPU demo
+  - button "Prepare and capture" [disabled]:
+    - text: Prepare and capture
+  - paragraph: The GPU demo replays a saved run with its recorded workload and settings. Your editable draft is preserved.

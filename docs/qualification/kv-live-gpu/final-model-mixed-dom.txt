@@ -1,0 +1,556 @@
+- paragraph: Real GPU demo opened with its recorded workload. Your editable draft is preserved.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-kv-layer-diagnostics":
+    - generic: gpu-kv-layer-diagnostics
+  - generic: Observed GPU recording
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model architecture" [level=1]
+    - paragraph: Controller execution time, after preparation
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "Model execution focused 3D view":
+      - generic: Qwen3-4B-Instruct-2507
+      - generic: Logical model structure · GPU layer timing available in Profile mode
+      - generic: L1
+      - generic: L10
+      - generic: L19
+      - generic: L28
+      - generic: L36
+      - generic: Token embeddings
+      - generic: Norm → LM head → sampling
+      - generic: Scheduled input positions
+      - generic "Requests scheduled in this step":
+        - button "prefix-reader Positions 178–178 · 0 prefill / 1 decode":
+          - generic: prefix-reader
+          - generic: Positions 178–178 · 0 prefill / 1 decode
+        - button "mixed-prefill Positions 46–108 · 63 prefill / 0 decode":
+          - generic: mixed-prefill
+          - generic: Positions 46–108 · 63 prefill / 0 decode
+      - generic: "step-8: 64 scheduled input positions / 2 requests"
+      - generic: 2 requests · 64 positions
+      - generic: Decode lighter · explanatory layout
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: Model execution
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 209
+    - generic: step_scheduled
+    - generic: step-8
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - generic: Selected
+    - generic: Walkthrough position
+    - generic: Profiler activity
+    - generic: Selected K/V snapshots available
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic "Model structure controls"
+    - option "Layer 1" [selected]
+    - option "Layer 2"
+    - option "Layer 3"
+    - option "Layer 4"
+    - option "Layer 5"
+    - option "Layer 6"
+    - option "Layer 7"
+    - option "Layer 8"
+    - option "Layer 9"
+    - option "Layer 10"
+    - option "Layer 11"
+    - option "Layer 12"
+    - option "Layer 13"
+    - option "Layer 14"
+    - option "Layer 15"
+    - option "Layer 16"
+    - option "Layer 17"
+    - option "Layer 18"
+    - option "Layer 19"
+    - option "Layer 20"
+    - option "Layer 21"
+    - option "Layer 22"
+    - option "Layer 23"
+    - option "Layer 24"
+    - option "Layer 25"
+    - option "Layer 26"
+    - option "Layer 27"
+    - option "Layer 28"
+    - option "Layer 29"
+    - option "Layer 30"
+    - option "Layer 31"
+    - option "Layer 32"
+    - option "Layer 33"
+    - option "Layer 34"
+    - option "Layer 35"
+    - option "Layer 36"
+    - region "Layer and token participation":
+      - heading "Layer × requests · step-8" [level=2]
+      - generic: Host step boundaries
+      - paragraph: Host/teaching playback shows scheduled participation. GPU write chronology uses the independent profiler clock.
+      - generic "Layer matrix legend":
+        - generic: S
+        - text: Scheduled
+        - generic: W
+        - text: KV write operation active
+        - generic: C
+        - text: KV write operation completed
+        - generic: R
+        - text: Existing prefix KV reused
+        - generic: —
+        - text: Outside this step
+        - generic: "?"
+        - text: Unknown
+      - button "Previous columns" [disabled]
+      - generic: 1–2 of 2
+      - button "Next columns" [disabled]
+      - generic: Select a request to inspect its tokens
+      - table "Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.":
+        - caption: Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.
+        - rowgroup:
+          - row "Layer mixed-prefill 63 scheduled prefix-reader 1 scheduled 64 prior positions":
+            - columnheader "Layer"
+            - columnheader "mixed-prefill 63 scheduled":
+              - button "mixed-prefill 63 scheduled":
+                - generic: mixed-prefill
+                - generic: 63 scheduled
+            - columnheader "prefix-reader 1 scheduled 64 prior positions":
+              - button "prefix-reader 1 scheduled 64 prior positions":
+                - generic: prefix-reader
+                - generic: 1 scheduled
+                - generic: 64 prior positions
+        - rowgroup:
+          - 'row "Layer 1 mixed-prefill, layer 1: 63 scheduled prefix-reader, layer 1: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 1":
+              - button "Layer 1"
+            - 'cell "mixed-prefill, layer 1: 63 scheduled"':
+              - 'button "mixed-prefill, layer 1: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 1: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 1: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 2 mixed-prefill, layer 2: 63 scheduled prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 2":
+              - button "Layer 2"
+            - 'cell "mixed-prefill, layer 2: 63 scheduled"':
+              - 'button "mixed-prefill, layer 2: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 3 mixed-prefill, layer 3: 63 scheduled prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 3":
+              - button "Layer 3"
+            - 'cell "mixed-prefill, layer 3: 63 scheduled"':
+              - 'button "mixed-prefill, layer 3: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 4 mixed-prefill, layer 4: 63 scheduled prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 4":
+              - button "Layer 4"
+            - 'cell "mixed-prefill, layer 4: 63 scheduled"':
+              - 'button "mixed-prefill, layer 4: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 5 mixed-prefill, layer 5: 63 scheduled prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 5":
+              - button "Layer 5"
+            - 'cell "mixed-prefill, layer 5: 63 scheduled"':
+              - 'button "mixed-prefill, layer 5: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 6 mixed-prefill, layer 6: 63 scheduled prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 6":
+              - button "Layer 6"
+            - 'cell "mixed-prefill, layer 6: 63 scheduled"':
+              - 'button "mixed-prefill, layer 6: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 7 mixed-prefill, layer 7: 63 scheduled prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 7":
+              - button "Layer 7"
+            - 'cell "mixed-prefill, layer 7: 63 scheduled"':
+              - 'button "mixed-prefill, layer 7: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 8 mixed-prefill, layer 8: 63 scheduled prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 8":
+              - button "Layer 8"
+            - 'cell "mixed-prefill, layer 8: 63 scheduled"':
+              - 'button "mixed-prefill, layer 8: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 9 mixed-prefill, layer 9: 63 scheduled prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 9":
+              - button "Layer 9"
+            - 'cell "mixed-prefill, layer 9: 63 scheduled"':
+              - 'button "mixed-prefill, layer 9: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 10 mixed-prefill, layer 10: 63 scheduled prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 10":
+              - button "Layer 10"
+            - 'cell "mixed-prefill, layer 10: 63 scheduled"':
+              - 'button "mixed-prefill, layer 10: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 11 mixed-prefill, layer 11: 63 scheduled prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 11":
+              - button "Layer 11"
+            - 'cell "mixed-prefill, layer 11: 63 scheduled"':
+              - 'button "mixed-prefill, layer 11: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 12 mixed-prefill, layer 12: 63 scheduled prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 12":
+              - button "Layer 12"
+            - 'cell "mixed-prefill, layer 12: 63 scheduled"':
+              - 'button "mixed-prefill, layer 12: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 13 mixed-prefill, layer 13: 63 scheduled prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 13":
+              - button "Layer 13"
+            - 'cell "mixed-prefill, layer 13: 63 scheduled"':
+              - 'button "mixed-prefill, layer 13: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 14 mixed-prefill, layer 14: 63 scheduled prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 14":
+              - button "Layer 14"
+            - 'cell "mixed-prefill, layer 14: 63 scheduled"':
+              - 'button "mixed-prefill, layer 14: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 15 mixed-prefill, layer 15: 63 scheduled prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 15":
+              - button "Layer 15"
+            - 'cell "mixed-prefill, layer 15: 63 scheduled"':
+              - 'button "mixed-prefill, layer 15: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 16 mixed-prefill, layer 16: 63 scheduled prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 16":
+              - button "Layer 16"
+            - 'cell "mixed-prefill, layer 16: 63 scheduled"':
+              - 'button "mixed-prefill, layer 16: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 17 mixed-prefill, layer 17: 63 scheduled prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 17":
+              - button "Layer 17"
+            - 'cell "mixed-prefill, layer 17: 63 scheduled"':
+              - 'button "mixed-prefill, layer 17: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 18 mixed-prefill, layer 18: 63 scheduled prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 18":
+              - button "Layer 18"
+            - 'cell "mixed-prefill, layer 18: 63 scheduled"':
+              - 'button "mixed-prefill, layer 18: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 19 mixed-prefill, layer 19: 63 scheduled prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 19":
+              - button "Layer 19"
+            - 'cell "mixed-prefill, layer 19: 63 scheduled"':
+              - 'button "mixed-prefill, layer 19: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 20 mixed-prefill, layer 20: 63 scheduled prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 20":
+              - button "Layer 20"
+            - 'cell "mixed-prefill, layer 20: 63 scheduled"':
+              - 'button "mixed-prefill, layer 20: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 21 mixed-prefill, layer 21: 63 scheduled prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 21":
+              - button "Layer 21"
+            - 'cell "mixed-prefill, layer 21: 63 scheduled"':
+              - 'button "mixed-prefill, layer 21: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 22 mixed-prefill, layer 22: 63 scheduled prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 22":
+              - button "Layer 22"
+            - 'cell "mixed-prefill, layer 22: 63 scheduled"':
+              - 'button "mixed-prefill, layer 22: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 23 mixed-prefill, layer 23: 63 scheduled prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 23":
+              - button "Layer 23"
+            - 'cell "mixed-prefill, layer 23: 63 scheduled"':
+              - 'button "mixed-prefill, layer 23: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 24 mixed-prefill, layer 24: 63 scheduled prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 24":
+              - button "Layer 24"
+            - 'cell "mixed-prefill, layer 24: 63 scheduled"':
+              - 'button "mixed-prefill, layer 24: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 25 mixed-prefill, layer 25: 63 scheduled prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 25":
+              - button "Layer 25"
+            - 'cell "mixed-prefill, layer 25: 63 scheduled"':
+              - 'button "mixed-prefill, layer 25: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 26 mixed-prefill, layer 26: 63 scheduled prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 26":
+              - button "Layer 26"
+            - 'cell "mixed-prefill, layer 26: 63 scheduled"':
+              - 'button "mixed-prefill, layer 26: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 27 mixed-prefill, layer 27: 63 scheduled prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 27":
+              - button "Layer 27"
+            - 'cell "mixed-prefill, layer 27: 63 scheduled"':
+              - 'button "mixed-prefill, layer 27: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 28 mixed-prefill, layer 28: 63 scheduled prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 28":
+              - button "Layer 28"
+            - 'cell "mixed-prefill, layer 28: 63 scheduled"':
+              - 'button "mixed-prefill, layer 28: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 29 mixed-prefill, layer 29: 63 scheduled prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 29":
+              - button "Layer 29"
+            - 'cell "mixed-prefill, layer 29: 63 scheduled"':
+              - 'button "mixed-prefill, layer 29: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 30 mixed-prefill, layer 30: 63 scheduled prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 30":
+              - button "Layer 30"
+            - 'cell "mixed-prefill, layer 30: 63 scheduled"':
+              - 'button "mixed-prefill, layer 30: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 31 mixed-prefill, layer 31: 63 scheduled prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 31":
+              - button "Layer 31"
+            - 'cell "mixed-prefill, layer 31: 63 scheduled"':
+              - 'button "mixed-prefill, layer 31: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 32 mixed-prefill, layer 32: 63 scheduled prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 32":
+              - button "Layer 32"
+            - 'cell "mixed-prefill, layer 32: 63 scheduled"':
+              - 'button "mixed-prefill, layer 32: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 33 mixed-prefill, layer 33: 63 scheduled prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 33":
+              - button "Layer 33"
+            - 'cell "mixed-prefill, layer 33: 63 scheduled"':
+              - 'button "mixed-prefill, layer 33: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 34 mixed-prefill, layer 34: 63 scheduled prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 34":
+              - button "Layer 34"
+            - 'cell "mixed-prefill, layer 34: 63 scheduled"':
+              - 'button "mixed-prefill, layer 34: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 35 mixed-prefill, layer 35: 63 scheduled prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 35":
+              - button "Layer 35"
+            - 'cell "mixed-prefill, layer 35: 63 scheduled"':
+              - 'button "mixed-prefill, layer 35: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 36 mixed-prefill, layer 36: 63 scheduled prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 36":
+              - button "Layer 36"
+            - 'cell "mixed-prefill, layer 36: 63 scheduled"':
+              - 'button "mixed-prefill, layer 36: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+      - paragraph: This matrix is bounded for large batches. Select a request or token to inspect a smaller scope.
+  - complementary "Inspector":
+    - paragraph: Inspector
+    - heading "Inspector" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - option "step-5"
+    - option "step-6"
+    - option "step-7"
+    - option "step-8"
+    - option "step-9"
+    - option "step-10"
+    - option "step-11"
+    - option "step-12"
+    - option "step-13"
+    - paragraph: Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead" [active]: "209"
+  - paragraph: Event 209, step_scheduled, 6111 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

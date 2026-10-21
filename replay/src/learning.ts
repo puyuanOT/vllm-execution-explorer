@@ -57,6 +57,7 @@ export interface KvPoolProjection {
 export interface KvCacheProjection {
   status: ObservationStatus
   reason: string | null
+  evidenceKind?: "gpu" | "fixture" | "unknown"
   pools: KvPoolProjection[]
   groups: CacheGroupInventory[]
 }
@@ -126,9 +127,11 @@ export function projectScheduler(state: ReplayState, stepId?: string | null): Sc
   }
 }
 
-export function projectKvCache(state: ReplayState, _manifest?: RecordingManifest | null, content: ContentRecord[] = []): KvCacheProjection {
+export function projectKvCache(state: ReplayState, manifest?: RecordingManifest | null, content: ContentRecord[] = []): KvCacheProjection {
   const observed = content.length ? attachContent(state, content) : state
+  const evidenceKind = manifest?.execution_kind === "gpu" ? "gpu" as const : manifest?.execution_kind === "fixture" ? "fixture" as const : "unknown" as const
   if (!observed.cacheInventory) return {
+    evidenceKind,
     status: state.trust === "unknown" ? "unknown" : "unavailable",
     reason: state.trust === "unknown"
       ? "A trace gap ends the trusted prefix before a full KV pool inventory was observed."
@@ -137,6 +140,7 @@ export function projectKvCache(state: ReplayState, _manifest?: RecordingManifest
     groups: [],
   }
   return {
+    evidenceKind,
     status: state.trust === "unknown" ? "unknown" : "observed",
     reason: state.trust === "unknown" ? "KV state is frozen at the last observation before a trace gap."
       : observed.cacheGroups.some((group) => !tokenMappingAvailable(group)) ? "Some cache groups have no qualified token-slot mapping; physical inventory remains observed." : null,

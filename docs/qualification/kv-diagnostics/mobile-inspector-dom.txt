@@ -1,0 +1,152 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation:
+    - button:
+      - generic: "01"
+      - text: Configure
+    - button:
+      - generic: "02"
+      - text: Explore
+  - generic: Observed GPU recording
+  - status:
+    - generic: Local controller
+    - generic: · Runner is reachable.
+  - button:
+- main:
+  - region:
+    - heading [level=1]: KV-cache manager
+    - generic: Find a request
+    - combobox
+    - button [pressed]:
+      - text: 3D architecture
+    - button:
+      - text: Request lanes
+    - button:
+      - generic: Edit as new
+    - button:
+      - text: Open inspector
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic: Column 0
+    - generic: Column 1
+    - generic: Column 2
+    - generic: Column 3
+    - generic: Column 4
+    - generic: Column 5
+    - generic: Column 6
+    - generic: Column 7
+    - generic: Column 8
+    - generic: Column 9
+    - generic: Column 10
+    - generic: Column 11
+    - generic: Blocks 0–11
+    - generic: Blocks 12–23
+    - generic: Blocks 24–35
+    - generic: Blocks 36–47
+    - generic: Blocks 48–59
+    - generic: Blocks 60–71
+    - generic: Blocks 72–83
+    - generic: Blocks 84–95
+    - generic: Blocks 96–107
+    - generic: Blocks 108–112
+    - generic: Device not captured / pool-0 · 113 blocks · 16 token slots/block
+    - navigation:
+      - button: Overview
+      - generic: KV-cache manager
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - button:
+    - text: Referenced
+    - generic: "4"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "108"
+    - text: Reserved null
+    - generic: "1"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic: Find a physical KV block
+- button:
+- button:
+- button:
+- button:
+  - text: Play
+- button:
+- button:
+- slider: "23"
+- paragraph: Event 23, step_scheduled, 10 ms. Controller execution time, after preparation|Event clock advances through recorded observations at a teaching pace.
+- generic: Event order · not elapsed time
+- generic: Clock
+- button [pressed]: Events
+- button: Walkthrough
+- button: Rec time
+- button: Profile
+- generic: Speed
+- combobox
+- checkbox
+- text: Reduce motion
+- dialog "Execution inspector":
+  - heading "Execution inspector" [level=2]
+  - paragraph: Recorded evidence for the selected workflow object.
+  - button "Close Execution inspector" [active]:
+  - complementary "Inspector":
+    - paragraph: Component
+    - heading "KV-cache manager" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals" [selected]
+    - option "step-1"
+    - option "step-2"
+    - option "step-3"
+    - option "step-4"
+    - region "KV cache configuration and occupancy":
+      - heading "Configuration" [level=3]
+      - generic: Not captured
+      - term: Unique physical KV storage
+      - definition: Not captured
+      - term: Actual KV datatype
+      - definition: Not captured
+      - term: Actual KV quantization
+      - definition: Not captured
+      - term: Requested cache datatype
+      - definition: Not captured
+      - term: Prefix caching
+      - definition: Disabled
+      - term: Context length limit per request
+      - definition: 1,024 tokens
+      - paragraph: Actual KV tensor placement, dtype and storage were not captured in this recording.
+      - region "pool-0 capacity and current state":
+        - heading "Device not captured / pool-0" [level=3]
+        - term: Physical / usable blocks
+        - definition: 113 / 112
+        - term: Token slots per block
+        - definition: "16"
+        - term: Usable token capacity
+        - definition: 1,792 slots
+        - term: Physical storage bytes
+        - definition: Not captured
+        - term: Layers using this pool
+        - definition: Not captured
+        - term: Cache groups
+        - definition: 0 (16 slots/block)
+        - heading "Current allocation state" [level=4]
+        - generic: "4"
+        - generic: Referenced
+        - generic: "0"
+        - generic: Reusable prefix
+        - generic: "108"
+        - generic: Uncached available
+        - paragraph: 108 blocks can be reassigned, including 0 reusable prefix blocks.
+      - generic "Explanation"
+    - generic: Lesson
+    - generic: "Real GPU: mixed prefill and decode"
+    - paragraph: Recorded on an NVIDIA A100 with vLLM 0.30.0 and Qwen3-4B. Explore actual request tokens, full KV inventory, packed batch membership and measured layer activity. This historical recording predates per-layer cache-write scopes and numerical K/V snapshots.

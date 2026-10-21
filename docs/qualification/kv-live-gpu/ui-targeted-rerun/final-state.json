@@ -1,0 +1,207 @@
+{
+  "run_id": "run-cb8b01c88cd0",
+  "status": "completed",
+  "active": false,
+  "intake_open": false,
+  "text": {
+    "prefix-prime": "The first thing recorded",
+    "prefix-reader": "A shared prefix can",
+    "mixed-prefill": "The scheduler's first"
+  },
+  "message": "Recording finalized.",
+  "workload_plan": {
+    "version": 1,
+    "synthesized": false,
+    "batches": [
+      {
+        "id": "prime",
+        "label": "Prime the shared prefix",
+        "arrival_offset_ms": 0,
+        "adapter_id": "base",
+        "samples": [
+          {
+            "id": "prefix-prime",
+            "label": "prefix-prime",
+            "max_output_tokens": 4,
+            "order": 0,
+            "input_mode": "prompt",
+            "target_input_tokens": null,
+            "resolved_input_tokens": null,
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "adapter_id": "base",
+            "sampling_override": null,
+            "priority": 0
+          }
+        ]
+      },
+      {
+        "id": "reuse-and-prefill",
+        "label": "Reuse prefix and prefill independent request",
+        "arrival_offset_ms": 6000,
+        "adapter_id": "base",
+        "samples": [
+          {
+            "id": "prefix-reader",
+            "label": "prefix-reader",
+            "max_output_tokens": 4,
+            "order": 1,
+            "input_mode": "prompt",
+            "target_input_tokens": null,
+            "resolved_input_tokens": null,
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "adapter_id": "base",
+            "sampling_override": null,
+            "priority": 0
+          },
+          {
+            "id": "mixed-prefill",
+            "label": "mixed-prefill",
+            "max_output_tokens": 4,
+            "order": 2,
+            "input_mode": "prompt",
+            "target_input_tokens": null,
+            "resolved_input_tokens": null,
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "adapter_id": "base",
+            "sampling_override": null,
+            "priority": 0
+          }
+        ]
+      }
+    ]
+  },
+  "controller_origin": {
+    "controller_started_monotonic_ns": 2171515700482,
+    "clock_domain": "time.monotonic_ns",
+    "provenance": "time.monotonic_ns"
+  },
+  "finalized": true,
+  "run_configuration": {
+    "version": 1,
+    "model": {
+      "source": {
+        "kind": "huggingface",
+        "locator": "Qwen/Qwen3-4B-Instruct-2507",
+        "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+        "authenticated": false
+      },
+      "tokenizer": {
+        "locator": "Qwen/Qwen3-4B-Instruct-2507",
+        "revision": "cdbee75f17c01a7cc42f958dc650907174af0554"
+      },
+      "dtype": "bfloat16",
+      "quantization": {
+        "kind": "none"
+      },
+      "lora_adapters": []
+    },
+    "vllm": {
+      "max_model_len": 1024,
+      "max_num_seqs": 3,
+      "max_num_scheduled_tokens": 64,
+      "enable_chunked_prefill": true,
+      "enable_prefix_caching": true,
+      "gpu_memory_utilization": 0.8,
+      "scheduling_policy": "fcfs",
+      "long_prefill_token_threshold": 64,
+      "kv_cache_memory_bytes": 268435456,
+      "fresh_prefix_cache": true
+    },
+    "sampling": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "seed": 0,
+      "stop": []
+    },
+    "profiling": {
+      "mode": "eager_diagnostic",
+      "max_steps": 8,
+      "start_step": 1,
+      "trigger_request_id": "prefix-prime",
+      "tensor_capture": {
+        "enabled": true,
+        "preset": "custom",
+        "request_id": "prefix-prime",
+        "token_positions": [
+          3
+        ],
+        "layer_indices": [
+          1
+        ],
+        "head_indices": [
+          0
+        ],
+        "dimension_start": 0,
+        "dimension_count": 16,
+        "max_bytes": 1048576
+      }
+    },
+    "workload": {
+      "request_count": 3,
+      "batch_count": 2,
+      "input_modes": [
+        "prompt"
+      ],
+      "adapter_ids": [
+        "base"
+      ],
+      "token_validation": {
+        "client_reported_request_count": 0,
+        "engine_verified_request_count": 0,
+        "pending_engine_verification_count": 3
+      }
+    },
+    "snapshot_sha256": "66fe3466e5481f0af0ba22a482c77425a61cf6363e0b0056963512d23d84cd2c"
+  },
+  "execution_process": {
+    "kind": "spawn_per_run",
+    "status": "exited",
+    "pid": 7162,
+    "started_monotonic_ns": 2150407659457,
+    "clock_domain": "controller:time.monotonic_ns",
+    "exit_code": 0,
+    "exited_monotonic_ns": 2190480271215
+  },
+  "capture": {
+    "status": "completed",
+    "phase": "completed",
+    "history": [
+      {
+        "phase": "configuration_accepted",
+        "observed_monotonic_ns": 2150406506957,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "initializing_recording",
+        "observed_monotonic_ns": 2150795363682,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "preparing_execution_runtime",
+        "observed_monotonic_ns": 2150797170602,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "capture_ready",
+        "observed_monotonic_ns": 2171514356682,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "dispatching_workload",
+        "observed_monotonic_ns": 2171515489452,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "finalizing_recording",
+        "observed_monotonic_ns": 2186326646528,
+        "clock_domain": "controller:time.monotonic_ns"
+      },
+      {
+        "phase": "completed",
+        "observed_monotonic_ns": 2188093699929,
+        "clock_domain": "controller:time.monotonic_ns"
+      }
+    ],
+    "finalized": true
+  }
+}

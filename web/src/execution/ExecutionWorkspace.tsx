@@ -1,4 +1,5 @@
 import type { MeasuredSceneProfile } from "../architecture/model.ts"
+import type { ProfileKvObservations } from "../../../replay/src/profiling.ts"
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AudioLines, Box, ChevronRight, Maximize2, PanelRight, RotateCcw, RotateCw, Scan, Search, SquarePen, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
@@ -17,6 +18,10 @@ import { RequestSequencer, SequencerLegend } from "./RequestSequencer.tsx"
 import type { TelemetryPoint } from "./telemetry.ts"
 import type { Selection, WorkspaceView } from "./types.ts"
 import type { EvidenceKind } from "./evidence.ts"
+import { LayerTokenMatrix } from "./LayerTokenMatrix.tsx"
+import { projectKvConfiguration } from "../../../replay/src/kv.ts"
+import { BLOCK_STATE_COLORS } from "../architecture/model.ts"
+import { CacheTensorControls } from "../architecture/CacheTensorStage.tsx"
 
 const EMPTY_REPLAY = initialState()
 
@@ -25,6 +30,8 @@ export function ExecutionWorkspace({
   state,
   manifest,
   measuredProfile,
+  profileObservations,
+  profileTimeUs,
   teachingProgress,
   onTeachingProgress,
   trackedRequestId,
@@ -48,11 +55,14 @@ export function ExecutionWorkspace({
   onEditAsNew,
   onOpenInspector,
   onSelect,
+  onClearTracking,
 }: {
   samples: SampleProjection[]
   state: ReplayState | null
   manifest: RecordingManifest | null
   measuredProfile?: MeasuredSceneProfile
+  profileObservations?: ProfileKvObservations | null
+  profileTimeUs?: number | null
   teachingProgress?: number
   onTeachingProgress: (value: number) => void
   trackedRequestId: string | null
@@ -77,6 +87,7 @@ export function ExecutionWorkspace({
   onEditAsNew?: () => void
   onOpenInspector?: () => void
   onSelect: (selection: Selection) => void
+  onClearTracking?: () => void
 }) {
   const [focus, setFocus] = useState<WorkflowComponentId | null>(null)
   const [architectureFocus, setArchitectureFocus] = useState<ArchitectureFocus | null>(null)
@@ -85,8 +96,20 @@ export function ExecutionWorkspace({
   const selectedComponent = selection?.kind === "component" ? selection.id : null
   const replay = state ?? EMPTY_REPLAY
   const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
-  const cache = useMemo(() => projectKvCache(replay, manifest), [manifest, replay])
+  const cache = useMemo(() => {
+    const projection = projectKvCache(replay, manifest)
+    const configuration = projectKvConfiguration(replay, manifest)
+    return { ...projection, pools: configuration.pools, evidenceKind: configuration.evidenceKind, tensorLayers: configuration.layers }
+  }, [manifest, replay])
   const labels = useMemo(() => new Map(samples.map((item) => [item.sample.id, item.sample.label])), [samples])
+  const cacheSlice = useMemo(() => {
+    if (selection?.kind !== "token" || selection.kvLayerIndex == null) return null
+    const blocks = cache.pools.flatMap((pool) => pool.blocks).filter((block) => [...block.contents, ...block.bindings].some((span) => span.requestId === selection.requestId && selection.position >= span.tokenStart && selection.position < span.tokenEnd))
+    const block = blocks.find((block) => block.key === selection.kvBlockKey) ?? blocks[0]
+    if (!block || block.trust !== "known") return null
+    const layers = cache.tensorLayers.filter((layer) => layer.pool === block.pool)
+    return layers.length ? { block, layers, selection } : null
+  }, [cache, selection])
 
   useEffect(() => {
     setFocus(null)
@@ -190,6 +213,7 @@ export function ExecutionWorkspace({
                 state={replay}
                 manifest={manifest}
                 measuredProfile={measuredProfile}
+                profileAvailable={Boolean(profileObservations)}
                 architectureFocus={architectureFocus}
                 teachingProgress={teachingProgress}
                 trackedRequestId={trackedRequestId}
@@ -260,11 +284,12 @@ export function ExecutionWorkspace({
             </div>
 
             <div className="pointer-events-none absolute bottom-3 left-3 right-3 z-10 flex flex-wrap items-end justify-between gap-2">
-              <SceneLegend focus={focus} state={replay} labels={labels} colors={colors} cache={cache} latestStep={latestStep} />
+              <SceneLegend focus={focus} state={replay} labels={labels} colors={colors} cache={cache} latestStep={latestStep} snapshotsAvailable={Boolean(profileObservations?.tensorSnapshots.length)} />
               <Watermark kind={evidenceKind} evidence={evidence} />
             </div>
           </div>
 
+          {focus === "kv-cache" && cacheSlice ? <CacheTensorControls {...cacheSlice} labels={labels} onSelect={onSelect} onInspect={onOpenInspector} /> : null}
           {focus ? (
             <div className="max-h-56 overflow-auto border-t border-line bg-[#060a11] px-3.5 py-2">
               <details open={focusControlsOpen} onToggle={(event) => setFocusControlsOpen(event.currentTarget.open)} className="group">
@@ -279,6 +304,7 @@ export function ExecutionWorkspace({
           ) : (
             <Telemetry telemetry={telemetry} selected={selectedComponent} state={state} onSelect={selectComponent} onExplore={exploreComponent} />
           )}
+          {focus === "model-execution" ? <LayerTokenMatrix state={replay} manifest={manifest} profile={measuredMode ? profileObservations : null} timeUs={measuredMode ? profileTimeUs : null} stepId={measuredProfile?.stepId} requestId={trackedRequestId} tokenPosition={trackedTokenPosition} teachingProgress={teachingProgress} labels={labels} onSelect={onSelect} onClearTracking={onClearTracking} /> : null}
         </div>
       )}
     </section>
@@ -301,13 +327,14 @@ function EventTicker({ event, labels }: { event: TraceEvent | null; labels: Map<
   )
 }
 
-function SceneLegend({ focus, state, labels, colors, cache, latestStep }: {
+function SceneLegend({ focus, state, labels, colors, cache, latestStep, snapshotsAvailable }: {
   focus: WorkflowComponentId | null
   state: ReplayState
   labels: Map<string, string>
   colors: Record<string, string>
   cache: ReturnType<typeof projectKvCache>
   latestStep: ReplayState["steps"][number] | null
+  snapshotsAvailable: boolean
 }) {
   const chip = "pointer-events-auto flex min-h-7 max-w-full flex-wrap items-center gap-x-3 gap-y-1 border border-line-strong bg-surface/95 px-2.5 py-1 font-mono text-[10.5px] text-muted"
   if (focus === "kv-cache") {
@@ -319,10 +346,11 @@ function SceneLegend({ focus, state, labels, colors, cache, latestStep }: {
     const free = blocks.length - referenced - cached - nulls
     return (
       <div className={chip}>
-        <span className="flex items-center gap-1.5"><i className="size-2 bg-[#6aa6e8]" />Referenced <b className="font-medium text-ink">{referenced.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="size-2 border border-amber-400" />Cached, 0 refs <b className="font-medium text-ink">{cached.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="size-2 border border-[#23403a] bg-[#122220]" />Free <b className="font-medium text-ink">{free.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="cp-hatch size-2 border border-[#45556f]" />Null <b className="font-medium text-ink">{nulls.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.referenced }} />Referenced <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : referenced.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.cached }} />Reusable prefix <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : cached.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.available }} />Available <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : free.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.null }} />Reserved null <b className="font-medium text-ink">{nulls.toLocaleString()}</b></span>
+        <span>Fill = allocation state · rim = request holder</span>
         {cache.status === "unknown" ? <span className="text-amber-300">Trace gap · current slot state unknown</span> : null}
       </div>
     )
@@ -333,7 +361,7 @@ function SceneLegend({ focus, state, labels, colors, cache, latestStep }: {
         <span className="flex items-center gap-1.5"><i className="size-2 bg-accent" />Selected</span>
         <span className="flex items-center gap-1.5"><i className="size-2 border border-dashed border-explain" />Walkthrough position</span>
         <span className="flex items-center gap-1.5"><i className="size-2 bg-amber-400" />Profiler activity</span>
-        <span className="flex items-center gap-1.5"><i className="cp-hatch size-2 border border-[#45556f]" />Tensor values not captured</span>
+        <span className="flex items-center gap-1.5"><i className="cp-hatch size-2 border border-[#45556f]" />{snapshotsAvailable ? "Selected K/V snapshots available" : "Numerical K/V snapshots not captured"}</span>
       </div>
     )
   }

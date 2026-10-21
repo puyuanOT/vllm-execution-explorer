@@ -1,0 +1,293 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "authored-kv-diagnostics":
+    - generic: authored-kv-diagnostics
+  - generic: Synthetic fixture · not GPU evidence
+  - status "Runner is reachable.":
+    - text: Local controller
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "KV-cache manager" [level=1]
+    - paragraph: Since first recorded event Arrival groups were not recorded.
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "KV-cache manager focused 3D view":
+      - generic: prefix-reader · token position 0 · block 0 / slot 0
+      - generic: Layer 1 · KV head 0 · cuda:0 · float16
+      - button "Keys · shape [16]" [pressed]
+      - generic: Structural dimensions
+      - button "Values · shape [16]"
+      - generic: Structural dimensions
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: KV-cache manager
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 23
+    - generic: kv_block_binding
+    - generic: prefix-reader → block 0
+    - generic: step-2
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera" [active]:
+    - text: Referenced
+    - generic: "2"
+    - text: Reusable prefix
+    - generic: "0"
+    - text: Available
+    - generic: "0"
+    - text: Reserved null
+    - generic: "0"
+    - generic: Fill = allocation state · rim = request holder
+    - paragraph:
+      - generic: Demo fixture. Teaching pace is synthetic and is not GPU evidence.
+    - region "3D KV tensor slice controls":
+      - navigation "3D KV slice breadcrumb":
+        - button "cuda:0 / pool-0 / group 0 / Block 0"
+        - generic: /
+        - generic: Slot 0
+        - generic: /
+        - generic: Token position 0
+        - generic: /
+        - generic: Layer 1 / KV head 0 / K
+      - text: Layer
+      - combobox "3D cache layer":
+        - option "Layer 1" [selected]
+        - option "Layer 2"
+      - text: KV head index
+      - combobox "3D cache head":
+        - option "0" [selected]
+        - option "1"
+      - group "3D cache keys or values":
+        - button "Keys (K)" [pressed]
+        - button "Values (V)"
+      - button "Inspect token and captured values"
+      - paragraph: One token’s structural K/V slice. Layer, head and K/V choices are shared with the inspector; numerical data appears only for captured snapshots.
+    - generic "Find a physical KV block"
+    - paragraph: Each cell is one physical block. Fill shows allocation state; request holders appear on its rim. Choose a block, then a token slot to inspect layer/head slices.
+    - generic: cuda:0 / pool-0 · 2 blocks · 4 token slots/block
+    - spinbutton "Physical block ID in pool-0"
+    - button "Inspect block"
+  - complementary "Inspector":
+    - paragraph: Token position
+    - heading "Request token" [level=2]
+    - generic "Measured diagnostic profile"
+    - option "Outside mapped batch intervals"
+    - option "step-1" [selected]
+    - option "step-2"
+    - option "step-3"
+    - heading "Token at position 0" [level=3]
+    - term: Token ID
+    - definition: "10"
+    - term: Decoded fragment
+    - definition: The
+    - term: KV state now
+    - definition: computed
+    - term: Previously computed
+    - definition: "Yes"
+    - button "pool-0 block 0 · generation 1 · group 0 · slot 0"
+    - region "Token KV tensor inspection":
+      - heading "KV tensors for token position 0" [level=3]
+      - navigation "KV tensor breadcrumb":
+        - button "cuda:0"
+        - generic: /
+        - generic: pool-0 · group 0
+        - generic: /
+        - button "Block 0"
+        - generic: /
+        - generic: Slot 0
+        - generic: /
+        - generic: Token position 0
+        - generic: /
+        - generic: Layer 1
+        - generic: /
+        - generic: KV head 0
+        - generic: /
+        - generic: K
+      - text: Layer slice
+      - combobox "KV tensor layer":
+        - option "Layer 1" [selected]
+        - option "Layer 2"
+      - text: KV head index
+      - combobox "KV tensor head":
+        - option "Head 0 (zero-based)" [selected]
+        - option "Head 1 (zero-based)"
+      - group "KV tensor kind":
+        - button "Keys (K)" [pressed]
+        - button "Values (V)"
+      - term: Request / token
+      - definition: prefix-reader · The · ID 10
+      - term: Current holder
+      - definition: prefix-reader
+      - term: Contents written by
+      - definition: prefix-writer · token position 0
+      - term: Actual datatype
+      - definition: float16
+      - term: Actual quantization
+      - definition: NONE
+      - term: K quantization scale
+      - definition: float32 · [] · cuda:0
+      - term: Backing tensor shape
+      - definition: "[2, 2, 4, 32]"
+      - term: Token/head slice shape
+      - definition: "[16] per K or V"
+      - term: Tensor layout
+      - definition: kernel_block,kv_head,token_slot,concatenated_K_V
+      - term: Backing storage
+      - definition: storage-0
+      - term: Manager / kernel block size
+      - definition: 4 / 4 slots
+      - term: Allocation generation
+      - definition: "1"
+      - paragraph: Layer/head slices share the block’s allocation. They do not increase the pool’s block count. These keys and values are attention state, separate from the token ID.
+      - heading "Recorded numerical slice" [level=4]
+      - generic: Synthetic
+      - paragraph: Synthetic numerical fixture; these values were not read from a GPU.
+      - text: Snapshot boundary
+      - combobox "KV numerical snapshot":
+        - option "step-1 · generation 1 · authored_numeric_example_no_tensor_read" [selected]
+      - term: Snapshot original writer
+      - definition: prefix-writer · token position 0 · step-1
+      - term: Observed device / datatype
+      - definition: cuda:0 / float16
+      - term: Snapshot location
+      - definition: pool-0, block 0, slot 0, generation 1
+      - term: Observation boundary
+      - definition: authored_numeric_example_no_tensor_read
+      - table "K head 0, dimensions 0–15; 32 recorded bytes":
+        - caption: K head 0, dimensions 0–15; 32 recorded bytes
+        - rowgroup:
+          - row "Dimension Value":
+            - columnheader "Dimension"
+            - columnheader "Value"
+        - rowgroup:
+          - row "0 -1.000000":
+            - rowheader "0"
+            - cell "-1.000000"
+          - row "1 -0.8750000":
+            - rowheader "1"
+            - cell "-0.8750000"
+          - row "2 -0.7500000":
+            - rowheader "2"
+            - cell "-0.7500000"
+          - row "3 -0.6250000":
+            - rowheader "3"
+            - cell "-0.6250000"
+          - row "4 -0.5000000":
+            - rowheader "4"
+            - cell "-0.5000000"
+          - row "5 -0.3750000":
+            - rowheader "5"
+            - cell "-0.3750000"
+          - row "6 -0.2500000":
+            - rowheader "6"
+            - cell "-0.2500000"
+          - row "7 -0.1250000":
+            - rowheader "7"
+            - cell "-0.1250000"
+          - row "8 0.000000":
+            - rowheader "8"
+            - cell "0.000000"
+          - row "9 0.1250000":
+            - rowheader "9"
+            - cell "0.1250000"
+          - row "10 0.2500000":
+            - rowheader "10"
+            - cell "0.2500000"
+          - row "11 0.3750000":
+            - rowheader "11"
+            - cell "0.3750000"
+          - row "12 0.5000000":
+            - rowheader "12"
+            - cell "0.5000000"
+          - row "13 0.6250000":
+            - rowheader "13"
+            - cell "0.6250000"
+          - row "14 0.7500000":
+            - rowheader "14"
+            - cell "0.7500000"
+          - row "15 0.8750000":
+            - rowheader "15"
+            - cell "0.8750000"
+      - paragraph: Historical snapshot at its stated boundary. It does not claim that the current allocation still contains these values.
+    - paragraph: A sampled output token may not yet have been processed by the model. Reserved slots are distinct from computed KV data.
+    - button "Previous tokens" [disabled]
+    - generic: 0–5 of 6
+    - button "Next tokens" [disabled]
+    - list "Request token positions":
+      - button "Position 0, prompt, token 10, KV computed":
+        - generic: "0"
+        - generic: The
+        - generic: computed
+      - button "Position 1, prompt, token 11, KV computed":
+        - generic: "1"
+        - generic: shared
+        - generic: computed
+      - button "Position 2, prompt, token 12, KV computed":
+        - generic: "2"
+        - generic: prefix
+        - generic: computed
+      - button "Position 3, prompt, token 13, KV computed":
+        - generic: "3"
+        - generic: ends
+        - generic: computed
+      - button "Position 4, prompt, token 14, KV not_computed":
+        - generic: "4"
+        - generic: "14"
+        - generic: not computed
+      - button "Position 5, prompt, token 15, KV not_computed":
+        - generic: "5"
+        - generic: "15"
+        - generic: not computed
+- group "Recording playback":
+  - button "Restart recording":
+  - button "Previous scheduler step":
+  - button "Previous recorded event":
+  - button "Play":
+    - text: Play
+  - button "Next recorded event":
+  - button "Next scheduler step":
+  - slider "Playhead": "23"
+  - paragraph: Event 23, kv_block_binding, 28 ms. Since first recorded event|Event clock advances through recorded observations at a teaching pace.
+  - generic: Event order · not elapsed time
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events" [pressed]
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile"
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×" [selected]
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

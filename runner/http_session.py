@@ -25,6 +25,7 @@ from runner.vllm_session import VllmSession
 from runner.workload import PROVISIONAL_LIMITS, WorkRequest, WorkloadError, parse_request_item
 
 HTTP_PATH = "/v1/explorer/generate"
+CANCELLATION_TIMEOUT_SECONDS = 30
 
 
 @dataclass
@@ -70,6 +71,7 @@ class VllmHttpSession:
         self.observability_record: dict[str, Any] = {"provider": "langsmith", "status": "not_started", "verification": "No experiment trace has been inspected."}
         self._stop = threading.Event()
         self._cancelled = threading.Event()
+        self._cancellation_acknowledged = threading.Event()
         self._clients = ThreadPoolExecutor(max_workers=int(PROVISIONAL_LIMITS["max_requests"]))
         self._futures: list[Future[Any]] = []
         self._owner = threading.Thread(target=self._own_engine, name="vllm-engine-owner", daemon=True)
@@ -108,6 +110,8 @@ class VllmHttpSession:
         for request in requests:
             ticket = _Ticket(request=request, dispatch_barrier=barrier)
             with self._tickets_lock:
+                if self._cancelled.is_set():
+                    raise RuntimeError("the HTTP execution session has been cancelled")
                 if request.request_id in self._tickets:
                     raise RuntimeError(f"duplicate HTTP request id {request.request_id}")
                 self._tickets[request.request_id] = ticket
@@ -159,6 +163,15 @@ class VllmHttpSession:
                 self._raise_owner_error()
                 return chunks
 
+    def drain_cancelled_chunks(self) -> list[ObservedChunk]:
+        """Return queued results without stepping vLLM or waiting for new work."""
+        chunks: list[ObservedChunk] = []
+        while True:
+            try:
+                chunks.append(self._chunks.get_nowait())
+            except queue.Empty:
+                return chunks
+
     def has_unfinished(self) -> bool:
         self._raise_owner_error()
         with self._tickets_lock:
@@ -167,6 +180,9 @@ class VllmHttpSession:
 
     def cancel(self) -> None:
         self._cancelled.set()
+        if not self._cancellation_acknowledged.wait(timeout=CANCELLATION_TIMEOUT_SECONDS):
+            raise RuntimeError(f"the vLLM engine owner did not acknowledge cancellation within {CANCELLATION_TIMEOUT_SECONDS}s")
+        self._raise_owner_error()
 
     def close(self) -> None:
         with self._tickets_lock:
@@ -181,7 +197,7 @@ class VllmHttpSession:
         self._http.join(timeout=2)
         self._stop.set()
         self._owner.join(timeout=30)
-        self._clients.shutdown(wait=True, cancel_futures=True)
+        self._clients.shutdown(wait=not self._owner.is_alive(), cancel_futures=True)
         if self._owner.is_alive():
             raise RuntimeError("the vLLM engine owner did not stop")
         self._raise_owner_error()
@@ -198,6 +214,7 @@ class VllmHttpSession:
             self.observability_record = self._trace.metadata()
         except BaseException as exc:  # noqa: BLE001 - returned to the preparing caller
             self._owner_error = exc
+            self._cancellation_acknowledged.set()
             self._owner_ready.set()
             return
         self._owner_ready.set()
@@ -207,7 +224,11 @@ class VllmHttpSession:
                     self._experiment_status = "cancelled"
                     self._base.cancel()
                     self._finish_open_tickets("cancelled")
-                    self._cancelled.clear()
+                    self._cancellation_acknowledged.set()
+                    # Cancellation is terminal. Late HTTP admissions cannot
+                    # restart an engine the workload driver is finalizing.
+                    self._stop.wait()
+                    break
                 admitted = False
                 while True:
                     try:
@@ -258,6 +279,7 @@ class VllmHttpSession:
             self._finish_open_tickets("failed", error=str(exc))
         finally:
             self._finish_open_tickets("cancelled")
+            self._cancellation_acknowledged.set()
             try:
                 self._base.close()
                 self._copy_records()
@@ -281,10 +303,12 @@ class VllmHttpSession:
             ticket.text += chunk.text_delta
             if chunk.finish_reason is not None:
                 ticket.finish_reason = chunk.finish_reason
-                ticket.completed.set()
                 if self._trace is not None:
                     self._trace.finish_request(chunk.request_id, ticket.text, ticket.token_ids)
         self._chunks.put(chunk)
+        if ticket is not None and chunk.finish_reason is not None:
+            # Publish the final chunk before making the request look idle.
+            ticket.completed.set()
 
     def _finish_open_tickets(self, reason: str, *, error: str | None = None) -> None:
         with self._tickets_lock:
@@ -459,5 +483,6 @@ class VllmHttpSession:
             "revision_resolution",
             "resolved_configuration",
             "profiling_record",
+            "kv_cache_record",
         ):
             setattr(self, name, getattr(base, name, None))

@@ -42,6 +42,10 @@ def parse_run_configuration(
         raise ConfigurationError(str(exc), field=exc.field) from exc
 
     known_adapters = {"base", *(item["id"] for item in model["lora_adapters"])}
+    request_ids = {request.request_id for request in requests}
+    for field, selected in (("trigger_request_id", profiling.get("trigger_request_id")), ("tensor_capture.request_id", profiling.get("tensor_capture", {}).get("request_id"))):
+        if selected is not None and selected not in request_ids:
+            raise ConfigurationError("Diagnostic request selection must name a workload request.", field=f"profiling_configuration.{field}")
     for request in requests:
         adapter_id = request.adapter_id or "base"
         if vllm["scheduling_policy"] != "priority" and request.priority != 0:
@@ -213,7 +217,41 @@ def _parse_profiling(payload: dict[str, Any]) -> dict[str, Any]:
     if mode not in {"off", "eager_diagnostic"}:
         raise ConfigurationError("Profiling mode must be off or eager_diagnostic.", field="profiling_configuration.mode")
     steps = require_int(raw.get("max_steps", 8), "profile step limit", field="profiling_configuration.max_steps", minimum=1, maximum=16)
-    return {"mode": mode, "max_steps": steps}
+    result: dict[str, Any] = {"mode": mode, "max_steps": steps}
+    # Preserve legacy snapshots when the new optional controls were not submitted.
+    if "start_step" in raw:
+        result["start_step"] = require_int(raw["start_step"], "profile starting step", field="profiling_configuration.start_step", minimum=1, maximum=1_000_000)
+    if "trigger_request_id" in raw:
+        selected = raw["trigger_request_id"]
+        if selected is not None and (not isinstance(selected, str) or not selected.strip()):
+            raise ConfigurationError("Capture trigger must be a request ID or null.", field="profiling_configuration.trigger_request_id")
+        result["trigger_request_id"] = selected
+    if "tensor_capture" in raw:
+        value = raw["tensor_capture"]
+        field = "profiling_configuration.tensor_capture"
+        if not isinstance(value, dict) or not isinstance(value.get("enabled", False), bool):
+            raise ConfigurationError("Tensor capture must be an object with a boolean enabled field.", field=field)
+        if value.get("enabled") and mode != "eager_diagnostic":
+            raise ConfigurationError("Numerical KV capture requires eager diagnostic profiling.", field=f"{field}.enabled")
+        preset = value.get("preset", "small")
+        if preset not in {"small", "custom"}:
+            raise ConfigurationError("Tensor preset must be small or custom.", field=f"{field}.preset")
+        request_id = value.get("request_id")
+        if request_id is not None and (not isinstance(request_id, str) or not request_id.strip()):
+            raise ConfigurationError("Tensor request selection must be a request ID or null.", field=f"{field}.request_id")
+        selections = {}
+        for name, default, maximum in (("token_positions", [], 64), ("layer_indices", [], 64), ("head_indices", [0], 32)):
+            items = value.get(name, default)
+            if not isinstance(items, list) or len(items) > maximum:
+                raise ConfigurationError(f"{name} must be a list of at most {maximum} indices.", field=f"{field}.{name}")
+            selections[name] = sorted({require_int(item, name, field=f"{field}.{name}", minimum=0, maximum=2_000_000) for item in items})
+        result["tensor_capture"] = {
+            "enabled": value.get("enabled", False), "preset": preset, "request_id": request_id, **selections,
+            "dimension_start": require_int(value.get("dimension_start", 0), "tensor dimension start", field=f"{field}.dimension_start", minimum=0, maximum=65535),
+            "dimension_count": require_int(value.get("dimension_count", 16), "tensor dimension count", field=f"{field}.dimension_count", minimum=1, maximum=256),
+            "max_bytes": require_int(value.get("max_bytes", 1048576), "tensor byte limit", field=f"{field}.max_bytes", minimum=64, maximum=16 * 1024 * 1024),
+        }
+    return result
 
 
 def _parse_model(payload: dict[str, Any]) -> dict[str, Any]:

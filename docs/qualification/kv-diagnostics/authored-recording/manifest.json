@@ -1,0 +1,537 @@
+{
+  "adapter": {
+    "name": "vllm_030",
+    "revision": "0.3.0"
+  },
+  "architecture": {
+    "activation": "silu",
+    "architectures": [
+      "AuthoredDenseDecoder"
+    ],
+    "evidence": "All dimensions are authored UI examples, not Qwen3 model dimensions.",
+    "head_dim": 16,
+    "hidden_size": 64,
+    "intermediate_size": 128,
+    "kv_groups": [
+      {
+        "block_size": 4,
+        "cache_group": 0,
+        "cache_type": "authored_full_attention",
+        "layer_names": [
+          "model.layers.0.self_attn.attn",
+          "model.layers.1.self_attn.attn"
+        ],
+        "pool": "pool-0",
+        "token_slot_mapping": "authored_fixture",
+        "token_slot_mapping_reason": "Authored token/block relationships; no native memory layout was inspected."
+      }
+    ],
+    "layer_names": [
+      "model.layers.0.self_attn.attn",
+      "model.layers.1.self_attn.attn"
+    ],
+    "model_type": "qwen3",
+    "norm": "RMSNorm",
+    "norm_epsilon": 1e-06,
+    "num_attention_heads": 4,
+    "num_key_value_heads": 2,
+    "num_layers": 2,
+    "position_encoding": "RoPE",
+    "source": "authored_fixture",
+    "supported": true
+  },
+  "arrivals": [],
+  "cache_geometry": {
+    "block_size": 4,
+    "groups": [
+      {
+        "block_size": 4,
+        "cache_group": 0,
+        "cache_type": "authored_full_attention",
+        "layer_names": [
+          "model.layers.0.self_attn.attn",
+          "model.layers.1.self_attn.attn"
+        ],
+        "pool": "pool-0",
+        "token_slot_mapping": "authored_fixture",
+        "token_slot_mapping_reason": "Authored token/block relationships; no native memory layout was inspected."
+      }
+    ],
+    "initial_free_blocks": 2,
+    "num_gpu_blocks": 2,
+    "pools": [
+      {
+        "block_size": 4,
+        "blocks": [
+          {
+            "allocation_generation": 0,
+            "block_id": 0,
+            "has_hash": false,
+            "is_null": false,
+            "ref_count": 0
+          },
+          {
+            "allocation_generation": 0,
+            "block_id": 1,
+            "has_hash": false,
+            "is_null": false,
+            "ref_count": 0
+          }
+        ],
+        "initial_free_blocks": 2,
+        "inventory_complete": true,
+        "num_gpu_blocks": 2,
+        "pool": "pool-0"
+      }
+    ]
+  },
+  "capture": {
+    "contract_version": 1,
+    "engine_admission_boundary": "fixture_scheduler",
+    "http_boundary_observed": false,
+    "phase_history": [],
+    "status": "completed",
+    "transport": "fixture_direct"
+  },
+  "clock_domain": "time.monotonic_ns",
+  "completion_status": "completed",
+  "content_retained": true,
+  "engine": {
+    "name": "vllm",
+    "upstream_revision": null,
+    "version": "0.30.0"
+  },
+  "engine_output_token_ids": {
+    "prefix-reader": [
+      101,
+      102
+    ],
+    "prefix-writer": [
+      100
+    ]
+  },
+  "engine_settings": {
+    "demo_fixture": true,
+    "enable_chunked_prefill": true,
+    "enable_prefix_caching": true,
+    "enforce_eager": true,
+    "fresh_prefix_cache": true,
+    "gpu_memory_utilization": 0.9,
+    "kv_cache_dtype": "auto",
+    "kv_cache_memory_bytes": null,
+    "long_prefill_token_threshold": 0,
+    "max_model_len": 64,
+    "max_num_scheduled_tokens": 8,
+    "max_num_seqs": 2,
+    "scheduling_policy": "fcfs"
+  },
+  "event_completeness": {
+    "dropped_content_count": 0,
+    "dropped_event_count": 0,
+    "dropped_record_count": 0,
+    "gap": null,
+    "status": "complete"
+  },
+  "execution_kind": "fixture",
+  "execution_target": {
+    "client_platform": "fixture",
+    "engine_location": "this-machine",
+    "kind": "local",
+    "remote_bind": "127.0.0.1",
+    "runner_endpoint": "http://127.0.0.1:8765"
+  },
+  "fixture_lesson": {
+    "claim": "Entirely synthetic fixture: timings, device names, block mappings, token IDs, tensor values and architecture are authored. No vLLM/GPU execution was measured.",
+    "title": "Authored KV diagnostic contract"
+  },
+  "hardware": {
+    "gpu": null
+  },
+  "initial_cache_state": {
+    "capture_ready_after_reset": false,
+    "evidence": "fixture_has_no_vllm_prefix_cache",
+    "kind": "not_applicable",
+    "reset_required": false,
+    "reset_verified": false,
+    "warmup_completed_before_reset": false
+  },
+  "kv_cache": {
+    "contract_version": 1,
+    "layers": [
+      {
+        "backend": "AUTHORED FlashAttention layout example",
+        "cache_group": 0,
+        "device": "cuda:0",
+        "dtype": "float16",
+        "head_dim": 16,
+        "kernel_block_size": 4,
+        "kernel_blocks_per_manager_block": 1,
+        "layer_index": 0,
+        "layer_name": "model.layers.0.self_attn.attn",
+        "layout": "kernel_block,kv_head,token_slot,concatenated_K_V",
+        "layout_status": "qualified",
+        "logical_bytes": 1024,
+        "manager_block_size": 4,
+        "num_kernel_blocks": 2,
+        "num_kv_heads": 2,
+        "pool": "pool-0",
+        "quantization": {
+          "cache_dtype": "auto",
+          "mode": "NONE",
+          "scales": {
+            "K": {
+              "device": "cuda:0",
+              "dtype": "float32",
+              "shape": [],
+              "status": "observed"
+            },
+            "V": {
+              "device": "cuda:0",
+              "dtype": "float32",
+              "shape": [],
+              "status": "observed"
+            }
+          }
+        },
+        "shape": [
+          2,
+          2,
+          4,
+          32
+        ],
+        "storage_id": "storage-0",
+        "storage_offset": 0,
+        "strides": [
+          256,
+          128,
+          32,
+          1
+        ]
+      },
+      {
+        "backend": "AUTHORED FlashAttention layout example",
+        "cache_group": 0,
+        "device": "cuda:0",
+        "dtype": "float16",
+        "head_dim": 16,
+        "kernel_block_size": 4,
+        "kernel_blocks_per_manager_block": 1,
+        "layer_index": 1,
+        "layer_name": "model.layers.1.self_attn.attn",
+        "layout": "kernel_block,kv_head,token_slot,concatenated_K_V",
+        "layout_status": "qualified",
+        "logical_bytes": 1024,
+        "manager_block_size": 4,
+        "num_kernel_blocks": 2,
+        "num_kv_heads": 2,
+        "pool": "pool-0",
+        "quantization": {
+          "cache_dtype": "auto",
+          "mode": "NONE",
+          "scales": {
+            "K": {
+              "device": "cuda:0",
+              "dtype": "float32",
+              "shape": [],
+              "status": "observed"
+            },
+            "V": {
+              "device": "cuda:0",
+              "dtype": "float32",
+              "shape": [],
+              "status": "observed"
+            }
+          }
+        },
+        "shape": [
+          2,
+          2,
+          4,
+          32
+        ],
+        "storage_id": "storage-1",
+        "storage_offset": 0,
+        "strides": [
+          256,
+          128,
+          32,
+          1
+        ]
+      }
+    ],
+    "observation_boundary": "authored_storage_geometry",
+    "status": "observed",
+    "storages": [
+      {
+        "byte_count": 1024,
+        "device": "cuda:0",
+        "dtype": "float16",
+        "storage_id": "storage-0"
+      },
+      {
+        "byte_count": 1024,
+        "device": "cuda:0",
+        "dtype": "float16",
+        "storage_id": "storage-1"
+      }
+    ],
+    "unique_storage_bytes": 2048
+  },
+  "model": {
+    "id": "Authored 2-layer dense decoder",
+    "note": "Synthetic small geometry; no model or tokenizer is loaded. Rerun controls retain the reference Qwen3 configuration only.",
+    "revision": null
+  },
+  "profiling": {
+    "attachment_status": "available",
+    "backend": "torch.profiler",
+    "captured_steps": 3,
+    "clock": {
+      "domain": "torch.profiler.chrome_trace",
+      "origin": "trace_local",
+      "unit": "microseconds"
+    },
+    "completeness": "bounded",
+    "contract_version": 1,
+    "enabled": true,
+    "evidence": "Authored profiler-shaped fixture; no profiling, CUDA execution, or numerical tensor inspection was performed.",
+    "execution_mode": "eager",
+    "max_steps": 3,
+    "mode": "eager_diagnostic",
+    "normalization": {
+      "activity_limit": 250000,
+      "correlated_gpu_activity_count": 6,
+      "gpu_activity_count": 6,
+      "source_activity_count": 33,
+      "status": "completed"
+    },
+    "normalized_artifact": {
+      "path": "profiling/activities.json",
+      "sha256": "998c43f7c50cfcac81ab735fbc8be11d6f947c96f8be449afe01c2426c433d95",
+      "size_bytes": 33521
+    },
+    "qualification": "authored_fixture_not_gpu_qualified",
+    "raw_artifacts": [
+      {
+        "path": "profiling/raw/authored.pt.trace.json.gz",
+        "sha256": "ccc978a09fe63d403ef2fd0807827ec99d2415d15d38a930983e583b765c5ab6",
+        "size_bytes": 500
+      }
+    ],
+    "runtime": {},
+    "start_step": 1,
+    "status": "completed",
+    "tensor_capture": {
+      "enabled": true,
+      "max_bytes": 256,
+      "observation_boundary": "authored_numeric_example_no_tensor_read",
+      "reason": "Authored example of the 256-byte budget: first-layer slices retained; second-layer values omitted. No numerical tensor was read.",
+      "retained_bytes": 256,
+      "selection": {
+        "dimension_count": 16,
+        "dimension_start": 0,
+        "head_indices": [
+          0
+        ],
+        "layer_indices": [
+          0,
+          1
+        ],
+        "request_id": "prefix-writer",
+        "token_positions": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      "status": "partial"
+    },
+    "tensor_capture_configuration": {
+      "dimension_count": 16,
+      "dimension_start": 0,
+      "enabled": true,
+      "head_indices": [
+        0
+      ],
+      "layer_indices": [
+        0,
+        1
+      ],
+      "max_bytes": 256,
+      "preset": "custom",
+      "request_id": "prefix-writer",
+      "token_positions": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "trigger_request_id": null
+  },
+  "provenance": {
+    "claim": "Deterministic demo evidence; not a vLLM or GPU observation.",
+    "evidence_kind": "fixture",
+    "gpu_acceptance": "not_applicable",
+    "http_serving": false,
+    "real_gpu": false
+  },
+  "qualification_bookmarks": {
+    "reader_decode_computed": 32,
+    "reader_scheduled": 24,
+    "reader_suffix_computed": 26,
+    "writer_computed": 10
+  },
+  "run_configuration": {
+    "model": {
+      "dtype": "float16",
+      "lora_adapters": [],
+      "quantization": {
+        "kind": "none"
+      },
+      "source": {
+        "authenticated": false,
+        "kind": "huggingface",
+        "locator": "Qwen/Qwen3-4B-Instruct-2507",
+        "revision": null
+      },
+      "tokenizer": {
+        "locator": "Qwen/Qwen3-4B-Instruct-2507",
+        "revision": null
+      }
+    },
+    "profiling": {
+      "max_steps": 3,
+      "mode": "eager_diagnostic",
+      "start_step": 1,
+      "tensor_capture": {
+        "dimension_count": 16,
+        "dimension_start": 0,
+        "enabled": true,
+        "head_indices": [
+          0
+        ],
+        "layer_indices": [
+          0,
+          1
+        ],
+        "max_bytes": 256,
+        "preset": "custom",
+        "request_id": "prefix-writer",
+        "token_positions": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    },
+    "sampling": {
+      "seed": 0,
+      "stop": [],
+      "temperature": 0.0,
+      "top_p": 1.0
+    },
+    "snapshot_sha256": "8d062c8274c4c320e32c9d42f1c02be181adec44588d19ad14c8526491dac9c4",
+    "version": 1,
+    "vllm": {
+      "enable_chunked_prefill": true,
+      "enable_prefix_caching": true,
+      "fresh_prefix_cache": true,
+      "gpu_memory_utilization": 0.9,
+      "kv_cache_memory_bytes": null,
+      "long_prefill_token_threshold": 0,
+      "max_model_len": 64,
+      "max_num_scheduled_tokens": 8,
+      "max_num_seqs": 2,
+      "scheduling_policy": "fcfs"
+    },
+    "workload": {
+      "adapter_ids": [
+        "base"
+      ],
+      "batch_count": 2,
+      "input_modes": [
+        "prompt"
+      ],
+      "request_count": 2,
+      "token_validation": {
+        "client_reported_request_count": 0,
+        "engine_verified_request_count": 0,
+        "pending_engine_verification_count": 2
+      }
+    }
+  },
+  "run_id": "authored-kv-diagnostics",
+  "sampling": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "schema_version": "1.0.0",
+  "tokenizer": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": null
+  },
+  "workload_limits": {
+    "gpu_validated": false,
+    "limit_basis": "contract_safety_ceiling",
+    "max_output_tokens": 8192,
+    "max_prompt_bytes": 2000000,
+    "max_prompt_characters": 2000000,
+    "max_prompt_tokens": 131072,
+    "max_requests": 64,
+    "max_run_seconds": 600,
+    "max_stop_string_characters": 256,
+    "max_stop_strings": 8,
+    "note": "Supports tens of authored requests. Tokenizer, context, memory, and recording limits must still be validated on the selected GPU before capture."
+  },
+  "workload_plan": {
+    "batches": [
+      {
+        "adapter_id": "base",
+        "arrival_offset_ms": 0,
+        "id": "request:prefix-writer",
+        "label": "prefix-writer",
+        "samples": [
+          {
+            "adapter_id": "base",
+            "id": "prefix-writer",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "prefix-writer",
+            "max_output_tokens": 1,
+            "order": 0,
+            "priority": 0,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          }
+        ]
+      },
+      {
+        "adapter_id": "base",
+        "arrival_offset_ms": 10,
+        "id": "request:prefix-reader",
+        "label": "prefix-reader",
+        "samples": [
+          {
+            "adapter_id": "base",
+            "id": "prefix-reader",
+            "input_mode": "prompt",
+            "input_token_count_provenance": "pending_execution_host_tokenizer",
+            "label": "prefix-reader",
+            "max_output_tokens": 2,
+            "order": 1,
+            "priority": 0,
+            "resolved_input_tokens": null,
+            "sampling_override": null,
+            "target_input_tokens": null
+          }
+        ]
+      }
+    ],
+    "synthesized": true,
+    "version": 1
+  }
+}

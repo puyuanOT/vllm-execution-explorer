@@ -1,0 +1,1367 @@
+- paragraph: Recording opened.
+- paragraph
+- banner:
+  - paragraph: vLLM Execution Explorer
+  - paragraph: vLLM 0.30.0 · observed serving mechanics
+  - navigation "Primary":
+    - button "01 Configure":
+      - generic: "01"
+      - text: Configure
+    - button "02 Explore":
+      - generic: "02"
+      - text: Explore
+  - generic "gpu-kv-layer-diagnostics":
+    - generic: gpu-kv-layer-diagnostics
+  - generic: Observed GPU recording
+  - status "Runner is reachable.":
+    - text: 127.0.0.1:8766
+    - generic: · Runner is reachable.
+  - button "Open recordings":
+- main:
+  - region "Execution explorer":
+    - heading "Model architecture" [level=1]
+    - paragraph: Native profiler clock · 6136.551 ms since trace start · host replay at event 209
+    - generic: Find a request
+    - combobox "Find a request"
+    - group "Execution view":
+      - button "3D architecture" [pressed]:
+        - text: 3D architecture
+      - button "Request lanes":
+        - text: Request lanes
+    - button "Edit as new":
+      - generic: Edit as new
+    - paragraph: The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output. Use the component controls below the canvas for equivalent keyboard access.
+    - generic "Model execution focused 3D view":
+      - generic: Qwen3-4B-Instruct-2507
+      - generic: Measured batch/layer activity · profiler clock
+      - generic: L1
+      - generic: L10
+      - generic: L19
+      - generic: L28
+      - generic: L36
+      - generic: Token embeddings
+      - generic: Norm → LM head → sampling
+      - generic: No mapped layer active at this profiler instant
+      - generic: Observed packed rows
+      - generic: 2 requests · whole packed batch
+      - generic: "step-8: 64 observed packed inputs / padding excluded"
+      - generic: 64 real input rows · padding excluded
+      - generic: Batch/layer timing · no token or head duration
+    - navigation "Component breadcrumb":
+      - button "Overview"
+      - generic: Model execution
+    - paragraph: Click to inspect · double-click to drill in · drag to orbit · right-drag to pan · scroll to zoom
+    - generic: EVT 209
+    - generic: step_scheduled
+    - generic: step-8
+    - group "3D camera controls":
+      - button "Orbit camera left":
+      - button "Orbit camera right":
+      - button "Zoom camera in":
+      - button "Zoom camera out":
+      - button "Pan camera left":
+      - button "Pan camera right":
+      - button "Pan camera up":
+      - button "Pan camera down":
+      - button "Reset camera":
+    - generic: Selected
+    - generic: Walkthrough position
+    - generic: Profiler activity
+    - generic: Selected K/V snapshots available
+    - paragraph:
+      - generic: Observed GPU recording. Host intervals are not GPU kernel durations.
+    - generic "Model structure controls"
+    - option "Layer 1" [selected]
+    - option "Layer 2"
+    - option "Layer 3"
+    - option "Layer 4"
+    - option "Layer 5"
+    - option "Layer 6"
+    - option "Layer 7"
+    - option "Layer 8"
+    - option "Layer 9"
+    - option "Layer 10"
+    - option "Layer 11"
+    - option "Layer 12"
+    - option "Layer 13"
+    - option "Layer 14"
+    - option "Layer 15"
+    - option "Layer 16"
+    - option "Layer 17"
+    - option "Layer 18"
+    - option "Layer 19"
+    - option "Layer 20"
+    - option "Layer 21"
+    - option "Layer 22"
+    - option "Layer 23"
+    - option "Layer 24"
+    - option "Layer 25"
+    - option "Layer 26"
+    - option "Layer 27"
+    - option "Layer 28"
+    - option "Layer 29"
+    - option "Layer 30"
+    - option "Layer 31"
+    - option "Layer 32"
+    - option "Layer 33"
+    - option "Layer 34"
+    - option "Layer 35"
+    - option "Layer 36"
+    - region "Layer and token participation":
+      - heading "Layer × requests · step-8" [level=2]
+      - generic: Profiler evidence
+      - paragraph: Write activity applies to the participating batch operation. It does not measure an individual token’s duration.
+      - generic "Layer matrix legend":
+        - generic: S
+        - text: Scheduled
+        - generic: W
+        - text: KV write operation active
+        - generic: C
+        - text: KV write operation completed
+        - generic: R
+        - text: Existing prefix KV reused
+        - generic: —
+        - text: Outside this step
+        - generic: "?"
+        - text: Unknown
+      - button "Previous columns" [disabled]
+      - generic: 1–2 of 2
+      - button "Next columns" [disabled]
+      - generic: Select a request to inspect its tokens
+      - table "Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.":
+        - caption: Layer cache-write status for scheduled requests and token positions; individual token timings are unavailable.
+        - rowgroup:
+          - row "Layer mixed-prefill 63 scheduled prefix-reader 1 scheduled 64 prior positions":
+            - columnheader "Layer"
+            - columnheader "mixed-prefill 63 scheduled":
+              - button "mixed-prefill 63 scheduled":
+                - generic: mixed-prefill
+                - generic: 63 scheduled
+            - columnheader "prefix-reader 1 scheduled 64 prior positions":
+              - button "prefix-reader 1 scheduled 64 prior positions":
+                - generic: prefix-reader
+                - generic: 1 scheduled
+                - generic: 64 prior positions
+        - rowgroup:
+          - 'row "Layer 1 mixed-prefill, layer 1: 63 kv write operation completed prefix-reader, layer 1: 64 existing prefix kv reused, 1 kv write operation completed"':
+            - rowheader "Layer 1":
+              - button "Layer 1"
+            - 'cell "mixed-prefill, layer 1: 63 kv write operation completed"':
+              - 'button "mixed-prefill, layer 1: 63 kv write operation completed"':
+                - generic: C 63
+            - 'cell "prefix-reader, layer 1: 64 existing prefix kv reused, 1 kv write operation completed"':
+              - 'button "prefix-reader, layer 1: 64 existing prefix kv reused, 1 kv write operation completed"':
+                - generic: R 64
+                - generic: C 1
+          - 'row "Layer 2 mixed-prefill, layer 2: 63 scheduled prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 2":
+              - button "Layer 2"
+            - 'cell "mixed-prefill, layer 2: 63 scheduled"':
+              - 'button "mixed-prefill, layer 2: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 2: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 3 mixed-prefill, layer 3: 63 scheduled prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 3":
+              - button "Layer 3"
+            - 'cell "mixed-prefill, layer 3: 63 scheduled"':
+              - 'button "mixed-prefill, layer 3: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 3: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 4 mixed-prefill, layer 4: 63 scheduled prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 4":
+              - button "Layer 4"
+            - 'cell "mixed-prefill, layer 4: 63 scheduled"':
+              - 'button "mixed-prefill, layer 4: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 4: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 5 mixed-prefill, layer 5: 63 scheduled prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 5":
+              - button "Layer 5"
+            - 'cell "mixed-prefill, layer 5: 63 scheduled"':
+              - 'button "mixed-prefill, layer 5: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 5: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 6 mixed-prefill, layer 6: 63 scheduled prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 6":
+              - button "Layer 6"
+            - 'cell "mixed-prefill, layer 6: 63 scheduled"':
+              - 'button "mixed-prefill, layer 6: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 6: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 7 mixed-prefill, layer 7: 63 scheduled prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 7":
+              - button "Layer 7"
+            - 'cell "mixed-prefill, layer 7: 63 scheduled"':
+              - 'button "mixed-prefill, layer 7: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 7: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 8 mixed-prefill, layer 8: 63 scheduled prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 8":
+              - button "Layer 8"
+            - 'cell "mixed-prefill, layer 8: 63 scheduled"':
+              - 'button "mixed-prefill, layer 8: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 8: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 9 mixed-prefill, layer 9: 63 scheduled prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 9":
+              - button "Layer 9"
+            - 'cell "mixed-prefill, layer 9: 63 scheduled"':
+              - 'button "mixed-prefill, layer 9: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 9: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 10 mixed-prefill, layer 10: 63 scheduled prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 10":
+              - button "Layer 10"
+            - 'cell "mixed-prefill, layer 10: 63 scheduled"':
+              - 'button "mixed-prefill, layer 10: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 10: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 11 mixed-prefill, layer 11: 63 scheduled prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 11":
+              - button "Layer 11"
+            - 'cell "mixed-prefill, layer 11: 63 scheduled"':
+              - 'button "mixed-prefill, layer 11: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 11: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 12 mixed-prefill, layer 12: 63 scheduled prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 12":
+              - button "Layer 12"
+            - 'cell "mixed-prefill, layer 12: 63 scheduled"':
+              - 'button "mixed-prefill, layer 12: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 12: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 13 mixed-prefill, layer 13: 63 scheduled prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 13":
+              - button "Layer 13"
+            - 'cell "mixed-prefill, layer 13: 63 scheduled"':
+              - 'button "mixed-prefill, layer 13: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 13: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 14 mixed-prefill, layer 14: 63 scheduled prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 14":
+              - button "Layer 14"
+            - 'cell "mixed-prefill, layer 14: 63 scheduled"':
+              - 'button "mixed-prefill, layer 14: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 14: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 15 mixed-prefill, layer 15: 63 scheduled prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 15":
+              - button "Layer 15"
+            - 'cell "mixed-prefill, layer 15: 63 scheduled"':
+              - 'button "mixed-prefill, layer 15: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 15: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 16 mixed-prefill, layer 16: 63 scheduled prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 16":
+              - button "Layer 16"
+            - 'cell "mixed-prefill, layer 16: 63 scheduled"':
+              - 'button "mixed-prefill, layer 16: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 16: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 17 mixed-prefill, layer 17: 63 scheduled prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 17":
+              - button "Layer 17"
+            - 'cell "mixed-prefill, layer 17: 63 scheduled"':
+              - 'button "mixed-prefill, layer 17: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 17: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 18 mixed-prefill, layer 18: 63 scheduled prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 18":
+              - button "Layer 18"
+            - 'cell "mixed-prefill, layer 18: 63 scheduled"':
+              - 'button "mixed-prefill, layer 18: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 18: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 19 mixed-prefill, layer 19: 63 scheduled prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 19":
+              - button "Layer 19"
+            - 'cell "mixed-prefill, layer 19: 63 scheduled"':
+              - 'button "mixed-prefill, layer 19: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 19: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 20 mixed-prefill, layer 20: 63 scheduled prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 20":
+              - button "Layer 20"
+            - 'cell "mixed-prefill, layer 20: 63 scheduled"':
+              - 'button "mixed-prefill, layer 20: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 20: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 21 mixed-prefill, layer 21: 63 scheduled prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 21":
+              - button "Layer 21"
+            - 'cell "mixed-prefill, layer 21: 63 scheduled"':
+              - 'button "mixed-prefill, layer 21: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 21: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 22 mixed-prefill, layer 22: 63 scheduled prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 22":
+              - button "Layer 22"
+            - 'cell "mixed-prefill, layer 22: 63 scheduled"':
+              - 'button "mixed-prefill, layer 22: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 22: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 23 mixed-prefill, layer 23: 63 scheduled prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 23":
+              - button "Layer 23"
+            - 'cell "mixed-prefill, layer 23: 63 scheduled"':
+              - 'button "mixed-prefill, layer 23: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 23: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 24 mixed-prefill, layer 24: 63 scheduled prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 24":
+              - button "Layer 24"
+            - 'cell "mixed-prefill, layer 24: 63 scheduled"':
+              - 'button "mixed-prefill, layer 24: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 24: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 25 mixed-prefill, layer 25: 63 scheduled prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 25":
+              - button "Layer 25"
+            - 'cell "mixed-prefill, layer 25: 63 scheduled"':
+              - 'button "mixed-prefill, layer 25: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 25: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 26 mixed-prefill, layer 26: 63 scheduled prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 26":
+              - button "Layer 26"
+            - 'cell "mixed-prefill, layer 26: 63 scheduled"':
+              - 'button "mixed-prefill, layer 26: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 26: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 27 mixed-prefill, layer 27: 63 scheduled prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 27":
+              - button "Layer 27"
+            - 'cell "mixed-prefill, layer 27: 63 scheduled"':
+              - 'button "mixed-prefill, layer 27: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 27: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 28 mixed-prefill, layer 28: 63 scheduled prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 28":
+              - button "Layer 28"
+            - 'cell "mixed-prefill, layer 28: 63 scheduled"':
+              - 'button "mixed-prefill, layer 28: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 28: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 29 mixed-prefill, layer 29: 63 scheduled prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 29":
+              - button "Layer 29"
+            - 'cell "mixed-prefill, layer 29: 63 scheduled"':
+              - 'button "mixed-prefill, layer 29: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 29: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 30 mixed-prefill, layer 30: 63 scheduled prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 30":
+              - button "Layer 30"
+            - 'cell "mixed-prefill, layer 30: 63 scheduled"':
+              - 'button "mixed-prefill, layer 30: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 30: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 31 mixed-prefill, layer 31: 63 scheduled prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 31":
+              - button "Layer 31"
+            - 'cell "mixed-prefill, layer 31: 63 scheduled"':
+              - 'button "mixed-prefill, layer 31: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 31: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 32 mixed-prefill, layer 32: 63 scheduled prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 32":
+              - button "Layer 32"
+            - 'cell "mixed-prefill, layer 32: 63 scheduled"':
+              - 'button "mixed-prefill, layer 32: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 32: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 33 mixed-prefill, layer 33: 63 scheduled prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 33":
+              - button "Layer 33"
+            - 'cell "mixed-prefill, layer 33: 63 scheduled"':
+              - 'button "mixed-prefill, layer 33: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 33: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 34 mixed-prefill, layer 34: 63 scheduled prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 34":
+              - button "Layer 34"
+            - 'cell "mixed-prefill, layer 34: 63 scheduled"':
+              - 'button "mixed-prefill, layer 34: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 34: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 35 mixed-prefill, layer 35: 63 scheduled prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 35":
+              - button "Layer 35"
+            - 'cell "mixed-prefill, layer 35: 63 scheduled"':
+              - 'button "mixed-prefill, layer 35: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 35: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+          - 'row "Layer 36 mixed-prefill, layer 36: 63 scheduled prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+            - rowheader "Layer 36":
+              - button "Layer 36"
+            - 'cell "mixed-prefill, layer 36: 63 scheduled"':
+              - 'button "mixed-prefill, layer 36: 63 scheduled"':
+                - generic: S 63
+            - 'cell "prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+              - 'button "prefix-reader, layer 36: 64 existing prefix kv reused, 1 scheduled"':
+                - generic: R 64
+                - generic: S 1
+      - paragraph: This matrix is bounded for large batches. Select a request or token to inspect a smaller scope.
+  - complementary "Inspector":
+    - paragraph: Component
+    - heading "Model execution" [level=2]
+    - generic "Measured diagnostic profile"
+    - paragraph: Eager execution with profiler overhead. Native profiler time is independent of the host replay playhead. Measurements apply to packed batch activities; individual token and head durations remain unknown.
+    - paragraph: "Capture: completed · coverage: complete · qualification: unverified"
+    - text: Profiled batch
+    - combobox "Profiled batch":
+      - option "Outside mapped batch intervals"
+      - option "step-1"
+      - option "step-2"
+      - option "step-3"
+      - option "step-4"
+      - option "step-5"
+      - option "step-6"
+      - option "step-7"
+      - option "step-8" [selected]
+      - option "step-9"
+      - option "step-10"
+      - option "step-11"
+      - option "step-12"
+      - option "step-13"
+    - paragraph: 12 active recorded activities · 26 activities have no batch/layer correlation.
+    - heading "Layer measurements for step-8" [level=3]
+    - list:
+      - button "Layer 1 · attention"
+      - paragraph: "CPU scope span: 3242.959 µs"
+      - paragraph: "Device 0: activity span 2901.603 µs · busy interval union 121.313 µs · 9 activities on 1 streams"
+      - button "Layer 1 · feed-forward"
+      - paragraph: "CPU scope span: 590.838 µs"
+      - paragraph: "Device 0: activity span 244.545 µs · busy interval union 242.209 µs · 4 activities on 1 streams"
+      - button "Layer 1"
+      - paragraph: "CPU scope span: 4102.496 µs"
+      - paragraph: "Device 0: activity span 3395.491 µs · busy interval union 6.464 µs · 2 activities on 1 streams"
+      - button "Layer 2 · attention"
+      - paragraph: "CPU scope span: 847.277 µs"
+      - paragraph: "Device 0: activity span 788.673 µs · busy interval union 119.936 µs · 8 activities on 1 streams"
+      - button "Layer 2 · feed-forward"
+      - paragraph: "CPU scope span: 258.179 µs"
+      - paragraph: "Device 0: activity span 245.280 µs · busy interval union 242.880 µs · 4 activities on 1 streams"
+      - button "Layer 2"
+      - paragraph: "CPU scope span: 1297.006 µs"
+      - paragraph: "Device 0: activity span 915.329 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+      - button "Layer 3 · attention"
+      - paragraph: "CPU scope span: 897.547 µs"
+      - paragraph: "Device 0: activity span 834.464 µs · busy interval union 119.744 µs · 8 activities on 1 streams"
+      - button "Layer 3 · feed-forward"
+      - paragraph: "CPU scope span: 206.329 µs"
+      - paragraph: "Device 0: activity span 246.497 µs · busy interval union 244.385 µs · 4 activities on 1 streams"
+      - button "Layer 3"
+      - paragraph: "CPU scope span: 1234.575 µs"
+      - paragraph: "Device 0: activity span 920.257 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 4 · attention"
+      - paragraph: "CPU scope span: 947.587 µs"
+      - paragraph: "Device 0: activity span 898.753 µs · busy interval union 119.777 µs · 8 activities on 1 streams"
+      - button "Layer 4 · feed-forward"
+      - paragraph: "CPU scope span: 194.529 µs"
+      - paragraph: "Device 0: activity span 244.385 µs · busy interval union 242.081 µs · 4 activities on 1 streams"
+      - button "Layer 4"
+      - paragraph: "CPU scope span: 1274.256 µs"
+      - paragraph: "Device 0: activity span 978.721 µs · busy interval union 7.072 µs · 2 activities on 1 streams"
+      - button "Layer 5 · attention"
+      - paragraph: "CPU scope span: 971.706 µs"
+      - paragraph: "Device 0: activity span 798.209 µs · busy interval union 119.904 µs · 8 activities on 1 streams"
+      - button "Layer 5 · feed-forward"
+      - paragraph: "CPU scope span: 254.879 µs"
+      - paragraph: "Device 0: activity span 252.032 µs · busy interval union 249.824 µs · 4 activities on 1 streams"
+      - button "Layer 5"
+      - paragraph: "CPU scope span: 1357.955 µs"
+      - paragraph: "Device 0: activity span 991.873 µs · busy interval union 7.104 µs · 2 activities on 1 streams"
+      - button "Layer 6 · attention"
+      - paragraph: "CPU scope span: 876.457 µs"
+      - paragraph: "Device 0: activity span 824.321 µs · busy interval union 119.488 µs · 8 activities on 1 streams"
+      - button "Layer 6 · feed-forward"
+      - paragraph: "CPU scope span: 208.399 µs"
+      - paragraph: "Device 0: activity span 246.080 µs · busy interval union 243.808 µs · 4 activities on 1 streams"
+      - button "Layer 6"
+      - paragraph: "CPU scope span: 1218.826 µs"
+      - paragraph: "Device 0: activity span 940.161 µs · busy interval union 7.104 µs · 2 activities on 1 streams"
+      - button "Layer 7 · attention"
+      - paragraph: "CPU scope span: 868.787 µs"
+      - paragraph: "Device 0: activity span 819.073 µs · busy interval union 120.673 µs · 8 activities on 1 streams"
+      - button "Layer 7 · feed-forward"
+      - paragraph: "CPU scope span: 191.670 µs"
+      - paragraph: "Device 0: activity span 247.841 µs · busy interval union 245.633 µs · 4 activities on 1 streams"
+      - button "Layer 7"
+      - paragraph: "CPU scope span: 1203.726 µs"
+      - paragraph: "Device 0: activity span 913.665 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+      - button "Layer 8 · attention"
+      - paragraph: "CPU scope span: 890.587 µs"
+      - paragraph: "Device 0: activity span 841.984 µs · busy interval union 120.064 µs · 8 activities on 1 streams"
+      - button "Layer 8 · feed-forward"
+      - paragraph: "CPU scope span: 191.029 µs"
+      - paragraph: "Device 0: activity span 244.289 µs · busy interval union 242.049 µs · 4 activities on 1 streams"
+      - button "Layer 8"
+      - paragraph: "CPU scope span: 1210.985 µs"
+      - paragraph: "Device 0: activity span 902.721 µs · busy interval union 7.040 µs · 2 activities on 1 streams"
+      - button "Layer 9 · attention"
+      - paragraph: "CPU scope span: 881.617 µs"
+      - paragraph: "Device 0: activity span 781.697 µs · busy interval union 120.161 µs · 8 activities on 1 streams"
+      - button "Layer 9 · feed-forward"
+      - paragraph: "CPU scope span: 251.779 µs"
+      - paragraph: "Device 0: activity span 248.832 µs · busy interval union 243.648 µs · 4 activities on 1 streams"
+      - button "Layer 9"
+      - paragraph: "CPU scope span: 1264.536 µs"
+      - paragraph: "Device 0: activity span 900.641 µs · busy interval union 7.616 µs · 2 activities on 1 streams"
+      - button "Layer 10 · attention"
+      - paragraph: "CPU scope span: 948.586 µs"
+      - paragraph: "Device 0: activity span 897.729 µs · busy interval union 118.976 µs · 8 activities on 1 streams"
+      - button "Layer 10 · feed-forward"
+      - paragraph: "CPU scope span: 203.640 µs"
+      - paragraph: "Device 0: activity span 244.000 µs · busy interval union 241.760 µs · 4 activities on 1 streams"
+      - button "Layer 10"
+      - paragraph: "CPU scope span: 1284.925 µs"
+      - paragraph: "Device 0: activity span 1012.321 µs · busy interval union 7.552 µs · 2 activities on 1 streams"
+      - button "Layer 11 · attention"
+      - paragraph: "CPU scope span: 882.927 µs"
+      - paragraph: "Device 0: activity span 821.921 µs · busy interval union 120.576 µs · 8 activities on 1 streams"
+      - button "Layer 11 · feed-forward"
+      - paragraph: "CPU scope span: 193.829 µs"
+      - paragraph: "Device 0: activity span 246.976 µs · busy interval union 244.800 µs · 4 activities on 1 streams"
+      - button "Layer 11"
+      - paragraph: "CPU scope span: 1212.286 µs"
+      - paragraph: "Device 0: activity span 919.073 µs · busy interval union 7.072 µs · 2 activities on 1 streams"
+      - button "Layer 12 · attention"
+      - paragraph: "CPU scope span: 881.167 µs"
+      - paragraph: "Device 0: activity span 832.480 µs · busy interval union 119.967 µs · 8 activities on 1 streams"
+      - button "Layer 12 · feed-forward"
+      - paragraph: "CPU scope span: 190.549 µs"
+      - paragraph: "Device 0: activity span 244.321 µs · busy interval union 241.953 µs · 4 activities on 1 streams"
+      - button "Layer 12"
+      - paragraph: "CPU scope span: 1202.216 µs"
+      - paragraph: "Device 0: activity span 896.673 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 13 · attention"
+      - paragraph: "CPU scope span: 880.147 µs"
+      - paragraph: "Device 0: activity span 776.960 µs · busy interval union 119.488 µs · 8 activities on 1 streams"
+      - button "Layer 13 · feed-forward"
+      - paragraph: "CPU scope span: 250.729 µs"
+      - paragraph: "Device 0: activity span 248.896 µs · busy interval union 244.640 µs · 4 activities on 1 streams"
+      - button "Layer 13"
+      - paragraph: "CPU scope span: 1263.636 µs"
+      - paragraph: "Device 0: activity span 898.625 µs · busy interval union 7.104 µs · 2 activities on 1 streams"
+      - button "Layer 14 · attention"
+      - paragraph: "CPU scope span: 884.867 µs"
+      - paragraph: "Device 0: activity span 834.145 µs · busy interval union 120.098 µs · 8 activities on 1 streams"
+      - button "Layer 14 · feed-forward"
+      - paragraph: "CPU scope span: 206.109 µs"
+      - paragraph: "Device 0: activity span 248.352 µs · busy interval union 246.112 µs · 4 activities on 1 streams"
+      - button "Layer 14"
+      - paragraph: "CPU scope span: 1224.975 µs"
+      - paragraph: "Device 0: activity span 949.153 µs · busy interval union 7.680 µs · 2 activities on 1 streams"
+      - button "Layer 15 · attention"
+      - paragraph: "CPU scope span: 865.587 µs"
+      - paragraph: "Device 0: activity span 815.425 µs · busy interval union 120.160 µs · 8 activities on 1 streams"
+      - button "Layer 15 · feed-forward"
+      - paragraph: "CPU scope span: 193.249 µs"
+      - paragraph: "Device 0: activity span 245.600 µs · busy interval union 243.424 µs · 4 activities on 1 streams"
+      - button "Layer 15"
+      - paragraph: "CPU scope span: 1206.766 µs"
+      - paragraph: "Device 0: activity span 911.297 µs · busy interval union 7.584 µs · 2 activities on 1 streams"
+      - button "Layer 16 · attention"
+      - paragraph: "CPU scope span: 955.737 µs"
+      - paragraph: "Device 0: activity span 907.169 µs · busy interval union 120.288 µs · 8 activities on 1 streams"
+      - button "Layer 16 · feed-forward"
+      - paragraph: "CPU scope span: 191.490 µs"
+      - paragraph: "Device 0: activity span 243.264 µs · busy interval union 241.152 µs · 4 activities on 1 streams"
+      - button "Layer 16"
+      - paragraph: "CPU scope span: 1277.136 µs"
+      - paragraph: "Device 0: activity span 972.321 µs · busy interval union 7.072 µs · 2 activities on 1 streams"
+      - button "Layer 17 · attention"
+      - paragraph: "CPU scope span: 827.287 µs"
+      - paragraph: "Device 0: activity span 771.553 µs · busy interval union 119.936 µs · 8 activities on 1 streams"
+      - button "Layer 17 · feed-forward"
+      - paragraph: "CPU scope span: 539.728 µs"
+      - paragraph: "Device 0: activity span 466.816 µs · busy interval union 244.128 µs · 4 activities on 1 streams"
+      - button "Layer 17"
+      - paragraph: "CPU scope span: 1549.454 µs"
+      - paragraph: "Device 0: activity span 897.121 µs · busy interval union 7.585 µs · 2 activities on 1 streams"
+      - button "Layer 18 · attention"
+      - paragraph: "CPU scope span: 2503.651 µs"
+      - paragraph: "Device 0: activity span 2103.266 µs · busy interval union 120.481 µs · 8 activities on 1 streams"
+      - button "Layer 18 · feed-forward"
+      - paragraph: "CPU scope span: 581.228 µs"
+      - paragraph: "Device 0: activity span 273.152 µs · busy interval union 243.296 µs · 4 activities on 1 streams"
+      - button "Layer 18"
+      - paragraph: "CPU scope span: 3346.998 µs"
+      - paragraph: "Device 0: activity span 2583.779 µs · busy interval union 7.104 µs · 2 activities on 1 streams"
+      - button "Layer 19 · attention"
+      - paragraph: "CPU scope span: 843.617 µs"
+      - paragraph: "Device 0: activity span 786.817 µs · busy interval union 120.097 µs · 8 activities on 1 streams"
+      - button "Layer 19 · feed-forward"
+      - paragraph: "CPU scope span: 261.179 µs"
+      - paragraph: "Device 0: activity span 247.808 µs · busy interval union 245.632 µs · 4 activities on 1 streams"
+      - button "Layer 19"
+      - paragraph: "CPU scope span: 1306.026 µs"
+      - paragraph: "Device 0: activity span 968.673 µs · busy interval union 7.168 µs · 2 activities on 1 streams"
+      - button "Layer 20 · attention"
+      - paragraph: "CPU scope span: 872.937 µs"
+      - paragraph: "Device 0: activity span 809.953 µs · busy interval union 120.162 µs · 8 activities on 1 streams"
+      - button "Layer 20 · feed-forward"
+      - paragraph: "CPU scope span: 205.080 µs"
+      - paragraph: "Device 0: activity span 244.224 µs · busy interval union 241.984 µs · 4 activities on 1 streams"
+      - button "Layer 20"
+      - paragraph: "CPU scope span: 1209.006 µs"
+      - paragraph: "Device 0: activity span 895.936 µs · busy interval union 7.072 µs · 2 activities on 1 streams"
+      - button "Layer 21 · attention"
+      - paragraph: "CPU scope span: 879.947 µs"
+      - paragraph: "Device 0: activity span 830.273 µs · busy interval union 120.544 µs · 8 activities on 1 streams"
+      - button "Layer 21 · feed-forward"
+      - paragraph: "CPU scope span: 267.199 µs"
+      - paragraph: "Device 0: activity span 263.808 µs · busy interval union 245.984 µs · 4 activities on 1 streams"
+      - button "Layer 21"
+      - paragraph: "CPU scope span: 1277.845 µs"
+      - paragraph: "Device 0: activity span 913.345 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+      - button "Layer 22 · attention"
+      - paragraph: "CPU scope span: 881.797 µs"
+      - paragraph: "Device 0: activity span 834.081 µs · busy interval union 120.801 µs · 8 activities on 1 streams"
+      - button "Layer 22 · feed-forward"
+      - paragraph: "CPU scope span: 191.519 µs"
+      - paragraph: "Device 0: activity span 245.472 µs · busy interval union 242.976 µs · 4 activities on 1 streams"
+      - button "Layer 22"
+      - paragraph: "CPU scope span: 1204.116 µs"
+      - paragraph: "Device 0: activity span 944.673 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 23 · attention"
+      - paragraph: "CPU scope span: 824.868 µs"
+      - paragraph: "Device 0: activity span 773.089 µs · busy interval union 119.777 µs · 8 activities on 1 streams"
+      - button "Layer 23 · feed-forward"
+      - paragraph: "CPU scope span: 199.540 µs"
+      - paragraph: "Device 0: activity span 247.745 µs · busy interval union 245.537 µs · 4 activities on 1 streams"
+      - button "Layer 23"
+      - paragraph: "CPU scope span: 1214.795 µs"
+      - paragraph: "Device 0: activity span 888.577 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 24 · attention"
+      - paragraph: "CPU scope span: 899.597 µs"
+      - paragraph: "Device 0: activity span 837.569 µs · busy interval union 119.746 µs · 8 activities on 1 streams"
+      - button "Layer 24 · feed-forward"
+      - paragraph: "CPU scope span: 211.209 µs"
+      - paragraph: "Device 0: activity span 245.984 µs · busy interval union 243.808 µs · 4 activities on 1 streams"
+      - button "Layer 24"
+      - paragraph: "CPU scope span: 1242.486 µs"
+      - paragraph: "Device 0: activity span 916.992 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 25 · attention"
+      - paragraph: "CPU scope span: 873.657 µs"
+      - paragraph: "Device 0: activity span 825.728 µs · busy interval union 119.871 µs · 8 activities on 1 streams"
+      - button "Layer 25 · feed-forward"
+      - paragraph: "CPU scope span: 190.499 µs"
+      - paragraph: "Device 0: activity span 248.672 µs · busy interval union 246.336 µs · 4 activities on 1 streams"
+      - button "Layer 25"
+      - paragraph: "CPU scope span: 1195.936 µs"
+      - paragraph: "Device 0: activity span 904.801 µs · busy interval union 7.040 µs · 2 activities on 1 streams"
+      - button "Layer 26 · attention"
+      - paragraph: "CPU scope span: 875.227 µs"
+      - paragraph: "Device 0: activity span 827.489 µs · busy interval union 120.192 µs · 8 activities on 1 streams"
+      - button "Layer 26 · feed-forward"
+      - paragraph: "CPU scope span: 190.330 µs"
+      - paragraph: "Device 0: activity span 245.472 µs · busy interval union 243.328 µs · 4 activities on 1 streams"
+      - button "Layer 26"
+      - paragraph: "CPU scope span: 1195.366 µs"
+      - paragraph: "Device 0: activity span 886.273 µs · busy interval union 7.200 µs · 2 activities on 1 streams"
+      - button "Layer 27 · attention"
+      - paragraph: "CPU scope span: 973.977 µs"
+      - paragraph: "Device 0: activity span 870.561 µs · busy interval union 119.552 µs · 8 activities on 1 streams"
+      - button "Layer 27 · feed-forward"
+      - paragraph: "CPU scope span: 194.499 µs"
+      - paragraph: "Device 0: activity span 245.793 µs · busy interval union 243.585 µs · 4 activities on 1 streams"
+      - button "Layer 27"
+      - paragraph: "CPU scope span: 1359.785 µs"
+      - paragraph: "Device 0: activity span 1043.361 µs · busy interval union 7.072 µs · 2 activities on 1 streams"
+      - button "Layer 28 · attention"
+      - paragraph: "CPU scope span: 857.497 µs"
+      - paragraph: "Device 0: activity span 806.944 µs · busy interval union 120.416 µs · 8 activities on 1 streams"
+      - button "Layer 28 · feed-forward"
+      - paragraph: "CPU scope span: 205.229 µs"
+      - paragraph: "Device 0: activity span 244.960 µs · busy interval union 242.560 µs · 4 activities on 1 streams"
+      - button "Layer 28"
+      - paragraph: "CPU scope span: 1205.826 µs"
+      - paragraph: "Device 0: activity span 886.496 µs · busy interval union 7.103 µs · 2 activities on 1 streams"
+      - button "Layer 29 · attention"
+      - paragraph: "CPU scope span: 876.487 µs"
+      - paragraph: "Device 0: activity span 827.809 µs · busy interval union 120.257 µs · 8 activities on 1 streams"
+      - button "Layer 29 · feed-forward"
+      - paragraph: "CPU scope span: 190.210 µs"
+      - paragraph: "Device 0: activity span 246.976 µs · busy interval union 244.832 µs · 4 activities on 1 streams"
+      - button "Layer 29"
+      - paragraph: "CPU scope span: 1197.266 µs"
+      - paragraph: "Device 0: activity span 896.320 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+      - button "Layer 30 · attention"
+      - paragraph: "CPU scope span: 890.417 µs"
+      - paragraph: "Device 0: activity span 842.145 µs · busy interval union 120.479 µs · 8 activities on 1 streams"
+      - button "Layer 30 · feed-forward"
+      - paragraph: "CPU scope span: 190.199 µs"
+      - paragraph: "Device 0: activity span 245.280 µs · busy interval union 242.656 µs · 4 activities on 1 streams"
+      - button "Layer 30"
+      - paragraph: "CPU scope span: 1262.885 µs"
+      - paragraph: "Device 0: activity span 903.809 µs · busy interval union 7.712 µs · 2 activities on 1 streams"
+      - button "Layer 31 · attention"
+      - paragraph: "CPU scope span: 826.647 µs"
+      - paragraph: "Device 0: activity span 775.841 µs · busy interval union 120.127 µs · 8 activities on 1 streams"
+      - button "Layer 31 · feed-forward"
+      - paragraph: "CPU scope span: 197.119 µs"
+      - paragraph: "Device 0: activity span 246.496 µs · busy interval union 244.288 µs · 4 activities on 1 streams"
+      - button "Layer 31"
+      - paragraph: "CPU scope span: 1216.186 µs"
+      - paragraph: "Device 0: activity span 941.441 µs · busy interval union 7.584 µs · 2 activities on 1 streams"
+      - button "Layer 32 · attention"
+      - paragraph: "CPU scope span: 881.317 µs"
+      - paragraph: "Device 0: activity span 819.457 µs · busy interval union 120.608 µs · 8 activities on 1 streams"
+      - button "Layer 32 · feed-forward"
+      - paragraph: "CPU scope span: 203.220 µs"
+      - paragraph: "Device 0: activity span 246.944 µs · busy interval union 244.704 µs · 4 activities on 1 streams"
+      - button "Layer 32"
+      - paragraph: "CPU scope span: 1216.116 µs"
+      - paragraph: "Device 0: activity span 898.465 µs · busy interval union 7.008 µs · 2 activities on 1 streams"
+      - button "Layer 33 · attention"
+      - paragraph: "CPU scope span: 948.287 µs"
+      - paragraph: "Device 0: activity span 899.809 µs · busy interval union 120.320 µs · 8 activities on 1 streams"
+      - button "Layer 33 · feed-forward"
+      - paragraph: "CPU scope span: 186.389 µs"
+      - paragraph: "Device 0: activity span 245.920 µs · busy interval union 243.776 µs · 4 activities on 1 streams"
+      - button "Layer 33"
+      - paragraph: "CPU scope span: 1263.865 µs"
+      - paragraph: "Device 0: activity span 974.945 µs · busy interval union 7.168 µs · 2 activities on 1 streams"
+      - button "Layer 34 · attention"
+      - paragraph: "CPU scope span: 883.817 µs"
+      - paragraph: "Device 0: activity span 836.097 µs · busy interval union 119.904 µs · 8 activities on 1 streams"
+      - button "Layer 34 · feed-forward"
+      - paragraph: "CPU scope span: 244.279 µs"
+      - paragraph: "Device 0: activity span 247.360 µs · busy interval union 245.024 µs · 4 activities on 1 streams"
+      - button "Layer 34"
+      - paragraph: "CPU scope span: 1260.066 µs"
+      - paragraph: "Device 0: activity span 896.641 µs · busy interval union 6.977 µs · 2 activities on 1 streams"
+      - button "Layer 35 · attention"
+      - paragraph: "CPU scope span: 2794.470 µs"
+      - paragraph: "Device 0: activity span 2657.955 µs · busy interval union 120.224 µs · 8 activities on 1 streams"
+      - button "Layer 35 · feed-forward"
+      - paragraph: "CPU scope span: 465.338 µs"
+      - paragraph: "Device 0: activity span 287.584 µs · busy interval union 240.961 µs · 4 activities on 1 streams"
+      - button "Layer 35"
+      - paragraph: "CPU scope span: 3693.437 µs"
+      - paragraph: "Device 0: activity span 2955.011 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+      - button "Layer 36 · attention"
+      - paragraph: "CPU scope span: 1564.895 µs"
+      - paragraph: "Device 0: activity span 1440.033 µs · busy interval union 120.384 µs · 8 activities on 1 streams"
+      - button "Layer 36 · feed-forward"
+      - paragraph: "CPU scope span: 193.169 µs"
+      - paragraph: "Device 0: activity span 248.929 µs · busy interval union 246.785 µs · 4 activities on 1 streams"
+      - button "Layer 36"
+      - paragraph: "CPU scope span: 1991.713 µs"
+      - paragraph: "Device 0: activity span 1724.802 µs · busy interval union 7.136 µs · 2 activities on 1 streams"
+    - heading "KV cache-write operations" [level=3]
+    - paragraph: These are shared batch operations for one layer. Participant membership and correlated GPU activity establish which positions are involved; they do not assign individual token durations.
+    - list "Measured layer cache writes":
+      - button "Layer 1 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 2 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 3 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 4 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 5 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 6 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 7 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 8 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 9 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 10 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 11 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 12 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 13 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 14 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 15 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 16 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 17 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 18 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 19 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 20 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 21 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 22 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 23 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 24 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 25 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 26 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 27 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 28 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 29 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 30 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 31 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 32 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 33 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 34 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 35 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+      - button "Layer 36 · cuda:0"
+      - paragraph: 64 participating positions · 1 correlated GPU activities · AttentionImpl.do_kv_cache_update.returned
+      - button "prefix-reader · position 178"
+      - button "mixed-prefill · position 46"
+      - button "mixed-prefill · position 47"
+      - button "mixed-prefill · position 48"
+      - button "mixed-prefill · position 49"
+      - button "mixed-prefill · position 50"
+      - button "mixed-prefill · position 51"
+      - button "mixed-prefill · position 52"
+      - paragraph: Use the layer matrix for the remaining 56 positions.
+    - heading "Packed input token rows" [level=3]
+    - paragraph: 64 actual rows; 64 including padding. Observed at GPUModelRunner._prepare_inputs.returned. Row order can differ from scheduler order.
+    - button "Previous rows" [disabled]
+    - generic: 0–63 of 64
+    - button "Next rows" [disabled]
+    - list "Measured packed input rows":
+      - button "Row 0 · prefix-reader · position 178"
+      - button "Row 1 · mixed-prefill · position 46"
+      - button "Row 2 · mixed-prefill · position 47"
+      - button "Row 3 · mixed-prefill · position 48"
+      - button "Row 4 · mixed-prefill · position 49"
+      - button "Row 5 · mixed-prefill · position 50"
+      - button "Row 6 · mixed-prefill · position 51"
+      - button "Row 7 · mixed-prefill · position 52"
+      - button "Row 8 · mixed-prefill · position 53"
+      - button "Row 9 · mixed-prefill · position 54"
+      - button "Row 10 · mixed-prefill · position 55"
+      - button "Row 11 · mixed-prefill · position 56"
+      - button "Row 12 · mixed-prefill · position 57"
+      - button "Row 13 · mixed-prefill · position 58"
+      - button "Row 14 · mixed-prefill · position 59"
+      - button "Row 15 · mixed-prefill · position 60"
+      - button "Row 16 · mixed-prefill · position 61"
+      - button "Row 17 · mixed-prefill · position 62"
+      - button "Row 18 · mixed-prefill · position 63"
+      - button "Row 19 · mixed-prefill · position 64"
+      - button "Row 20 · mixed-prefill · position 65"
+      - button "Row 21 · mixed-prefill · position 66"
+      - button "Row 22 · mixed-prefill · position 67"
+      - button "Row 23 · mixed-prefill · position 68"
+      - button "Row 24 · mixed-prefill · position 69"
+      - button "Row 25 · mixed-prefill · position 70"
+      - button "Row 26 · mixed-prefill · position 71"
+      - button "Row 27 · mixed-prefill · position 72"
+      - button "Row 28 · mixed-prefill · position 73"
+      - button "Row 29 · mixed-prefill · position 74"
+      - button "Row 30 · mixed-prefill · position 75"
+      - button "Row 31 · mixed-prefill · position 76"
+      - button "Row 32 · mixed-prefill · position 77"
+      - button "Row 33 · mixed-prefill · position 78"
+      - button "Row 34 · mixed-prefill · position 79"
+      - button "Row 35 · mixed-prefill · position 80"
+      - button "Row 36 · mixed-prefill · position 81"
+      - button "Row 37 · mixed-prefill · position 82"
+      - button "Row 38 · mixed-prefill · position 83"
+      - button "Row 39 · mixed-prefill · position 84"
+      - button "Row 40 · mixed-prefill · position 85"
+      - button "Row 41 · mixed-prefill · position 86"
+      - button "Row 42 · mixed-prefill · position 87"
+      - button "Row 43 · mixed-prefill · position 88"
+      - button "Row 44 · mixed-prefill · position 89"
+      - button "Row 45 · mixed-prefill · position 90"
+      - button "Row 46 · mixed-prefill · position 91"
+      - button "Row 47 · mixed-prefill · position 92"
+      - button "Row 48 · mixed-prefill · position 93"
+      - button "Row 49 · mixed-prefill · position 94"
+      - button "Row 50 · mixed-prefill · position 95"
+      - button "Row 51 · mixed-prefill · position 96"
+      - button "Row 52 · mixed-prefill · position 97"
+      - button "Row 53 · mixed-prefill · position 98"
+      - button "Row 54 · mixed-prefill · position 99"
+      - button "Row 55 · mixed-prefill · position 100"
+      - button "Row 56 · mixed-prefill · position 101"
+      - button "Row 57 · mixed-prefill · position 102"
+      - button "Row 58 · mixed-prefill · position 103"
+      - button "Row 59 · mixed-prefill · position 104"
+      - button "Row 60 · mixed-prefill · position 105"
+      - button "Row 61 · mixed-prefill · position 106"
+      - button "Row 62 · mixed-prefill · position 107"
+      - button "Row 63 · mixed-prefill · position 108"
+    - paragraph: Submitted steps, participants, and recorded executor results.
+    - generic: 7/7
+    - generic: results / submissions
+    - generic: "209"
+    - generic: Playhead event
+    - region "Derived from observations":
+      - list:
+        - generic: Derived
+        - generic: 7 steps have a recorded executor submission; 7 have a recorded result.
+    - generic "Explanation"
+- group "Recording playback":
+  - button "Restart profiler playback":
+  - button "Previous profiled batch":
+  - button "Previous measured activity":
+  - button "Play":
+    - text: Play
+  - button "Next measured activity":
+  - button "Next profiled batch":
+  - slider "Profiler clock" [active]: "6136551"
+  - paragraph: "Profiler clock: 6136.551 ms since trace start. Host replay remains at event 209.|Profiler clock. Host replay stays at its own playhead; no cross-clock alignment or token/head duration is inferred."
+  - generic: Profiler clock · separate from replay
+  - generic: Clock
+  - group "Playback mode":
+    - button "Events"
+    - button "Walkthrough"
+    - button "Rec time"
+    - button "Profile" [pressed]
+  - generic: Speed
+  - combobox "Speed":
+    - option "0.001×" [selected]
+    - option "0.0025×"
+    - option "0.005×"
+    - option "0.01×"
+    - option "0.025×"
+    - option "0.05×"
+    - option "0.1×"
+    - option "0.25×"
+    - option "0.5×"
+    - option "1×"
+    - option "2×"
+    - option "4×"
+  - checkbox "Reduce motion"
+  - text: Reduce motion

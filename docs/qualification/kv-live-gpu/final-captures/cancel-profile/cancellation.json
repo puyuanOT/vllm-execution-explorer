@@ -1,0 +1,10 @@
+{
+  "response": {
+    "status": "cancel_requested"
+  },
+  "observed_completed_steps": [
+    "step-1",
+    "step-2"
+  ],
+  "after_sequence": 71
+}

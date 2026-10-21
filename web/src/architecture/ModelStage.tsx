@@ -22,6 +22,7 @@ export interface ModelStageProps {
   trackedRequestId?: string | null
   trackedTokenPosition?: number | null
   measuredProfile?: MeasuredSceneProfile
+  profileAvailable?: boolean
   onSelect: (selection: Selection) => void
   onArchitectureExplore?: (focus: ArchitectureFocus) => void
 }
@@ -37,9 +38,9 @@ export function ModelStage(props: ModelStageProps) {
   const profile = props.measuredProfile
   const profileTokenCount = profile?.packedRows.filter((row) => !row.isPadding && row.requestId != null && row.tokenPosition != null).length ?? 0
   const evidence = profile ? profile.evidenceKind === "fixture" ? "Synthetic batch/layer activity · fixture profiler clock" : profile.evidenceKind === "gpu" ? "Measured batch/layer activity · profiler clock" : "Profiler batch/layer activity · source unverified"
-    : props.state.trust === "known" ? "Logical model structure · GPU layer timing not captured" : "Trace gap · structure is known; current token participation is unknown"
+    : props.state.trust === "known" ? props.profileAvailable ? "Logical model structure · GPU layer timing available in Profile mode" : "Logical model structure · GPU layer timing not captured" : "Trace gap · structure is known; current token participation is unknown"
   const tracked = props.trackedRequestId && overview && !profile
-    ? `${props.trackedRequestId}${props.trackedTokenPosition == null ? "" : ` / position ${props.trackedTokenPosition}`} / ${step?.requests.some((request) => request.requestId === props.trackedRequestId && (props.trackedTokenPosition == null || props.trackedTokenPosition >= request.rangeStart && props.trackedTokenPosition < request.rangeStart + request.rangeLength)) ? "scheduled in this step" : "not scheduled in this step"}`
+    ? `${requestLabel(props.requestLabels, props.trackedRequestId)}${props.trackedTokenPosition == null ? "" : ` / token position ${props.trackedTokenPosition}`} / ${step?.requests.some((request) => request.requestId === props.trackedRequestId && (props.trackedTokenPosition == null || props.trackedTokenPosition >= request.rangeStart && props.trackedTokenPosition < request.rangeStart + request.rangeLength)) ? "scheduled in this step" : "not scheduled in this step"}`
     : null
   const bottomY = overview ? -4.75 : -4.15
   return <group>
@@ -325,21 +326,28 @@ function ParticipantInputs({ state, requestOrder, requestLabels, selection, acti
   const tokens = useMemo(() => step ? scheduledTokenPositions(step) : [], [step])
   if (!step || state.trust !== "known") return null
   const requestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
-  const request = step.requests.find((item) => item.requestId === requestId) ?? step.requests[0]
+  const request = step.requests.find((item) => item.requestId === requestId)
   const position = selection?.kind === "token" ? selection.position : trackedTokenPosition
-  if (!request) return null
   return <group>
     <group position={[-3.9, y + 0.16, 0.7]}>
       <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
       <SceneText text="Scheduled input positions" position={[0, 0.9, 0]} muted />
     </group>
-    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, request.requestId)}
-      color={requestColor(requestOrder, request.requestId)} selected={request.requestId === requestId}
+    {request ? <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, request.requestId)}
+      color={requestColor(requestOrder, request.requestId)} selected
       detail={`${request.promptTokens} prefill / ${request.generationTokens} decode`}
-      onSelect={() => onSelect({ kind: "request", id: request.requestId })} />
+      onSelect={() => onSelect({ kind: "request", id: request.requestId })} /> : <SceneLabel position={[-1.8, y + 0.25, 0.7]} anchor="right" interactive>
+      <div className="grid max-h-28 w-52 gap-1 overflow-auto" aria-label="Requests scheduled in this step">
+        {step.requests.slice(0, 12).map((item) => <button key={item.requestId} type="button" className="cp-hud w-full px-2 py-1 text-left font-mono text-[10px] text-muted" onClick={() => onSelect({ kind: "request", id: item.requestId })}>
+          <span className="block text-ink">{requestLabel(requestLabels, item.requestId)}</span>
+          <span>Positions {item.rangeStart}–{item.rangeStart + item.rangeLength - 1} · {item.promptTokens} prefill / {item.generationTokens} decode</span>
+        </button>)}
+        {step.requests.length > 12 ? <span className="text-xs text-muted">{step.requests.length - 12} more requests in the layer matrix</span> : null}
+      </div>
+    </SceneLabel>}
     <InputCaption position={[0.75, y, 0.8]} lines={[
       { text: summary, tone: "strong" },
-      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / p${position}${request.requestId === requestId && position >= request.rangeStart && position < request.rangeStart + request.rangeLength ? ` / ${position < request.numPromptTokens ? "prefill" : "decode"}` : " / outside this batch"}` : `${step.requests.length} requests · ${step.totalScheduledTokens} positions` },
+      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / position ${position}${request && position >= request.rangeStart && position < request.rangeStart + request.rangeLength ? ` / ${position < request.numPromptTokens ? "prefill" : "decode"}` : " / outside this batch"}` : `${step.requests.length} requests · ${step.totalScheduledTokens} positions` },
       { text: "Decode lighter · explanatory layout", tone: "muted" },
     ]} />
   </group>
@@ -351,16 +359,16 @@ function MeasuredParticipantInputs({ profile, requestOrder, requestLabels, selec
   const requestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
   const position = selection?.kind === "token" ? selection.position : trackedTokenPosition
   const mapped = tokens.filter((token) => token.requestId === requestId)
-  const shownRequest = mapped[0]?.requestId ?? tokens[0].requestId
+  const shownRequest = mapped[0]?.requestId ?? null
   const shownRows = tokens.filter((token) => token.requestId === shownRequest)
   return <group>
     <group position={[-3.9, y + 0.16, 0.7]}>
       <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
       <SceneText text={profile.evidenceKind === "fixture" ? "Fixture packed rows" : "Observed packed rows"} position={[0, 0.9, 0]} muted />
     </group>
-    <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, shownRequest)} detail={`${shownRows.length} mapped input positions`}
+    {shownRequest ? <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, shownRequest)} detail={`${shownRows.length} mapped input positions`}
       color={requestColor(requestOrder, shownRequest)} selected={shownRequest === requestId}
-      onSelect={() => onSelect({ kind: "request", id: shownRequest })} />
+      onSelect={() => onSelect({ kind: "request", id: shownRequest })} /> : <SceneText text={`${new Set(tokens.map((token) => token.requestId)).size} requests · whole packed batch`} position={[-0.65, y, 0.7]} />}
     <InputCaption position={[0.75, y, 0.8]} lines={[
       { text: summary, tone: "strong" },
       { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / p${position}${mapped.some((token) => token.position === position) ? " / mapped" : " / outside this batch"}` : `${tokens.length} real input rows · padding excluded` },

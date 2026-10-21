@@ -116,6 +116,7 @@ class VllmSession:
         self._profile: Any = None
         self._engine_lease: _EngineSessionLease | None = None
         self.profiling_record: dict[str, Any] | None = None
+        self.kv_cache_record: dict[str, Any] | None = None
 
     @classmethod
     def open(cls, recording: Any, body: Any) -> VllmSession:
@@ -174,7 +175,7 @@ class VllmSession:
             session._describe(body, version)
             from runner.profiling import DiagnosticProfile
 
-            session._profile = DiagnosticProfile(engine, core, recording, profiling, session.architecture_record)
+            session._profile = DiagnosticProfile(engine, core, recording, profiling, session.architecture_record, session.adapter)
             session._profile.start()
             session.profiling_record = session._profile.record
             recording.event(
@@ -205,6 +206,8 @@ class VllmSession:
             raise RuntimeError("the live engine takes text prompts")
         params = SamplingParams(**_sampling_kwargs(self._sampling, max_output_tokens))
         self.engine.add_request(request_id, prompt, params)
+        if self._profile is not None:
+            self._profile.note_request_arrival(request_id)
         self._request_ids.append(request_id)
         self._seen_tokens[request_id] = []
         self._seen_text[request_id] = ""
@@ -265,6 +268,8 @@ class VllmSession:
             None if lora is None else lora.request,
             priority=request.priority,
         )
+        if self._profile is not None:
+            self._profile.note_request_arrival(request.request_id)
         self._request_ids.append(request.request_id)
         self._seen_tokens[request.request_id] = []
         self._seen_text[request.request_id] = ""
@@ -285,6 +290,8 @@ class VllmSession:
 
     def step(self) -> list[ObservedChunk]:
         try:
+            if self._profile is not None:
+                self._profile.before_step()
             outputs = self.engine.step()
         except Exception:
             if self._profile is not None:
@@ -384,6 +391,14 @@ class VllmSession:
         from runner.architecture import describe_architecture
 
         self.architecture_record = describe_architecture(config.model_config, cache_groups=self.adapter.cache_inventory["groups"])
+        from vllm_030.cache_tensors import loaded_cache_tensors
+        worker = getattr(getattr(core.model_executor, "driver_worker", None), "worker", None)
+        model_runner = getattr(worker, "model_runner", None)
+        if model_runner is not None and hasattr(model_runner, "model"):
+            self.kv_cache_record, _records = loaded_cache_tensors(model_runner, self.adapter.cache_inventory)
+        else:
+            self.kv_cache_record = {"contract_version": 1, "status": "unavailable", "reason": "The loaded cache tensors are not exposed by this model executor.",
+                                    "storages": [], "layers": [], "unique_storage_bytes": None, "observation_boundary": "loaded_attention_cache_tensors"}
         scheduled = getattr(config.scheduler_config, "max_num_scheduled_tokens", None)
         batched = getattr(config.scheduler_config, "max_num_batched_tokens", None)
         self.engine_settings = {
@@ -398,6 +413,7 @@ class VllmSession:
             "scheduling_policy": str(getattr(config.scheduler_config, "policy", "fcfs")),
             "long_prefill_token_threshold": int(getattr(config.scheduler_config, "long_prefill_token_threshold", 0)),
             "kv_cache_memory_bytes": getattr(config.cache_config, "kv_cache_memory_bytes", None),
+            "kv_cache_dtype": getattr(config.cache_config, "cache_dtype", None),
             "continuous_batching": True,
             "continuous_batching_note": "Core iteration scheduling behavior; there is no native on/off setting.",
             "enforce_eager": bool(getattr(config.model_config, "enforce_eager", False)),

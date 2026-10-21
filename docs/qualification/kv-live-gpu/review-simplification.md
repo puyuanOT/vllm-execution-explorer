@@ -1,0 +1,40 @@
+# Independent final simplification review
+
+Reviewed on 2026-10-07 by an agent that authored none of the implementation, capture helpers or retained experiments. Scope is the whole PR against `codex/arrival-diamonds`, including the final real-demo changes, GPU qualification helpers and HTTP cancellation repair present in the worktree. This is a source and retained-evidence review; this reviewer did not execute GPU work or operate the browser.
+
+## Result
+
+No significant simplification issue remains. The added runtime, replay and presentation paths serve distinct requirements. The implementation reuses production capture, normalization and replay logic; it does not replace these with a separate demo simulator. The production demo catalog contains three actual GPU recordings, while synthetic fixtures remain useful for deterministic replay and failure regression coverage.
+
+One nonblocking dead interface was identified during review: `SelectionInspector` accepted a `profileTimeUs` property without reading it, and both inspector instances in `App` supplied it. The owner removed the property and both arguments. I inspected the repair: `ExecutionWorkspace` and `LayerTokenMatrix` still receive the independent native clock, and the profiler inspector's existing `onProfileTime` navigation remains intact. No runtime behavior depends on the removed property.
+
+The owner also corrected the stale design-document statement that the numerical GPU lesson awaited qualification. The updated paragraph describes the real A6000 default and links its scoped qualification. Both observations are resolved in the reviewed source.
+
+## Production paths and complexity
+
+- `CacheWriteCapture` owns native update scopes, bounded participant identities, selected snapshot clones, allocation generations and deferred readback. These responsibilities belong together because snapshot attribution must retain the original update boundary before allocation reuse. CPU readback occurs after native profiling stops, and snapshot gather/copy launches are outside the native update scope.
+- The cache metadata path is available independently of diagnostic profiling. The second metadata inspection used when installing hooks retains live module references, whereas the manifest retains serializable configuration. These are distinct consumers; combining them into persistent module state would add coupling for little benefit.
+- `replay/src/kv.ts` separates configuration, the layer/token state matrix and historical numerical selection. Physical allocations are counted once, and numerical snapshots resolve exact pool/group/block/generation/slot identities. Existing-prefix reuse, an unavailable numerical slice and a later write completion have different evidence requirements and should remain separate states.
+- The scene uses the existing instanced physical pool and demand render loop. A tensor drill constructs at most 32 dimension segments and two backing meshes, without introducing another animation loop or multiplying physical cache capacity. Native form controls and the inspector share token/layer/head/K/V selection rather than maintaining independent selection stores.
+- The real demo loader opens the standard bundled-recording path and preserves the editable draft. The removed fixture selector does not leave another user-facing synthetic execution route. Saved fixture files and the backend fixture mode remain for regression coverage.
+- Cancellation reuses one `consume` function for normal chunks and the final nonstepping drain. The bounded owner acknowledgment prevents the driver from finalizing before an in-flight chunk is queued. The completion flag is published after that chunk, and cancellation is terminal. This repair removes duplicated output-bookkeeping code rather than adding another result representation.
+
+The later column-ruler adjustment in `CacheStage.tsx` is also appropriately small: `Math.max(4, rulerStep(layout.columns))` reduces overlapping labels for the 113-block pool while leaving geometry, instancing, raycasting, block IDs and selection unchanged. It introduces no additional layout or navigation state. Inspected the subsequent `final-ruler-spacing-dom.txt` and `final-demo.png`: column labels are now 0, 4 and 8, remain separated visually, and the actual pool still contains 113 blocks.
+
+Inspected `final-post-cleanup-profile-active-dom.txt` and `final-post-cleanup-profile-completed-dom.txt`. After removing the unused inspector property, the layer-1 shared operation still changes from active to completed on the independent native clock, with 63 `mixed-prefill` inputs and one `prefix-reader` input; the reader's existing prefix KV remains distinguished. The owner repeated all 73 web tests and the TypeScript/Vite build successfully after these small final changes. No issue remains in either reassessed change.
+
+## Tests and qualification helpers
+
+The new tests protect distinct boundaries: aliased storage counting; native manager/kernel addresses; immutable snapshot ownership before reuse; byte limits; skipped GPU slots; clone-kernel exclusion; combined step/admission triggers; exact allocation matching; gaps and older recordings; parser rejection of mismatched attribution; and inference restoration while preserving operator connection settings. The cancellation suite separately exercises cancellation, deadlines, owner cleanup failure, early cancellation, final-chunk publication ordering, acknowledgment timeout and direct sessions that must never step during cancellation. Removing these as redundant would lose meaningful regressions.
+
+The qualification scripts have complementary roles. `capture.py` delegates API execution and retention to the existing qualification helper. `assess.py` inspects unchanged artifacts and native correlations. `native_reference.py` adds an explicitly separate source-input observer to compare native K/V input values against production cache snapshots. The duplicated numerical comparisons in the observer and retained-artifact assessment provide independent execution-time and post-capture checks; they are not production abstractions or parallel inference implementations.
+
+Inspected the five final API assessment files: demo 33 checks, request trigger 30, byte limit 30, diagnostics off 20 and cancellation 31, all passing. The UI-targeted rerun passes 33 checks. The final native reference passes ten checks and retains 24 bitwise-equal BF16 source/cache comparisons. The preceding cancellation failure remains distinguishable from the successful final-source repeat. Reviewed the retained final native-clock active/completed DOM, captured Layer 2 rerun values, compact tensor controls/focus restoration, draft preservation and clean fresh-browser console evidence. These artifacts substantiate the paths being kept; they do not justify additional general-purpose capture or scene frameworks.
+
+## Independent projection measurement
+
+Executed the production `projectLayerTokenMatrix` against the actual default `run-a413ca908152` recording, at mixed scheduler step 8 and an actual native cache-update interval. The attachment contains 70,357 activities and 468 cache-write operations. The bounded whole-batch projection produces 128 positions, 36 layers and 4,608 cells. After ten warmups, 100 synchronous Node calls on this laptop measured p50 7.68 ms, p95 10.64 ms and maximum 17.93 ms. This is a local projection-cost observation, excluding React rendering, browser layout/presentation, WebGL and GPU completion. It provides no evidence that a broader indexing abstraction or worker pipeline is necessary for this recorded demo.
+
+## Limits
+
+This review does not certify accessibility or performance across devices, every tensor element, other attention backends, multi-GPU layouts or unqualified dtypes. The retained live evidence is scoped to the pinned dense Qwen3 BF16 configuration on the observed single A6000. Final archive packaging and the assessed presentation-only changes do not alter the distributed GPU source identity. No substantiated significant simplification defect is outstanding.
