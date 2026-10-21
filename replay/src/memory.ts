@@ -66,6 +66,7 @@ export interface MemoryProjection {
   intervalMs: number
   phase: string | null
   reason: string | null
+  captureReason: string | null
 }
 
 function object(value: unknown): Record<string, unknown> {
@@ -129,7 +130,8 @@ export function projectMemory(events: TraceEvent[], manifest: RecordingManifest 
   const firstEventNs = ns(events[0]?.monotonic_ns)
   const firstQueryNs = samples[0]?.startNs ?? null
   const originNs = firstEventNs == null ? firstQueryNs : firstQueryNs != null && firstQueryNs < firstEventNs ? firstQueryNs : firstEventNs
-  return { samples, current, latestAttempt, inventory, timeNs, originNs, ageMs, inventoryAgeMs, gap, intervalMs, phase, reason }
+  const captureReason = metadata.status === "partial" ? typeof metadata.reason === "string" ? metadata.reason : "The memory sampler did not finish before the capture closed." : null
+  return { samples, current, latestAttempt, inventory, timeNs, originNs, ageMs, inventoryAgeMs, gap, intervalMs, phase, reason, captureReason }
 }
 
 export function storageBreakdown(inventory: MemoryInventory | null, device: string): Array<{ category: string; bytes: number; storageCount: number }> {

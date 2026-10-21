@@ -76,7 +76,6 @@ export function ExecutionWorkspace({
   colors: Record<string, string>
   selection: Selection | null
   highlightedIds: Set<string>
-  highlightedStepIds: Set<string>
   view: WorkspaceView
   onView: (view: WorkspaceView) => void
   timeBasisLabel: string

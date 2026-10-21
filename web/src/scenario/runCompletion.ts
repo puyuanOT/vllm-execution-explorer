@@ -6,15 +6,6 @@ export function ownedLiveRun(expectedRunId: string, live: RunSnapshot | null, us
   return expectedRunId && !userOpenedRecording && live?.run_id === expectedRunId ? live : null
 }
 
-export function shouldLoadExpectedRecording(
-  expectedRunId: string,
-  live: RunSnapshot | null,
-  userOpenedRecording: boolean,
-): live is RunSnapshot & { run_id: string } {
-  if (!expectedRunId || userOpenedRecording || live?.run_id !== expectedRunId) return false
-  return live.status === "completed" && live.finalized === true
-}
-
 export function expectedRunFailure(
   expectedRunId: string,
   live: RunSnapshot | null,

@@ -62,6 +62,61 @@ test("remote binary parts preserve the pinned base path and original part order"
   assert.deepEqual(calls, urls.map((url) => `${baseUrl.slice(0, -1)}${url}`))
 })
 
+test("materialized canonical recordings load locally without any external request", async () => {
+  const url = "/recordings/demo/events.jsonl"
+  const calls: string[] = []
+  const original = '{"request":"offline 世界"}\n'
+  const result = await fetchRecordingText(url, {
+    assets: { [url]: { encoding: "gzip", parts: ["/recordings/demo/transport/part.bin"] } },
+    preferLocal: true,
+    fetcher: async (input) => {
+      calls.push(String(input))
+      assert.equal(String(input), url)
+      return new Response(original, { headers: { "content-type": "application/json" } })
+    },
+  })
+  assert.equal(result, original)
+  assert.deepEqual(calls, [url])
+})
+
+test("missing canonical files and Vite HTML fallbacks load the immutable transport", async () => {
+  const original = '{"request":"captured"}\n'
+  const url = "/recordings/demo/events.jsonl"
+  const part = "/recordings/demo/transport/part.bin"
+  for (const local of [new Response("Missing", {status:404}), new Response("<!doctype html><html>SPA</html>", {headers:{"content-type":"text/html; charset=utf-8"}})]) {
+    const calls: string[] = []
+    const result = await fetchRecordingText(url, {
+      assets: { [url]: {encoding:"gzip", parts:[part]} },
+      preferLocal: true,
+      baseUrl: "https://cdn.example.test/pinned/web/public",
+      fetcher: async (input) => {
+        calls.push(String(input))
+        return calls.length === 1 ? local : new Response(gzipSync(original))
+      },
+    })
+    assert.equal(result, original)
+    assert.deepEqual(calls, [url, `https://cdn.example.test/pinned/web/public${part}`])
+  }
+})
+
+test("local file errors and invalid content are not silently replaced by remote recordings", async () => {
+  const url = "/recordings/demo/events.jsonl"
+  const assets: RecordingAssetMap = { [url]: {encoding:"gzip", parts:["/part.bin"]} }
+  const calls: string[] = []
+  await assert.rejects(fetchRecordingText(url, {
+    assets,
+    preferLocal: true,
+    fetcher: async (input) => { calls.push(String(input)); return new Response("Unavailable", {status:503}) },
+  }), /HTTP 503/)
+  assert.deepEqual(calls, [url])
+  const invalid = "{broken json"
+  assert.equal(await fetchRecordingText(url, {
+    assets,
+    preferLocal: true,
+    fetcher: async () => new Response(invalid, {headers:{"content-type":"application/json"}}),
+  }), invalid)
+})
+
 test("missing parts fail with the affected part URL and HTTP status", async () => {
   const gzip = gzipSync("The complete recording must be present.")
   const assets: RecordingAssetMap = { "/recordings/demo/events.jsonl": { encoding: "gzip", parts: ["/first.bin", "/missing.bin"] } }

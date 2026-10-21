@@ -7,6 +7,7 @@ import {
   type TraceEvent,
 } from "../../replay/src/reduce.ts"
 import { recordingConfiguration, type RecordingConfiguration } from "./shell/demoCatalog.ts"
+import { HOSTED_DEMO } from "./hosting.ts"
 import { fetchRecordingText } from "./recordingAssets.ts"
 
 export interface CatalogEntry {
@@ -158,7 +159,7 @@ export async function loadCatalog(): Promise<CatalogEntry[]> {
   const body = (await response.json()) as { recordings: CatalogEntry[] }
   return Promise.all(body.recordings.map(async (entry) => {
     try {
-      const manifest = parseRecordingJson<RecordingManifest>(await fetchRecordingText(`/recordings/${encodeURIComponent(entry.id)}/manifest.json`))
+      const manifest = await fetchJson<RecordingManifest>(`/recordings/${encodeURIComponent(entry.id)}/manifest.json`)
       return { ...entry, configuration: recordingConfiguration(manifest) }
     } catch (error) {
       return { ...entry, configurationError: error instanceof Error ? error.message : "Recording configuration could not be read." }
@@ -217,10 +218,11 @@ export async function loadFiles(files: FileList): Promise<LoadedRecording> {
 }
 
 async function loadFromBase(base: string, source: string): Promise<LoadedRecording> {
-  const manifest = parseRecordingJson<RecordingManifest>(await fetchRecordingText(`${base}/manifest.json`))
-  const events = parseJsonl<TraceEvent>(await fetchRecordingText(`${base}/events.jsonl`))
-  const contentText = await fetchRecordingText(`${base}/content.jsonl`)
-  const profile = await loadProfile(manifest, () => fetchRecordingText(`${base}/${readProfileArtifact(manifest)!.path}`))
+  const options = { preferLocal: !HOSTED_DEMO }
+  const manifest = parseRecordingJson<RecordingManifest>(await fetchRecordingText(`${base}/manifest.json`, options))
+  const events = parseJsonl<TraceEvent>(await fetchRecordingText(`${base}/events.jsonl`, options))
+  const contentText = await fetchRecordingText(`${base}/content.jsonl`, options)
+  const profile = await loadProfile(manifest, () => fetchRecordingText(`${base}/${readProfileArtifact(manifest)!.path}`, options))
   return { source, manifest, events, content: parseJsonl<ContentRecord>(contentText), ...profile }
 }
 

@@ -54,6 +54,14 @@ test("unmatched clock domains never align with host events", () => {
   assert.equal(view.samples.length, 0)
 })
 
+test("partial memory capture retains valid samples and exposes the shutdown limitation", () => {
+  const events = [sample(1, 100)]
+  const view = projectMemory(events, { gpu_memory: { status: "partial", reason: "Sampler shutdown timed out." } }, 1)
+  assert.equal(view.current?.devices[0].used, 100)
+  assert.equal(view.captureReason, "Sampler shutdown timed out.")
+  assert.equal(projectMemory(events, { gpu_memory: { status: "completed" } }, 1).captureReason, null)
+})
+
 test("trace gaps prevent future memory measurements and maxima from becoming observed", () => {
   const events = [sample(1, 100), event(2, "trace_gap", { reason: "buffer_exhausted" }), sample(3, 900)]
   const view = projectMemory(events, null, 3)

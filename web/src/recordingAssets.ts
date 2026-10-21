@@ -6,6 +6,7 @@ export type RecordingAssetMap = Record<string, { encoding: "gzip"; parts: string
 interface RecordingAssetOptions {
   assets?: RecordingAssetMap
   baseUrl?: string
+  preferLocal?: boolean
   fetcher?: typeof fetch
   signal?: AbortSignal
 }
@@ -23,6 +24,13 @@ export async function fetchRecordingText(url: string, options: RecordingAssetOpt
     return response.text()
   }
   if (!asset.parts.length) throw new Error(`Compressed recording ${url} has no asset parts.`)
+  if (options.preferLocal) {
+    const local = await fetcher(url, { signal })
+    // Vite's SPA fallback serves index.html with status 200 for missing recording files.
+    if (local.ok && !local.headers.get("content-type")?.includes("text/html")) return local.text()
+    await local.body?.cancel()
+    if (!local.ok && local.status !== 404) throw new Error(`Could not read ${url} (HTTP ${local.status}).`)
+  }
   const baseUrl = (options.baseUrl ?? recordingAssetBaseUrl).replace(/\/+$/, "")
 
   let partIndex = 0

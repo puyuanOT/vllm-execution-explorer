@@ -29,6 +29,7 @@ export function GpuMemoryPanel({ events, manifest, sequence, live = false }: { e
     </div>
     <Modal open={detailsOpen} onOpenChange={setDetailsOpen} title="Memory breakdown" description={`${live ? "Live" : "Recorded"} GPU measurements at the host playhead. Memory counters and storage attribution use separately captured observations.`}>
       <div className="grid gap-3">
+        {memory.captureReason ? <p className="m-0 text-pretty text-xs text-warn" role="status">Memory capture incomplete: {memory.captureReason}</p> : null}
         {provenanceNote ? <p className="m-0 text-pretty text-xs text-warn" role="status">{provenanceNote}</p> : null}
         {!device ? <div className="grid gap-2">
           <p className="m-0 text-pretty text-sm text-muted" role="status">{waitingForSample ? "Waiting for the first GPU memory sample…" : memory.reason}</p>

@@ -72,15 +72,13 @@ import { curatedDemos, demoSelection, initialDemo, INITIAL_DEMO_SELECTION, remem
 import { firstIterationSequence } from "./iterationPlayback.ts"
 import { requestColor } from "./theme.ts"
 import { createRecordingLoader, type RecordingLoadCallbacks } from "./scenario/recordingLoad.ts"
+import { HOSTED_DEMO, LOCAL_CAPTURE_MESSAGE } from "./hosting.ts"
 
 const EMPTY_STAGES: SetupStage[] = [
   { id: "connect", label: "Reach execution host", status: "pending" },
   { id: "runtime", label: "Inspect CUDA and vLLM runtime", status: "pending" },
   { id: "ready", label: "Confirm loopback controller", status: "pending" },
 ]
-
-const HOSTED_DEMO = true
-const LOCAL_CAPTURE_MESSAGE = "Live capture runs in the local app and controller. Clone the repository to connect your own GPU host."
 
 const GPU_DEMO_LOAD_ERROR = "The recorded GPU demo could not be opened. Check that the recording files are available and try again."
 
@@ -168,10 +166,6 @@ export function App() {
     },
   }
   useEffect(() => () => recordingLoader.cancel(), [recordingLoader])
-
-  useEffect(() => {
-    document.title = `${route === "explore" ? "Explore" : "Configure"} · vLLM Execution Explorer`
-  }, [route])
 
   const acceptLiveRecording = useCallback((loaded: LoadedRecording) => {
     if (!expectedRun.current || loaded.source !== expectedRun.current || userOpened.current) return
@@ -354,7 +348,7 @@ export function App() {
   }, [content, draft.scenario, index, manifest, sequence, showingDraft, showingLive, submitted, viewState])
   const requestOrder = useMemo(() => index.roster.samples.map((sample) => sample.id), [index])
   const colors = useMemo(() => Object.fromEntries(requestOrder.map((id) => [id, requestColor(requestOrder, id)])), [requestOrder])
-  const highlighted = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
+  const highlightedIds = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
   const maxSequence = built.player?.maxSequence ?? 0
   const telemetrySamples = useMemo(() => telemetrySeries(built.player), [built.player])
   const telemetry = useMemo(() => viewState ? telemetryThrough(telemetrySamples, telemetryPoint(viewState)) : [], [telemetrySamples, viewState])
@@ -964,8 +958,7 @@ export function App() {
               requestOrder={requestOrder}
               colors={colors}
               selection={selection}
-              highlightedIds={highlighted.ids}
-              highlightedStepIds={highlighted.steps}
+              highlightedIds={highlightedIds}
               view={view}
               onView={setView}
               timeBasisLabel={mode === "measured" ? `Native profiler clock · ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start · host replay at event ${sequence}` : showingDraft
@@ -1109,22 +1102,19 @@ export function App() {
   )
 }
 
-function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null, trackedRequestId: string | null): { ids: Set<string>; steps: Set<string> } {
+function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null, trackedRequestId: string | null): Set<string> {
   const ids = new Set<string>()
-  const steps = new Set<string>()
-  if (!state) return { ids, steps }
+  if (!state) return ids
   if (trackedRequestId) ids.add(trackedRequestId)
-  if (!selection) return { ids, steps }
+  if (!selection) return ids
   if (selection.kind === "request") {
     ids.add(selection.id)
-    for (const step of state.steps) if (step.requests.some((request) => request.requestId === selection.id)) steps.add(step.id)
   }
   if (selection.kind === "step") {
-    steps.add(selection.id)
     const step = state.steps.find((item) => item.id === selection.id)
     for (const request of step?.requests ?? []) ids.add(request.requestId)
   }
-  return { ids, steps }
+  return ids
 }
 
 function promptMap(scenario: ScenarioDraft): Record<string, string> {

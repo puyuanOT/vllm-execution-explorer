@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/puyuanOT/vllm-execution-explorer",
+  "branch": "main",
+  "commit": "41339e9865fca547d55c76fee686a62ccfad2243",
+  "build": "public-static",
+  "source_files": 148,
+  "source_digest_sha256": "47b4eab5af83acd05057f24b05c4ff4700ff0901b4ba8ac03abef143d85fa036"
+}
