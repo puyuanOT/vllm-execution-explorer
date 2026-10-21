@@ -1,0 +1,9 @@
+# Independent integration and evidence review
+
+Reviewed the final source diff, production call site in `WorkloadSection`, all 22 raw browser observations and assessments, all four screenshots, the complete synthetic fixture manifest and 289-event recording, and retained build/test logs.
+
+No significant implementation or integration issues found. `WorkloadSection` invokes the changed production `ArrivalSequencer`; there is no parallel mock implementation. The source diff does not change workload reducers, storage, serialization, controller dispatch, or scheduler behavior. Retained observations show six points at proportional 0/100/120 ms offsets, conversion without geometry changes, edited offsets surviving reload, duplicate arrivals, empty/remounted charts, long labels, phone widths, and 64 readable rows with settled keyboard scrolling to the end.
+
+The fixture manifest retains the original 2/3/1 request groups and explicitly identifies synthetic evidence with `provenance.real_gpu: false`. The recording contains one run, unique producer sequence identifiers, and one completion for each of the six requests. The README accurately limits this to frontend/controller integration; it makes no real GPU or performance claim. Initial missing-SDK failures and the immediate scroll-animation observation remain retained and explained. The passing test totals agree with the raw logs.
+
+Full-page overflow measurements are retained in the top-level `case.page` entries of `browser-cases.json`: the initial 320 and 360 px cases both have `scrollWidth: 375`; the repaired cases have `scrollWidth: 320` and `360` respectively. This supports the README's regression and repair claim independently of the screenshots. An initial review overlooked those top-level entries; that evidence-gap finding was withdrawn after direct reinspection. No actionable findings remain.

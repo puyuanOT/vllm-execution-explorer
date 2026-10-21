@@ -199,7 +199,7 @@ export function ConfigurePage({
                 Define timed requests, prepare the serving host, and capture instrumented vLLM boundaries. Opening this page never starts a run.
               </p>
             </div>
-            <div className="flex shrink-0 flex-col items-start gap-2.5">
+            <div className="flex min-w-0 max-w-full flex-col items-start gap-2.5">
               <div className="flex flex-wrap gap-1.5" aria-label="Draft summary">
                 <Chip tone={issues.length > 0 ? "warning" : undefined}><Led tone={issues.length > 0 ? "warning" : "ready"} /><span>{issues.length > 0 ? `${issues.length} to review` : "Draft ready"}</span></Chip>
                 <Chip>{scenario.batches.length} {scenario.batches.length === 1 ? "batch" : "batches"}</Chip>

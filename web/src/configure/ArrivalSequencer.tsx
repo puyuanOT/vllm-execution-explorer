@@ -1,94 +1,107 @@
-import { useLayoutEffect, useRef, useState } from "react"
+import { useId, useLayoutEffect, useRef, useState } from "react"
 
 import { arrivalAxis } from "./arrivalAxis.ts"
+import { cn } from "../lib/cn.ts"
 import { formatTime } from "../scenario/time.ts"
 import type { ScenarioDraft, TimeUnit } from "../scenario/types.ts"
 import { requestColor } from "../theme.ts"
 
-const LABELS = 112
-const PREP = 64
-const HEIGHT = 136
-const TOP = 26
+const TOP = 48
+const DIAMOND = 5
 
 /** Planned dispatch offsets only; vLLM still decides how arrivals join scheduler steps. */
 export function ArrivalSequencer({ scenario, unit }: { scenario: ScenarioDraft; unit: TimeUnit }) {
   const container = useRef<HTMLDivElement>(null)
+  const descriptionId = useId()
   const [width, setWidth] = useState(640)
   const rows = scenario.batches.flatMap((batch) => batch.samples.map((sample) => ({ batch, sample })))
   const hasRows = rows.length > 0
   useLayoutEffect(() => {
     const element = container.current
     if (!element) return
-    const update = () => setWidth(Math.max(480, element.clientWidth))
+    const update = () => setWidth(element.clientWidth)
     update()
     const observer = new ResizeObserver(update)
     observer.observe(element)
     return () => observer.disconnect()
   }, [hasRows])
   if (!hasRows) return null
-  const order = rows.map((row) => row.sample.id)
-  const latest = Math.max(0, ...scenario.batches.map((batch) => batch.arrivalOffsetMs))
-  const { span, ticks } = arrivalAxis(latest)
-  const left = PREP + 18 + LABELS
-  const right = width - 12
-  const x = (ms: number) => left + (ms / span) * Math.max(40, right - left - 60)
-  const available = HEIGHT - TOP - 22
-  const rowHeight = Math.max(2, Math.min(14, Math.floor(available / rows.length)))
+
+  const compact = width < 440
+  const left = compact ? 90 : 110
+  const right = Math.max(left + 1, width - 24)
+  const rowHeight = compact ? 40 : 32
   const rowY = (index: number) => TOP + index * rowHeight
-  const showLabels = rowHeight >= 10
-  const bottom = rowY(rows.length) + 2
-  const prepBottom = Math.max(bottom, TOP + 48)
-  const height = Math.max(HEIGHT, bottom + 20, prepBottom + 8)
-  const description = scenario.batches
-    .map((batch) => `batch ${batch.label || "untitled"} at ${formatTime(batch.arrivalOffsetMs, unit)} ${unit} with ${batch.samples.length} request${batch.samples.length === 1 ? "" : "s"}`)
-    .join("; ")
+  const bottom = rowY(rows.length - 1) + 22
+  const order = rows.map((row) => row.sample.id)
+  const latest = Math.max(0, ...rows.map((row) => row.batch.arrivalOffsetMs))
+  const { span, ticks } = arrivalAxis(latest)
+  const x = (ms: number) => left + (ms / span) * (right - left)
+  const tickSpace = Math.max(...ticks.map((tick) => formatTime(tick, unit).length)) * 7.2 + 16
+  const tickStride = Math.max(1, Math.ceil(tickSpace / (x(ticks[1] ?? span) - left)))
+  const visibleTicks = ticks.filter((_, index) => index % tickStride === 0)
+  const description = scenario.batches.filter((batch) => batch.samples.length > 0)
+    .map((batch) => `Arrival batch ${batch.label || "untitled"} dispatches ${batch.samples.map((sample) => sample.label || "untitled request").join(", ")} at ${formatTime(batch.arrivalOffsetMs, unit)} ${unit}.`)
+    .join(" ")
   let rowIndex = 0
+
   return (
-    <div className="flex flex-col border border-slate-800 bg-[#060a11] md:flex-row">
-      <div ref={container} className="relative min-w-0 flex-1 overflow-x-auto" role="region" aria-label="Planned request arrivals" tabIndex={0}>
-        <svg width={width} height={height} role="img" aria-label={`Arrival sequencer: ${description}`}>
-          <defs>
-            <pattern id="arrival-prep" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1="0" y1="0" x2="0" y2="6" stroke="#152640" strokeWidth="2" />
-            </pattern>
-          </defs>
-          <rect x={8} y={TOP - 4} width={PREP - 8} height={prepBottom - TOP + 4} fill="url(#arrival-prep)" stroke="#152640" />
-          {["LOAD", "WARM", "RESET"].map((text, index) => <text key={text} x={8 + (PREP - 8) / 2} y={TOP + 16 + index * 13} textAnchor="middle" className="fill-[#6b84a8] font-mono text-[8.5px] tracking-[0.08em]">{text}</text>)}
-          {ticks.map((tick) => (
-            <g key={tick}>
-              <line x1={x(tick)} x2={x(tick)} y1={TOP - 4} y2={bottom} stroke={tick === 0 ? "transparent" : "#131e30"} />
-              <text x={x(tick)} y={bottom + 12} textAnchor="middle" className="fill-slate-500 font-mono text-[9px]">{formatTime(tick, unit)} {unit}</text>
-            </g>
-          ))}
-          {rows.map(({ sample }, index) => (
-            <g key={sample.id}>
-              <rect x={left - 6} y={rowY(index)} width={right - left + 6} height={Math.max(1, rowHeight - 2)} fill={index % 2 ? "#060c17" : "#08101d"} />
-              {showLabels ? <text x={left - 14} y={rowY(index) + rowHeight - 4} textAnchor="end" className="fill-slate-400 font-mono text-[9px]">{sample.label || "untitled"}</text> : null}
-              {showLabels ? <rect x={left - 10} y={rowY(index) + 1} width={3} height={rowHeight - 4} fill={requestColor(order, sample.id)} /> : null}
-            </g>
-          ))}
-          <line x1={x(0)} x2={x(0)} y1={TOP - 12} y2={bottom} stroke="var(--accent)" strokeWidth={1.2} />
-          <text x={x(0) + 5} y={TOP - 8} className="fill-accent font-mono text-[9px] tracking-[0.04em]">t=0 · fresh cache required</text>
+    <div className="min-w-0 border border-slate-800 bg-[#060a11] p-3 sm:p-4">
+      <div className="border-b border-slate-800 pb-3">
+        <span className="cp-label">Planned request arrivals</span>
+        <p className="m-0 mt-1 text-pretty text-xs leading-5 text-slate-400">One diamond per request · shared arrival time per arrival batch</p>
+      </div>
+      <p id={descriptionId} className="sr-only">Diamonds mark planned dispatch instants, not execution durations. Vertical brackets group requests in an arrival batch. {description}</p>
+      <div ref={container} className="mt-3 max-h-96 min-w-0 overflow-y-auto" role="region" aria-label="Planned request arrivals" aria-describedby={descriptionId} tabIndex={0}>
+        <svg width={width} height={bottom} role="img" aria-label="Request dispatch diamonds" aria-describedby={descriptionId}>
+          <title>Planned dispatch instants for each request</title>
+          {visibleTicks.map((tick) => <line key={tick} x1={x(tick)} x2={x(tick)} y1={TOP - 18} y2={bottom} stroke="#172334" />)}
+          <text x={left} y={TOP - 36} className="fill-accent font-mono text-xs">t=0</text>
+          {rows.map(({ batch, sample }, index) => {
+            const px = x(batch.arrivalOffsetMs)
+            const py = rowY(index)
+            return (
+              <g key={sample.id}>
+                <line x1={left} x2={right} y1={py} y2={py} stroke="#172334" />
+                <foreignObject x={0} y={py - 10} width={left - 14} height={22}>
+                  <div className="truncate text-right font-mono text-xs leading-5 text-slate-400" title={sample.label || "Untitled request"}>{sample.label || "Untitled request"}</div>
+                </foreignObject>
+                <path d={`M${px},${py - DIAMOND} L${px + DIAMOND},${py} L${px},${py + DIAMOND} L${px - DIAMOND},${py} Z`} fill={requestColor(order, sample.id)}>
+                  <title>{sample.label || "Untitled request"}: planned dispatch at {formatTime(batch.arrivalOffsetMs, unit)} {unit}, arrival batch {batch.label || "untitled"}</title>
+                </path>
+              </g>
+            )
+          })}
           {scenario.batches.map((batch) => {
+            if (!batch.samples.length) return null
             const first = rowIndex
-            const notes = batch.samples.map((sample) => {
-              const y = rowY(rowIndex++)
-              return <rect key={sample.id} x={x(batch.arrivalOffsetMs)} y={y} width={44} height={Math.max(1, rowHeight - 4)} fill={requestColor(order, sample.id)} opacity={0.85} />
-            })
+            rowIndex += batch.samples.length
             const bx = x(batch.arrivalOffsetMs)
+            const inline = right - bx - 22 >= Math.min(150, Math.max(80, formatTime(batch.arrivalOffsetMs, unit).length * 7.2 + 56))
+            const labelWidth = inline ? Math.min(200, right - bx - 22) : Math.min(200, right - left)
             return (
               <g key={batch.id}>
-                {batch.arrivalOffsetMs > 0 && batch.samples.length ? <line x1={bx} x2={bx} y1={rowY(first) - 3} y2={rowY(rowIndex) - 1} stroke="#e2eaf4" opacity={0.5} /> : null}
-                {notes}
-                {batch.samples.length && showLabels ? <text x={bx + 49} y={rowY(first) + rowHeight - 4} className="fill-slate-100 font-mono text-[9px] font-semibold">{batch.label || "?"}<tspan className="fill-slate-500 font-medium"> +{formatTime(batch.arrivalOffsetMs, unit)}{unit}</tspan></text> : null}
+                {batch.samples.length > 1 ? <path d={`M${bx + 9},${rowY(first)} H${bx + 13} V${rowY(rowIndex - 1)} H${bx + 9}`} fill="none" stroke="#9aaac0" /> : null}
+                <foreignObject x={inline ? bx + 22 : right - labelWidth} y={rowY(first) - (inline ? 10 : 27)} width={labelWidth} height={22}>
+                  <div className={cn("flex items-center gap-1 font-mono text-xs leading-5 text-slate-100", !inline && "justify-end")} title={`Arrival batch ${batch.label || "untitled"} · ${formatTime(batch.arrivalOffsetMs, unit)} ${unit}`}>
+                    <span className="min-w-0 truncate">{batch.label || "Untitled"}</span>
+                    <span className="shrink-0 tabular-nums">· {formatTime(batch.arrivalOffsetMs, unit)} {unit}</span>
+                  </div>
+                </foreignObject>
               </g>
             )
           })}
         </svg>
       </div>
-      <div className="grid shrink-0 content-start gap-1.5 px-3.5 pb-3 md:w-52 md:py-3.5 md:pl-0">
-        <span className="cp-label">Arrival sequencer</span>
-        <span className="text-pretty text-[11.5px] leading-[1.45] text-faint">Capture verifies a fresh prefix cache before planned t=0. Each batch then dispatches at its offset. vLLM still decides how requests join scheduler steps.</span>
+      <svg width={width} height={49} role="img" aria-label={`Planned offset axis in ${unit}`}>
+        <line x1={left} x2={right} y1={1} y2={1} stroke="#253246" />
+        {visibleTicks.map((tick, index) => <text key={tick} x={x(tick)} y={19} textAnchor={index === 0 ? "start" : index === visibleTicks.length - 1 ? "end" : "middle"} className="fill-slate-400 font-mono text-xs tabular-nums">{formatTime(tick, unit)}</text>)}
+        <text x={(left + right) / 2} y={42} textAnchor="middle" className="fill-slate-400 font-mono text-xs">Planned offset ({unit})</text>
+      </svg>
+      <div className="flex items-center gap-2 text-xs text-slate-400"><span className="size-2 rotate-45 bg-accent" aria-hidden="true" />Planned dispatch</div>
+      <div className="mt-3 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-slate-800 pt-3 font-mono text-xs text-slate-400">
+        <span>Clock origin <span className="text-slate-100">t = 0</span></span>
+        <span className="text-pretty">Fresh cache required before dispatch</span>
       </div>
     </div>
   )
