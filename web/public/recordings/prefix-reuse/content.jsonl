@@ -1,0 +1,5 @@
+{"schema_version":"1.0.0","run_id":"prefix-reuse","content_sequence":1,"monotonic_ns":523213187178375,"kind":"prompt_text","request_id":"first","text":"shared prefix"}
+{"schema_version":"1.0.0","run_id":"prefix-reuse","content_sequence":2,"monotonic_ns":523213187189458,"kind":"prompt_text","request_id":"second","text":"shared prefix plus more"}
+{"schema_version":"1.0.0","run_id":"prefix-reuse","content_sequence":3,"monotonic_ns":523213187215375,"kind":"accepted_tokens","request_id":"first","step_id":"step-1","output_position_start":0,"token_ids":[31]}
+{"schema_version":"1.0.0","run_id":"prefix-reuse","content_sequence":4,"monotonic_ns":523213187259041,"kind":"accepted_tokens","request_id":"second","step_id":"step-2","output_position_start":0,"token_ids":[32]}
+{"schema_version":"1.0.0","run_id":"prefix-reuse","content_sequence":5,"monotonic_ns":523213187314333,"kind":"text","request_id":"second","emission_index":0,"text_delta":"Next","token_range":[0,1]}

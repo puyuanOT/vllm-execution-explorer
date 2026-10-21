@@ -1,0 +1,1173 @@
+{
+  "version": 1,
+  "preparation": {
+    "gzipLevel": 6,
+    "gzipHeaderMtime": 0,
+    "gzipHeaderOS": 255,
+    "plainLimitBytes": 1048576,
+    "maxPartBytes": 16777216,
+    "rawArchivesIncluded": false
+  },
+  "summary": {
+    "sourceBytes": 1636582629,
+    "runtimeOriginalBytes": 1110830853,
+    "compressedTransportBytes": 113530168,
+    "deploymentAssetBytes": 116769900,
+    "gzipFiles": 32,
+    "gzipChunks": 33,
+    "maxAssetBytes": 16777216,
+    "omittedRawFiles": 14,
+    "omittedRawBytes": 525751776
+  },
+  "assets": [
+    {
+      "url": "/recordings/cancellation/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 747,
+      "originalSha256": "badaf58b4d408a723065d90dc5c30f054fa361c607c1b420ed077aa9037c1d9e",
+      "parts": [
+        {
+          "url": "/recordings/cancellation/content.jsonl",
+          "size": 747,
+          "sha256": "badaf58b4d408a723065d90dc5c30f054fa361c607c1b420ed077aa9037c1d9e"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/cancellation/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 3117,
+      "originalSha256": "6f91cca21478fe3e39d17ff6afe8f66b2ccf13c02c6d1085bf4e18af5d4b3011",
+      "parts": [
+        {
+          "url": "/recordings/cancellation/events.jsonl",
+          "size": 3117,
+          "sha256": "6f91cca21478fe3e39d17ff6afe8f66b2ccf13c02c6d1085bf4e18af5d4b3011"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/cancellation/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1802,
+      "originalSha256": "6b2c899cde55ec8e0ece9de44a3687cd986ddc03c7a9b98a6fd440aab47b43da",
+      "parts": [
+        {
+          "url": "/recordings/cancellation/manifest.json",
+          "size": 1802,
+          "sha256": "6b2c899cde55ec8e0ece9de44a3687cd986ddc03c7a9b98a6fd440aab47b43da"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/chunked-prefill/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 1400,
+      "originalSha256": "55ec93cfd1deb84bc7988ca1b0730618f3aa8fb891bc6adbe497fa3f992ecf93",
+      "parts": [
+        {
+          "url": "/recordings/chunked-prefill/content.jsonl",
+          "size": 1400,
+          "sha256": "55ec93cfd1deb84bc7988ca1b0730618f3aa8fb891bc6adbe497fa3f992ecf93"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/chunked-prefill/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 5148,
+      "originalSha256": "e26106c49ffd7006cb37b3810fa038e74c6808815018c171a39526c6d71bf94a",
+      "parts": [
+        {
+          "url": "/recordings/chunked-prefill/events.jsonl",
+          "size": 5148,
+          "sha256": "e26106c49ffd7006cb37b3810fa038e74c6808815018c171a39526c6d71bf94a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/chunked-prefill/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1833,
+      "originalSha256": "214befaedc6eec09f58f27758a66117eb22cef7d69f66fb133bfc8b6e634a028",
+      "parts": [
+        {
+          "url": "/recordings/chunked-prefill/manifest.json",
+          "size": 1833,
+          "sha256": "214befaedc6eec09f58f27758a66117eb22cef7d69f66fb133bfc8b6e634a028"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/continuous-batching/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 2969,
+      "originalSha256": "9215a105d7ceb9b14e7dbffba1602da7620d5c20d8d474256720762e0afb282d",
+      "parts": [
+        {
+          "url": "/recordings/continuous-batching/content.jsonl",
+          "size": 2969,
+          "sha256": "9215a105d7ceb9b14e7dbffba1602da7620d5c20d8d474256720762e0afb282d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/continuous-batching/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 10659,
+      "originalSha256": "452f4763cf8357ae10e09b29ce42e6b50457827ccf47b6eb6aced7535f6d620f",
+      "parts": [
+        {
+          "url": "/recordings/continuous-batching/events.jsonl",
+          "size": 10659,
+          "sha256": "452f4763cf8357ae10e09b29ce42e6b50457827ccf47b6eb6aced7535f6d620f"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/continuous-batching/manifest.json",
+      "encoding": "identity",
+      "originalSize": 2436,
+      "originalSha256": "12229dd645ac6062f076e0465559d90c86c996e76f39263672f75eb54b3eddb7",
+      "parts": [
+        {
+          "url": "/recordings/continuous-batching/manifest.json",
+          "size": 2436,
+          "sha256": "12229dd645ac6062f076e0465559d90c86c996e76f39263672f75eb54b3eddb7"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-bf16/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 176716,
+      "originalSha256": "fe9e4b72fc569449f5efae664a29ce539fb8d97694e0d30b81290149011ca6c5",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-bf16/content.jsonl",
+          "size": 176716,
+          "sha256": "fe9e4b72fc569449f5efae664a29ce539fb8d97694e0d30b81290149011ca6c5"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-bf16/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1740554,
+      "originalSha256": "801fd78b961393c7526afc537638b6f78321a68a5b6ed98cc8bb03b0221ed538",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-bf16/transport/events-jsonl-5c7fc68576c36658.part-001.bin",
+          "size": 88950,
+          "sha256": "ff8a55811a421db1c3a7a164c9fe8602e9a3167e3ec4e23c052988c0c57d03d5"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-bf16/manifest.json",
+      "encoding": "identity",
+      "originalSize": 68217,
+      "originalSha256": "9830e229d00e86b777c9069d23c059c62603c6f297ceed6849d634912a8a183f",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-bf16/manifest.json",
+          "size": 68217,
+          "sha256": "9830e229d00e86b777c9069d23c059c62603c6f297ceed6849d634912a8a183f"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-bf16/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 40527946,
+      "originalSha256": "b647aedb1e5aa6a609ffae978d78da6a406cf8123a41811c3e4d14be50740cbd",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-bf16/transport/activities-json-7a9d445893d7b9d3.part-001.bin",
+          "size": 1564898,
+          "sha256": "3ac821a2a2c845b30fa8f26a50aad579d7d574b4097f0827cce381521635c1b9"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-kv/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 177209,
+      "originalSha256": "bc575b3a5127b5663f10d9d4d860ea88b3e3cffd399ac96c4b04e597632a967a",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-kv/content.jsonl",
+          "size": 177209,
+          "sha256": "bc575b3a5127b5663f10d9d4d860ea88b3e3cffd399ac96c4b04e597632a967a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-kv/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1723950,
+      "originalSha256": "ecb1322a501915c4fff2f9dcfd4e6918943d4d93514d3d21aaba7796c08ad7f6",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-kv/transport/events-jsonl-96265e8db5269f97.part-001.bin",
+          "size": 90915,
+          "sha256": "b982eadde480e727c87aaf5dd8c37055c142741ad7396bbd9b3882eabfbabd34"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-kv/manifest.json",
+      "encoding": "identity",
+      "originalSize": 90297,
+      "originalSha256": "31f1f4508008b6b47b430e0dd9fd62aaed3832118fe7349b428dd8d58a953707",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-kv/manifest.json",
+          "size": 90297,
+          "sha256": "31f1f4508008b6b47b430e0dd9fd62aaed3832118fe7349b428dd8d58a953707"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-kv/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 38461902,
+      "originalSha256": "837332427f7437028b1921f3ca97925ec7a34ef9a5d1333d71c26fe5321dca1a",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-kv/transport/activities-json-c096d0cf81b14a2c.part-001.bin",
+          "size": 1451083,
+          "sha256": "fde3983221102bad992c7e2d652f93a2cef59492105e0cea7c5677834dd953f3"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-weights/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 176654,
+      "originalSha256": "68118e1921df4cd356e90bacbb24bd372d17cdfd0b26213cb28416c94f237cea",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-weights/content.jsonl",
+          "size": 176654,
+          "sha256": "68118e1921df4cd356e90bacbb24bd372d17cdfd0b26213cb28416c94f237cea"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-weights/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1896714,
+      "originalSha256": "ad6ac5224a6c843d0628a5ccd95bfe1e58cf91de964922548281bf52dc79186e",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-weights/transport/events-jsonl-99510c3fdc186cb4.part-001.bin",
+          "size": 95505,
+          "sha256": "4586d049258968dede3dd009877524f9378824e5425fd0a227a46e6c9b2da47c"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-weights/manifest.json",
+      "encoding": "identity",
+      "originalSize": 68252,
+      "originalSha256": "00bafd4ca05119d585ab0073bd1eca619d531725eda113b92ff8231a336efe82",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-weights/manifest.json",
+          "size": 68252,
+          "sha256": "00bafd4ca05119d585ab0073bd1eca619d531725eda113b92ff8231a336efe82"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-fp8-weights/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 47369185,
+      "originalSha256": "e87a0bc419cfb11abeb8aa5066e316cedec16692e75982905916565a8c5ded84",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-fp8-weights/transport/activities-json-6fb9d3b6d87766bb.part-001.bin",
+          "size": 1706983,
+          "sha256": "658d4e2ace2c64b83623a8a67e2f7748f3d8f0400af4ee17fbc499af0416e0c6"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-all/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 178712,
+      "originalSha256": "696806570e850349f988acb6c3ea0073631e95a22bbf1e2085aad6d9b95d694a",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-all/content.jsonl",
+          "size": 178712,
+          "sha256": "696806570e850349f988acb6c3ea0073631e95a22bbf1e2085aad6d9b95d694a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-all/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 2312896,
+      "originalSha256": "bb7b1ffcdd1dd3f47b645f63e06d75ad1ff72edbe447bda832a677747b804bae",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-all/transport/events-jsonl-153d06b3a152c9c2.part-001.bin",
+          "size": 116145,
+          "sha256": "77afb303383ae67e75e2b7a60b5122ed6d10f6c5ae21bc1afa8a93acb3bffe07"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-all/manifest.json",
+      "encoding": "identity",
+      "originalSize": 69008,
+      "originalSha256": "ec568d3368eca8ab0594b1fccc00bce322a1d7a95a15df2e4827f6c31ffb0ef6",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-all/manifest.json",
+          "size": 69008,
+          "sha256": "ec568d3368eca8ab0594b1fccc00bce322a1d7a95a15df2e4827f6c31ffb0ef6"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-all/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 63934433,
+      "originalSha256": "1d9fa0edc95f8d33af290e11e0c22eb05c9698afa636ff07435abf36ac2c2bc8",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-all/transport/activities-json-97038702294ddc91.part-001.bin",
+          "size": 2809221,
+          "sha256": "1eec75514ec13bd6dd72419c8af24a5ceaec0c5df11ebd2287d658d8a787f68a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-mixed/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 186748,
+      "originalSha256": "8a032d9a8cd3f5fdce172cb6971429cbd639ec48b8a4bb7f9e82f1a6f3224d4b",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-mixed/content.jsonl",
+          "size": 186748,
+          "sha256": "8a032d9a8cd3f5fdce172cb6971429cbd639ec48b8a4bb7f9e82f1a6f3224d4b"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-mixed/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 2274905,
+      "originalSha256": "350bd4a9dc546799dd1919486df986e9b2e84333fe86c9a84bf6353d4281e45b",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-mixed/transport/events-jsonl-19255f55d34fdbe9.part-001.bin",
+          "size": 113382,
+          "sha256": "3d05b2fd49e947a79254bc8f7b63b62092a0d9bd7ed4c211791f2e84477b5d9a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-mixed/manifest.json",
+      "encoding": "identity",
+      "originalSize": 68993,
+      "originalSha256": "c61da5c40d12d2f4b2922e4d3e425d13e27d66bec9fa3892e57531dfab5a6bf0",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-mixed/manifest.json",
+          "size": 68993,
+          "sha256": "c61da5c40d12d2f4b2922e4d3e425d13e27d66bec9fa3892e57531dfab5a6bf0"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-lora-mixed/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 62629726,
+      "originalSha256": "b9fff2704d27c3ce82c9f6e551c74d5acc3caf668a7f70f11de8b9e684115b5b",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-lora-mixed/transport/activities-json-d6fac389d4f08ff2.part-001.bin",
+          "size": 2712681,
+          "sha256": "076416b6ce1eaea15d2efe2fc563feaa2111b6ef17a2018f67c0ec95f5377381"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-qwen38-27b/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 202088,
+      "originalSha256": "45a1804ecd29c666334fd95d2608ff4f70867f9c10f7f0f10af4f379ebdc6040",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-qwen38-27b/content.jsonl",
+          "size": 202088,
+          "sha256": "45a1804ecd29c666334fd95d2608ff4f70867f9c10f7f0f10af4f379ebdc6040"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-qwen38-27b/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1696706,
+      "originalSha256": "96999c39c2193cea9b2e8f35894047cd912ffc5f223ddbb5152700867e3324f2",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-qwen38-27b/transport/events-jsonl-0068a3e74868ce36.part-001.bin",
+          "size": 85598,
+          "sha256": "70c484c269c8a2bf37d07467313b0785edd4a72335c9aeac761ceebd9430cc7d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-qwen38-27b/manifest.json",
+      "encoding": "identity",
+      "originalSize": 42884,
+      "originalSha256": "0db2a4a7677aed3095e82337a8acc9ca6799e2c54e64284361713d4d2a160c2b",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-qwen38-27b/manifest.json",
+          "size": 42884,
+          "sha256": "0db2a4a7677aed3095e82337a8acc9ca6799e2c54e64284361713d4d2a160c2b"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-qwen38-27b/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 53041681,
+      "originalSha256": "62e81920bce20bf7ae10b23d1628e8ec100d16f2b8d1200d04b1eb876e039f65",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-qwen38-27b/transport/activities-json-8630a6b06003e640.part-001.bin",
+          "size": 3062801,
+          "sha256": "29dc9105e2d3b753d863a62f53c4e291ed50f1110ba6d96513eab865e7c4e3f2"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-bf16/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1187380,
+      "originalSha256": "0c681bf1a18cd5669378d842a5f6cfbb7885edc55ac6e2ed40e7b644bc350bcf",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-bf16/transport/content-jsonl-60af03a7cdf436e7.part-001.bin",
+          "size": 108108,
+          "sha256": "6ec777be7770fb843036b4ac8646566e6a4465ec9267ed9ee79c76ab1d4890d1"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-bf16/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 23799418,
+      "originalSha256": "bc90ea8c05ebdc72cb78302f293ab68a20c9048d83be4f5adb3f87f1adf8ec9c",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-bf16/transport/events-jsonl-1e48b627f4057e4c.part-001.bin",
+          "size": 1329842,
+          "sha256": "4673f77c7246eabf64e704318f07de79b96db27e6a7860ae9b1eae5244c98f8d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-bf16/manifest.json",
+      "encoding": "identity",
+      "originalSize": 72416,
+      "originalSha256": "2a6b0a97395366d2ea0240f838771762380af8c66ac5a80afa2b204858b3a024",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-bf16/manifest.json",
+          "size": 72416,
+          "sha256": "2a6b0a97395366d2ea0240f838771762380af8c66ac5a80afa2b204858b3a024"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-bf16/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 68855266,
+      "originalSha256": "174439d0ca5a76e9cc2b42e4aa0598677d6cfe8a3d1cc456d3cfb1937f97ed1e",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-bf16/transport/activities-json-ee6c655f8009562b.part-001.bin",
+          "size": 9508633,
+          "sha256": "ab24a495bc51a32ffd0b3710c114b6e55ef73b923370631de00ff7eb521ce0cc"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-kv/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1180220,
+      "originalSha256": "3d327ed81e8e7fa3a368762cc3c59f79a9fa8ebced0f3d32aa3cc7984d9c323d",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-kv/transport/content-jsonl-039545b2c0a41df6.part-001.bin",
+          "size": 104522,
+          "sha256": "b017ea6ff96f3600b7ef3b981feef0bdef6367c79be9d42a3e7486b4619d880b"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-kv/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 23874790,
+      "originalSha256": "558df659e982582e5c334b44bf7fe1c05c912403c027b4bd20fe162c14756eeb",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-kv/transport/events-jsonl-64f01991ece6d5dc.part-001.bin",
+          "size": 1322942,
+          "sha256": "d6464c66cd67072a062c0bbafc2ac4ad0b7338a9e831ec36b668ac985365616a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-kv/manifest.json",
+      "encoding": "identity",
+      "originalSize": 94467,
+      "originalSha256": "e7b17c38ae96a263f9fe5d43d8f78024cdf06b229eec3b915fa5da2775799920",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-kv/manifest.json",
+          "size": 94467,
+          "sha256": "e7b17c38ae96a263f9fe5d43d8f78024cdf06b229eec3b915fa5da2775799920"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-kv/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 77121484,
+      "originalSha256": "6d6fe8356e07a3fa3b892baa3973fe4d083b385a85c31489d5732e32f0db2b33",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-kv/transport/activities-json-f80b80254f42b4c7.part-001.bin",
+          "size": 10840288,
+          "sha256": "d278e7a3dd3b34b7a97f2321302e1445ca99b2816dcccaca79b3f9009792598e"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-weights/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1188335,
+      "originalSha256": "988749efd8242d5fd0968085448ceed235eb7a79af6873d1bf8e07fec1d0463c",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-weights/transport/content-jsonl-3e3a4e86b5ae6e7f.part-001.bin",
+          "size": 104865,
+          "sha256": "6bd42f2fee2a16876246ac30fe28ea0bab3d2feb76835f69c0f11873367b7902"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-weights/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 24474771,
+      "originalSha256": "d6915fb56046d72366fffc2f13422b8380c7535604bc714d19e387a8d5ec9beb",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-weights/transport/events-jsonl-5b067f4a528862cd.part-001.bin",
+          "size": 1299994,
+          "sha256": "7b5b8e5d4fc0e5d99d4b32df0799d6ee006dbc71eda98d5873bbdfb983834c56"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-weights/manifest.json",
+      "encoding": "identity",
+      "originalSize": 72403,
+      "originalSha256": "97e21c94d8240631675045d2ac32d3cb9e11dafb052988587d3ff10b732eb46b",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-weights/manifest.json",
+          "size": 72403,
+          "sha256": "97e21c94d8240631675045d2ac32d3cb9e11dafb052988587d3ff10b732eb46b"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-fp8-weights/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 81588097,
+      "originalSha256": "d138588940a12b7cfa221a51501df1f3bc7cc7b23299c50313c77a45908b640c",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-fp8-weights/transport/activities-json-d34f5479251be951.part-001.bin",
+          "size": 11182529,
+          "sha256": "8d011dbc46142bb42a860b0e62966c2cf5a745cb42ca2da82033a3cba8b35b06"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-all/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1134105,
+      "originalSha256": "efdb84fb368aa5b975ae4f64dac559231c0192e7997ec5eff0f35bdddc8779d9",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-all/transport/content-jsonl-e8b6791ab25ac855.part-001.bin",
+          "size": 101929,
+          "sha256": "bbba54165443586d71d44a595b330b25506737a53506408966bfce6dfcf7f206"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-all/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 23984159,
+      "originalSha256": "0f759035fd96108572e48bd75429ff6eea4e01a2a6cbe563b885a3405254c6d9",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-all/transport/events-jsonl-ea33952a3f2d3772.part-001.bin",
+          "size": 1275519,
+          "sha256": "bef1b3a04610039644a07c39a1bc1096d2853595cff913c12b5fe68e77a5b364"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-all/manifest.json",
+      "encoding": "identity",
+      "originalSize": 72946,
+      "originalSha256": "5603f90bce99f3f369599e3aee818bf0f150ebc76d53ff949f78cee89ff72a00",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-all/manifest.json",
+          "size": 72946,
+          "sha256": "5603f90bce99f3f369599e3aee818bf0f150ebc76d53ff949f78cee89ff72a00"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-all/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 97529117,
+      "originalSha256": "c2c7b7a830bf3dd0490fe0c8f56fe27b60a83099d1c702d667b50ac3a7425561",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-all/transport/activities-json-05787385a90253b3.part-001.bin",
+          "size": 14261342,
+          "sha256": "632054f27de4648e3268ccbee682b4a85bb64b6b3f5e2a26df5d1e351f6d9357"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-mixed/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1190576,
+      "originalSha256": "ad0659b2eb541d42a2591f01387544979de71c05b5f3351578bb4f81a6e26c4c",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-mixed/transport/content-jsonl-fabedffbdeac9f19.part-001.bin",
+          "size": 109426,
+          "sha256": "c2bed04cc30833b7f08dd3e5484b5382c721defc40d43d59e94bdcdcfe7cf6c0"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-mixed/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 24513560,
+      "originalSha256": "63349962df309eb360150c8fed27ce5be95ee100aa91591d3e4dfa5418ccd584",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-mixed/transport/events-jsonl-0a892e64eff5f16d.part-001.bin",
+          "size": 1306398,
+          "sha256": "ab4fe0e99f0bcf53e02749b559f96febc9755948fbaf41401b40cccfcd10f955"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-mixed/manifest.json",
+      "encoding": "identity",
+      "originalSize": 72948,
+      "originalSha256": "ae1a38199efb0e45f75be2066bc11a9ffeae7c7b8201e6360000e0f0f100cf71",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-mixed/manifest.json",
+          "size": 72948,
+          "sha256": "ae1a38199efb0e45f75be2066bc11a9ffeae7c7b8201e6360000e0f0f100cf71"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-lora-mixed/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 97683327,
+      "originalSha256": "82cf23b6b9a76fe1706891f8030d682a8285a1c56ab1da48ed8ef341f78a9077",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-lora-mixed/transport/activities-json-1641f185c5def4ed.part-001.bin",
+          "size": 14057909,
+          "sha256": "1554ad61e2c60e6ebcd8fb1d4b184e6bd4d712af34ae39eb0f5da336dda469a9"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-qwen38-27b/content.jsonl",
+      "encoding": "gzip",
+      "originalSize": 1159625,
+      "originalSha256": "7dfddb59775e027f29f69567e67b32b1aff764dd6ab5f29e18d276e54ec7b8b4",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-qwen38-27b/transport/content-jsonl-9ca5124f31458914.part-001.bin",
+          "size": 98321,
+          "sha256": "31e044e827520bd5cd7b5c70a290eb1be68174895efc9e03f550ffaa6826eb21"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-qwen38-27b/events.jsonl",
+      "encoding": "gzip",
+      "originalSize": 6419732,
+      "originalSha256": "3981b74f9afb684ecf07792b1d41c8b221ea0daf471605244b1b7a9958f4b115",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-qwen38-27b/transport/events-jsonl-0895c86811eb3e20.part-001.bin",
+          "size": 281334,
+          "sha256": "6964e06fdc97450af0d18ccf4dbcda490cbdb6a63e56103382aae8376410913d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-qwen38-27b/manifest.json",
+      "encoding": "identity",
+      "originalSize": 46760,
+      "originalSha256": "e9fc800e26172fc1894d0cbe912ae42810dc5f531218e86b0942f177e7ebfb69",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-qwen38-27b/manifest.json",
+          "size": 46760,
+          "sha256": "e9fc800e26172fc1894d0cbe912ae42810dc5f531218e86b0942f177e7ebfb69"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-h100-realistic-qwen38-27b/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 199798871,
+      "originalSha256": "7b76aa4e041def737059f1d6289a2c1ef0985e1aad132231b78cd12b64717059",
+      "parts": [
+        {
+          "url": "/recordings/gpu-h100-realistic-qwen38-27b/transport/activities-json-d2bb4dcfc0faacb1.part-001.bin",
+          "size": 16777216,
+          "sha256": "898be33a0c4943e3f8b73d32fd0552242e09eaf8ff46d81279d8f4979e66c685"
+        },
+        {
+          "url": "/recordings/gpu-h100-realistic-qwen38-27b/transport/activities-json-d2bb4dcfc0faacb1.part-002.bin",
+          "size": 13967094,
+          "sha256": "ccde8df2b1ac8d422e86b0500d37197b262745e38c4d9ab9e8ae52f4d0a14674"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-kv-layer-diagnostics/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 43168,
+      "originalSha256": "c710bfe2137f5d4c423c5caf4762e18fd16184e75fa929a45bd4858fadebbca7",
+      "parts": [
+        {
+          "url": "/recordings/gpu-kv-layer-diagnostics/content.jsonl",
+          "size": 43168,
+          "sha256": "c710bfe2137f5d4c423c5caf4762e18fd16184e75fa929a45bd4858fadebbca7"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-kv-layer-diagnostics/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 176340,
+      "originalSha256": "c076d11baf7855d5df7a30672029db193f13ca76243810da9c81f94d5067c91a",
+      "parts": [
+        {
+          "url": "/recordings/gpu-kv-layer-diagnostics/events.jsonl",
+          "size": 176340,
+          "sha256": "c076d11baf7855d5df7a30672029db193f13ca76243810da9c81f94d5067c91a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-kv-layer-diagnostics/integrity-report.txt",
+      "encoding": "identity",
+      "originalSize": 771,
+      "originalSha256": "bf90df5f68ad82865ad567f9c1f2e58e5575f96361c74f6fdfe833d191b31393",
+      "parts": [
+        {
+          "url": "/recordings/gpu-kv-layer-diagnostics/integrity-report.txt",
+          "size": 771,
+          "sha256": "bf90df5f68ad82865ad567f9c1f2e58e5575f96361c74f6fdfe833d191b31393"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-kv-layer-diagnostics/manifest.json",
+      "encoding": "identity",
+      "originalSize": 90305,
+      "originalSha256": "756367012514cb31b5ad6b4ab9d7eb972bc34b64f0fe85aecbcdb68ddd1ad50a",
+      "parts": [
+        {
+          "url": "/recordings/gpu-kv-layer-diagnostics/manifest.json",
+          "size": 90305,
+          "sha256": "756367012514cb31b5ad6b4ab9d7eb972bc34b64f0fe85aecbcdb68ddd1ad50a"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-kv-layer-diagnostics/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 26790726,
+      "originalSha256": "e9a12f209d11962f178bd634529412175befa3aaacfcf5a0b5c27728610ae93c",
+      "parts": [
+        {
+          "url": "/recordings/gpu-kv-layer-diagnostics/transport/activities-json-738e2b4828ca407f.part-001.bin",
+          "size": 1270003,
+          "sha256": "e14d098fdb4e22b520dd6b3698c72a5f64b6e39ac22d993199fa98ca4f7bad4d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-model-batching/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 56821,
+      "originalSha256": "ab51f5b8b9d55dc5a3b3581c0413aafe5f3ed7c8e28a9a335478299cd98264d1",
+      "parts": [
+        {
+          "url": "/recordings/gpu-model-batching/content.jsonl",
+          "size": 56821,
+          "sha256": "ab51f5b8b9d55dc5a3b3581c0413aafe5f3ed7c8e28a9a335478299cd98264d1"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-model-batching/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 288825,
+      "originalSha256": "1ef5e227d26c6a218cba256997a4e884845124f6df1f61c9d761248fddf68470",
+      "parts": [
+        {
+          "url": "/recordings/gpu-model-batching/events.jsonl",
+          "size": 288825,
+          "sha256": "1ef5e227d26c6a218cba256997a4e884845124f6df1f61c9d761248fddf68470"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-model-batching/manifest.json",
+      "encoding": "identity",
+      "originalSize": 25346,
+      "originalSha256": "fafdf4090d3ac7e79bca06f55a9ef84b8ad5acb3a9319399f082581b05418e94",
+      "parts": [
+        {
+          "url": "/recordings/gpu-model-batching/manifest.json",
+          "size": 25346,
+          "sha256": "fafdf4090d3ac7e79bca06f55a9ef84b8ad5acb3a9319399f082581b05418e94"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-model-batching/profiling/activities.json",
+      "encoding": "gzip",
+      "originalSize": 6506964,
+      "originalSha256": "b69944ce88eea05f94ef9fe9cc7880b405f650b0c90e5525f9e7b83656061646",
+      "parts": [
+        {
+          "url": "/recordings/gpu-model-batching/transport/activities-json-244e7c6a7694581b.part-001.bin",
+          "size": 323792,
+          "sha256": "9d4f5fab80cbc78c2333995ffb854a239ea442352373ee29e89bdd6a5c88f36f"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-prefix-reuse/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 44546,
+      "originalSha256": "5bbbb8cf1a00e3844e4d5e560c9483e6bb5d809c0bfbd24568aefd9f63f1ed75",
+      "parts": [
+        {
+          "url": "/recordings/gpu-prefix-reuse/content.jsonl",
+          "size": 44546,
+          "sha256": "5bbbb8cf1a00e3844e4d5e560c9483e6bb5d809c0bfbd24568aefd9f63f1ed75"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-prefix-reuse/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 264788,
+      "originalSha256": "2ca9fd07517abf87f609d2ea2196455052ddaeb1f8ae0a030efef06ddd838789",
+      "parts": [
+        {
+          "url": "/recordings/gpu-prefix-reuse/events.jsonl",
+          "size": 264788,
+          "sha256": "2ca9fd07517abf87f609d2ea2196455052ddaeb1f8ae0a030efef06ddd838789"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/gpu-prefix-reuse/manifest.json",
+      "encoding": "identity",
+      "originalSize": 55256,
+      "originalSha256": "b58e89f0952e62e2ae9be2c9f0493b042eabe7ed1be667974bd0673d056232a1",
+      "parts": [
+        {
+          "url": "/recordings/gpu-prefix-reuse/manifest.json",
+          "size": 55256,
+          "sha256": "b58e89f0952e62e2ae9be2c9f0493b042eabe7ed1be667974bd0673d056232a1"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/incomplete-capture/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 178,
+      "originalSha256": "106997877f638083ac9a3784f56915a126e724699570ac5d655e2de2accfe992",
+      "parts": [
+        {
+          "url": "/recordings/incomplete-capture/content.jsonl",
+          "size": 178,
+          "sha256": "106997877f638083ac9a3784f56915a126e724699570ac5d655e2de2accfe992"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/incomplete-capture/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 1764,
+      "originalSha256": "5ccb4a3935ab811dd3cac48f780803bbd1de85dfcdb684e8bc5289c983bc6f12",
+      "parts": [
+        {
+          "url": "/recordings/incomplete-capture/events.jsonl",
+          "size": 1764,
+          "sha256": "5ccb4a3935ab811dd3cac48f780803bbd1de85dfcdb684e8bc5289c983bc6f12"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/incomplete-capture/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1982,
+      "originalSha256": "f1d2936c4acda531b6c944000e343926c983c26a2ba68a5c87d60ad37ab6c28d",
+      "parts": [
+        {
+          "url": "/recordings/incomplete-capture/manifest.json",
+          "size": 1982,
+          "sha256": "f1d2936c4acda531b6c944000e343926c983c26a2ba68a5c87d60ad37ab6c28d"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/index.json",
+      "encoding": "identity",
+      "originalSize": 6110,
+      "originalSha256": "7cd637f672bb145e46e68bfb407cc6f69da34ebf945805894a36e157edca6c95",
+      "parts": [
+        {
+          "url": "/recordings/index.json",
+          "size": 6110,
+          "sha256": "7cd637f672bb145e46e68bfb407cc6f69da34ebf945805894a36e157edca6c95"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/model-kv-walkthrough/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 40970,
+      "originalSha256": "4550d535a8bf82a700802c20ce7c75a2e0372ca77e6787b5e41df6f1ed1103d2",
+      "parts": [
+        {
+          "url": "/recordings/model-kv-walkthrough/content.jsonl",
+          "size": 40970,
+          "sha256": "4550d535a8bf82a700802c20ce7c75a2e0372ca77e6787b5e41df6f1ed1103d2"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/model-kv-walkthrough/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 122284,
+      "originalSha256": "0ed6f73de5939e25fdd19f05ca2e0da37408d6f79bbb79b4614f06062fa6ece9",
+      "parts": [
+        {
+          "url": "/recordings/model-kv-walkthrough/events.jsonl",
+          "size": 122284,
+          "sha256": "0ed6f73de5939e25fdd19f05ca2e0da37408d6f79bbb79b4614f06062fa6ece9"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/model-kv-walkthrough/manifest.json",
+      "encoding": "identity",
+      "originalSize": 22717,
+      "originalSha256": "8758b7801163e15ef32b392c17f9d1676d3a71c553f86c1f7cad91809acad2ca",
+      "parts": [
+        {
+          "url": "/recordings/model-kv-walkthrough/manifest.json",
+          "size": 22717,
+          "sha256": "8758b7801163e15ef32b392c17f9d1676d3a71c553f86c1f7cad91809acad2ca"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/preemption/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 794,
+      "originalSha256": "295ebbadf0d85aa1b4ee2a6c7562fb40c53ccfdc6f288d6acbf70df4de263347",
+      "parts": [
+        {
+          "url": "/recordings/preemption/content.jsonl",
+          "size": 794,
+          "sha256": "295ebbadf0d85aa1b4ee2a6c7562fb40c53ccfdc6f288d6acbf70df4de263347"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/preemption/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 5149,
+      "originalSha256": "b4f1bebffb72ba64d57879042fa1777ec817bb4306a8e607cc12c1c4adc956b4",
+      "parts": [
+        {
+          "url": "/recordings/preemption/events.jsonl",
+          "size": 5149,
+          "sha256": "b4f1bebffb72ba64d57879042fa1777ec817bb4306a8e607cc12c1c4adc956b4"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/preemption/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1903,
+      "originalSha256": "f9d9af2b2c038401e356faef46909c968721b05fdbd859ea1d00d69c86a197ec",
+      "parts": [
+        {
+          "url": "/recordings/preemption/manifest.json",
+          "size": 1903,
+          "sha256": "f9d9af2b2c038401e356faef46909c968721b05fdbd859ea1d00d69c86a197ec"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-miss/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 584,
+      "originalSha256": "1656d9f7182dc8c16d1a60357d6339d099e3926bd8a487520274af71b105a136",
+      "parts": [
+        {
+          "url": "/recordings/prefix-miss/content.jsonl",
+          "size": 584,
+          "sha256": "1656d9f7182dc8c16d1a60357d6339d099e3926bd8a487520274af71b105a136"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-miss/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 2536,
+      "originalSha256": "955b3f5dca24eda5375fd565f99d49bafb7d1d02bbe53b0e2169fad41c06b88c",
+      "parts": [
+        {
+          "url": "/recordings/prefix-miss/events.jsonl",
+          "size": 2536,
+          "sha256": "955b3f5dca24eda5375fd565f99d49bafb7d1d02bbe53b0e2169fad41c06b88c"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-miss/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1793,
+      "originalSha256": "1f8e1c26300da9d6a489b91e373a54ec5214836322d1b66d0050f27c8d55635e",
+      "parts": [
+        {
+          "url": "/recordings/prefix-miss/manifest.json",
+          "size": 1793,
+          "sha256": "1f8e1c26300da9d6a489b91e373a54ec5214836322d1b66d0050f27c8d55635e"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-reuse/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 968,
+      "originalSha256": "0dfd66fd6ce2b8454542b46ff2f8674936984276a24cbc4c9bc8b7293aae60b9",
+      "parts": [
+        {
+          "url": "/recordings/prefix-reuse/content.jsonl",
+          "size": 968,
+          "sha256": "0dfd66fd6ce2b8454542b46ff2f8674936984276a24cbc4c9bc8b7293aae60b9"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-reuse/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 4571,
+      "originalSha256": "b17f8c75fa4b0024b94449bc4a7e34878c2695f811a27cc0613574b0139f8e70",
+      "parts": [
+        {
+          "url": "/recordings/prefix-reuse/events.jsonl",
+          "size": 4571,
+          "sha256": "b17f8c75fa4b0024b94449bc4a7e34878c2695f811a27cc0613574b0139f8e70"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/prefix-reuse/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1875,
+      "originalSha256": "548c0a1665d834f988bda1000606edf9d3124711b011831c4c58b0d1f080f793",
+      "parts": [
+        {
+          "url": "/recordings/prefix-reuse/manifest.json",
+          "size": 1875,
+          "sha256": "548c0a1665d834f988bda1000606edf9d3124711b011831c4c58b0d1f080f793"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/single-request/content.jsonl",
+      "encoding": "identity",
+      "originalSize": 1628,
+      "originalSha256": "a95abc44a588489c34988dc00b0985842c575d89b0e871e200f94c0e21b3c959",
+      "parts": [
+        {
+          "url": "/recordings/single-request/content.jsonl",
+          "size": 1628,
+          "sha256": "a95abc44a588489c34988dc00b0985842c575d89b0e871e200f94c0e21b3c959"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/single-request/events.jsonl",
+      "encoding": "identity",
+      "originalSize": 6011,
+      "originalSha256": "9a3fe3ce2bab549d64dd9dc1f59f2f9cffc41f6f1a25f87d2352645924b8f9bc",
+      "parts": [
+        {
+          "url": "/recordings/single-request/events.jsonl",
+          "size": 6011,
+          "sha256": "9a3fe3ce2bab549d64dd9dc1f59f2f9cffc41f6f1a25f87d2352645924b8f9bc"
+        }
+      ]
+    },
+    {
+      "url": "/recordings/single-request/manifest.json",
+      "encoding": "identity",
+      "originalSize": 1920,
+      "originalSha256": "37cebd13846e7f9c7bc11f10608967c116948b2f7e8c85c1dbfc29fe5390a8b9",
+      "parts": [
+        {
+          "url": "/recordings/single-request/manifest.json",
+          "size": 1920,
+          "sha256": "37cebd13846e7f9c7bc11f10608967c116948b2f7e8c85c1dbfc29fe5390a8b9"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":1,"monotonic_ns":523213185633125,"kind":"prompt_text","request_id":"long","text":"a long prompt split across scheduler steps"}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":2,"monotonic_ns":523213185643666,"kind":"prompt_text","request_id":"short","text":"short"}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":3,"monotonic_ns":523213185667208,"kind":"accepted_tokens","request_id":"short","step_id":"step-1","output_position_start":0,"token_ids":[11]}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":4,"monotonic_ns":523213185675541,"kind":"text","request_id":"short","emission_index":0,"text_delta":"Hi","token_range":[0,1]}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":5,"monotonic_ns":523213185694291,"kind":"accepted_tokens","request_id":"long","step_id":"step-2","output_position_start":0,"token_ids":[21]}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":6,"monotonic_ns":523213185700083,"kind":"accepted_tokens","request_id":"short","step_id":"step-2","output_position_start":1,"token_ids":[12]}
+{"schema_version":"1.0.0","run_id":"chunked-prefill","content_sequence":7,"monotonic_ns":523213185705916,"kind":"text","request_id":"long","emission_index":0,"text_delta":"Done","token_range":[0,1]}

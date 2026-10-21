@@ -1,0 +1,194 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+import { readFileSync } from "node:fs"
+import * as THREE from "three"
+
+import { BLOCK_STATE_COLORS, iterationDisplayLabel, kvHeadForQuery, mappedBlockSlot, modelIterationSummary, observedProfileTokenPositions, physicalBlockState, poolCellPosition, poolGridLayout, scheduledTokenPositions, sceneClick } from "../architecture/model.ts"
+import { createPlayer, initialState, parseJsonl } from "../../../replay/src/reduce.ts"
+import { createPoolRaycast } from "../architecture/poolPicking.ts"
+
+test("a real-sized pool has a unique, stable cell for every physical ID", () => {
+  const layout = poolGridLayout(35000)
+  const cells = new Set(Array.from({ length: layout.capacity }, (_, index) => poolCellPosition(index, layout).join(",")))
+  assert.equal(cells.size, 35000)
+  assert.equal(layout.capacity, 35000)
+  assert.ok(layout.columns * layout.rows * layout.depths >= layout.capacity)
+  assert.deepEqual(poolCellPosition(34999, layout), poolCellPosition(34999, poolGridLayout(35000)))
+  assert.equal(poolGridLayout(-1).capacity, 0)
+  assert.equal(poolGridLayout(Infinity).capacity, 0)
+})
+
+test("fast pool picking reaches the final physical block and skips empty grid padding", () => {
+  const layout = poolGridLayout(35000)
+  const mesh = poolMesh(layout)
+  try {
+    const last = new THREE.Vector3(...poolCellPosition(34999, layout))
+    assert.equal(pick(mesh, last.clone().add(new THREE.Vector3(0, 0, -10)), new THREE.Vector3(0, 0, 1))[0]?.instanceId, 34999)
+    const paddedIndex = layout.columns * layout.rows * layout.depths - 1
+    const padded = new THREE.Vector3(...poolCellPosition(paddedIndex, layout))
+    const expected = paddedIndex - layout.columns * layout.rows
+    assert.ok(expected < layout.capacity)
+    assert.equal(pick(mesh, padded.clone().add(new THREE.Vector3(0, 0, -10)), new THREE.Vector3(0, 0, 1))[0]?.instanceId, expected)
+  } finally { dispose(mesh) }
+})
+
+test("pool picking respects gaps, near/far clipping and all six viewing directions", () => {
+  const layout = poolGridLayout(8)
+  const mesh = poolMesh(layout)
+  try {
+    assert.equal(pick(mesh, new THREE.Vector3(0, 1.75, 8), new THREE.Vector3(0, 0, -1)).length, 0)
+    const front = new THREE.Vector3(...poolCellPosition(0, layout))
+    const rayOrigin = front.clone().setZ(6)
+    assert.equal(pick(mesh, rayOrigin, new THREE.Vector3(0, 0, -1))[0]?.instanceId, 0)
+    assert.equal(pick(mesh, rayOrigin, new THREE.Vector3(0, 0, -1), 3.2)[0]?.instanceId, 4)
+    assert.equal(pick(mesh, rayOrigin, new THREE.Vector3(0, 0, -1), 0, 2).length, 0)
+    for (const axis of [0, 1, 2]) {
+      for (const sign of [-1, 1]) {
+        const id = axis === 0 ? sign > 0 ? 1 : 0 : axis === 1 ? sign > 0 ? 0 : 2 : sign > 0 ? 0 : 4
+        const cell = new THREE.Vector3(...poolCellPosition(id, layout))
+        const direction = new THREE.Vector3().setComponent(axis, -sign)
+        const origin = cell.clone().setComponent(axis, sign * 8)
+        assert.equal(pick(mesh, origin, direction)[0]?.instanceId, id, `axis ${axis}, sign ${sign}`)
+      }
+    }
+    assert.equal(pick(mesh, front, new THREE.Vector3(0, 0, -1))[0]?.instanceId, 0)
+  } finally { dispose(mesh) }
+})
+
+test("pool picking preserves block identity under translation, rotation and nonuniform scale", () => {
+  const layout = poolGridLayout(8)
+  const mesh = poolMesh(layout)
+  try {
+    mesh.position.set(5, -3, 2); mesh.rotation.set(0.3, 0.8, -0.2); mesh.scale.set(0.6, 1.3, 0.9)
+    mesh.updateMatrixWorld(true)
+    const local = new THREE.Vector3(...poolCellPosition(7, layout))
+    const target = local.clone().applyMatrix4(mesh.matrixWorld)
+    const origin = local.clone().add(new THREE.Vector3(0, 0, -10)).applyMatrix4(mesh.matrixWorld)
+    const hit = pick(mesh, origin, target.clone().sub(origin).normalize())[0]
+    assert.equal(hit?.instanceId, 7)
+    assert.ok(hit && Math.abs(hit.distance - hit.point.distanceTo(origin)) < 1e-9)
+  } finally { dispose(mesh) }
+})
+
+test("GQA maps all 32 query heads to the captured 8 KV heads without guessing incompatible geometry", () => {
+  assert.deepEqual(Array.from({ length: 32 }, (_, index) => kvHeadForQuery(index, 32, 8)), Array.from({ length: 32 }, (_, index) => Math.floor(index / 4)))
+  assert.equal(kvHeadForQuery(0, 7, 2), null)
+  assert.equal(kvHeadForQuery(32, 32, 8), null)
+  assert.equal(kvHeadForQuery(-1, 32, 8), null)
+})
+
+test("scheduled token geometry distinguishes prefill/decode and excludes the next sampled output", () => {
+  const tokens = scheduledTokenPositions({ requests: [
+    { requestId: "a", rangeStart: 2, rangeLength: 3, numPromptTokens: 4, promptTokens: 2, generationTokens: 1 },
+    { requestId: "b", rangeStart: 8, rangeLength: 1, numPromptTokens: 8, promptTokens: 0, generationTokens: 1 },
+  ] })
+  assert.deepEqual(tokens, [
+    { requestId: "a", position: 2, kind: "prefill" }, { requestId: "a", position: 3, kind: "prefill" },
+    { requestId: "a", position: 4, kind: "decode" }, { requestId: "b", position: 8, kind: "decode" },
+  ])
+  assert.ok(!tokens.some((token) => token.requestId === "b" && token.position === 9))
+})
+
+test("measured row geometry follows observed native rows independently of host state and excludes padding", () => {
+  const rows = observedProfileTokenPositions([
+    { row: 2, requestId: null, tokenPosition: null, isPadding: true },
+    { row: 1, requestId: "b", tokenPosition: 9, isPadding: false },
+    { row: 0, requestId: "a", tokenPosition: 12, isPadding: false },
+  ])
+  assert.deepEqual(rows, [
+    { requestId: "a", position: 12, row: 0, kind: "unclassified" },
+    { requestId: "b", position: 9, row: 1, kind: "unclassified" },
+  ])
+})
+
+test("model summary keeps the real mixed batch visible independently of the tracked request", () => {
+  const source = new URL("../../public/recordings/gpu-kv-layer-diagnostics/", import.meta.url)
+  const manifest = JSON.parse(readFileSync(new URL("manifest.json", source), "utf8"))
+  const player = createPlayer(parseJsonl(readFileSync(new URL("events.jsonl", source), "utf8")), manifest)
+  const state = player.at(player.maxSequence)
+  const mixed = state.steps.find((step) => step.requests.some((request) => request.promptTokens > 0) && step.requests.some((request) => request.generationTokens > 0))!
+  const summary = modelIterationSummary(state, undefined, mixed.id)
+  assert.equal(summary.known, true)
+  assert.equal(summary.positions, mixed.totalScheduledTokens)
+  assert.equal(summary.participants.length, mixed.requests.length)
+  assert.deepEqual(summary.participants.map((request) => [request.prefill, request.decode]), mixed.requests.map((request) => [request.promptTokens, request.generationTokens]))
+  assert.deepEqual(summary.participants.map((request) => request.ranges), mixed.requests.map((request) => [{ start: request.rangeStart, end: request.rangeStart + request.rangeLength - 1 }]))
+  const gap = modelIterationSummary({ ...state, trust: "unknown" }, undefined, mixed.id)
+  assert.equal(gap.known, false)
+  assert.deepEqual(gap.participants, [])
+})
+
+test("model profiler summary does not borrow host batch participants or padding", () => {
+  const state = initialState()
+  const summary = modelIterationSummary(state, { stepId: "step-8", activeLayers: [4], packedRows: [
+    { row: 0, requestId: "native-request", tokenPosition: 15, isPadding: false },
+    { row: 1, requestId: "native-request", tokenPosition: 17, isPadding: false },
+    { row: 2, requestId: null, tokenPosition: null, isPadding: true },
+  ] })
+  assert.equal(summary.label, "Iteration 8")
+  assert.equal(summary.positions, 2)
+  assert.deepEqual(summary.participants, [{ requestId: "native-request", positions: 2, ranges: [{ start: 15, end: 15 }, { start: 17, end: 17 }], prefill: null, decode: null }])
+  assert.equal(modelIterationSummary(state, { stepId: null, activeLayers: [], packedRows: [] }).known, false)
+  assert.equal(iterationDisplayLabel("custom-id"), "Iteration · custom-id")
+})
+
+test("reused prefix slots select the active request while retaining the original content source", () => {
+  const contents = [{ requestId: "a", cacheGroup: 0, tokenStart: 0, tokenEnd: 2, slotStart: 0, slotEnd: 2,
+    stepId: "first", sequence: 1, tokenIds: [100, 101], tokenPieces: ["Hello", " world"] }]
+  const bindings = ["a", "b"].map((requestId) => ({ requestId, cacheGroup: 0, tokenStart: 0, tokenEnd: 4, stepId: "reuse", sequence: 2 }))
+  const computed = mappedBlockSlot({ contents, bindings }, 16, 1, "b")
+  assert.equal(computed.requestId, "b")
+  assert.equal(computed.position, 1)
+  assert.equal(computed.sourceRequestId, "a")
+  assert.equal(computed.tokenId, 101)
+  assert.equal(computed.tokenPiece, " world")
+  const reserved = mappedBlockSlot({ contents, bindings }, 16, 2, "b")
+  assert.equal(reserved.requestId, "b")
+  assert.equal(reserved.position, 2)
+  assert.equal(reserved.span, undefined)
+  assert.equal(reserved.tokenId, null)
+  assert.equal(mappedBlockSlot({ contents, bindings: [] }, 16, 1).requestId, "a")
+  assert.equal(mappedBlockSlot({ contents: [], bindings }, 16, 1, "b").sourceRequestId, null)
+})
+
+test("physical allocation colors distinguish free, cached, referenced, null and unknown without request identity", () => {
+  const available = { isNull: false, trust: "known" as const, refCount: 0, hasHash: false }
+  const cached = { ...available, hasHash: true }
+  const referenced = { ...available, refCount: 2 }
+  const nullBlock = { ...available, isNull: true }
+  assert.equal(physicalBlockState(available), "available")
+  assert.equal(physicalBlockState(cached), "cached")
+  assert.equal(physicalBlockState(referenced), "referenced")
+  assert.equal(physicalBlockState(nullBlock), "null")
+  assert.equal(physicalBlockState({ ...referenced, trust: "unknown" }), "unknown")
+  assert.equal(physicalBlockState(undefined), "unknown")
+  assert.equal(new Set(Object.values(BLOCK_STATE_COLORS)).size, 5)
+})
+
+test("rotate, Ctrl/Cmd pan and right-button pan never select objects on release", () => {
+  const event = { delta: 0, nativeEvent: { button: 0, ctrlKey: false, metaKey: false, shiftKey: false } }
+  assert.equal(sceneClick(event), true)
+  assert.equal(sceneClick({ ...event, delta: 10 }), false)
+  for (const modifier of ["ctrlKey", "metaKey", "shiftKey"] as const) {
+    assert.equal(sceneClick({ ...event, nativeEvent: { ...event.nativeEvent, [modifier]: true } }), false)
+  }
+  assert.equal(sceneClick({ ...event, nativeEvent: { ...event.nativeEvent, button: 2 } }), false)
+})
+
+function poolMesh(layout: ReturnType<typeof poolGridLayout>): THREE.InstancedMesh {
+  const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(), new THREE.MeshBasicMaterial(), layout.capacity)
+  mesh.raycast = createPoolRaycast(layout)
+  mesh.updateMatrixWorld(true)
+  return mesh
+}
+function pick(mesh: THREE.InstancedMesh, origin: THREE.Vector3, direction: THREE.Vector3, near = 0, far = Infinity) {
+  const hits: THREE.Intersection[] = []
+  mesh.raycast(new THREE.Raycaster(origin, direction, near, far), hits)
+  return hits
+}
+function dispose(mesh: THREE.InstancedMesh) {
+  mesh.geometry.dispose()
+  if (Array.isArray(mesh.material)) mesh.material.forEach((material) => material.dispose())
+  else mesh.material.dispose()
+  mesh.dispose()
+}

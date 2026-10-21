@@ -1,0 +1,3 @@
+{"schema_version":"1.0.0","run_id":"prefix-miss","content_sequence":1,"monotonic_ns":523213190349666,"kind":"prompt_text","request_id":"changed","text":"a different prefix"}
+{"schema_version":"1.0.0","run_id":"prefix-miss","content_sequence":2,"monotonic_ns":523213190382666,"kind":"accepted_tokens","request_id":"changed","step_id":"step-1","output_position_start":0,"token_ids":[41]}
+{"schema_version":"1.0.0","run_id":"prefix-miss","content_sequence":3,"monotonic_ns":523213190391750,"kind":"text","request_id":"changed","emission_index":0,"text_delta":"Miss","token_range":[0,1]}

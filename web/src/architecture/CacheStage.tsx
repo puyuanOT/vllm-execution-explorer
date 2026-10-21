@@ -1,0 +1,258 @@
+import { useThree } from "@react-three/fiber"
+import { X } from "lucide-react"
+import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react"
+import * as THREE from "three"
+
+import type { KvBlockProjection, KvCacheProjection, KvPoolProjection } from "../../../replay/src/learning.ts"
+import type { Selection } from "../execution/types.ts"
+import { requestLabel } from "../explore/model.ts"
+import { cn } from "../lib/cn.ts"
+import { requestColor } from "../theme.ts"
+import { EvidenceTag } from "../ui/controls.tsx"
+import { BLOCK_STATE_COLORS, dieCellPosition, dieLayout, mappedBlockSlot, physicalBlockState, physicalBlockStateLabel } from "./model.ts"
+import { createDieRaycast } from "./poolPicking.ts"
+import { CacheTensorStage } from "./CacheTensorStage.tsx"
+import { BlockMarks } from "./BlockMarks.tsx"
+import type { KvLayerConfiguration } from "../../../replay/src/kv.ts"
+import { BoxEdges, FloorGrid, SceneEmpty, SceneLabel, SceneText, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./primitives.tsx"
+
+const DIE_Y = -1.0
+
+export function CacheStage({ cache, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
+  cache: KvCacheProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
+  trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
+}) {
+  const lastBlock = useRef<string | null>(null)
+  useLayoutEffect(() => { if (selection?.kind === "block") lastBlock.current = selection.key }, [selection])
+  const blocks = useMemo(() => cache.pools.flatMap((pool) => pool.blocks), [cache.pools])
+  const tokenRequestId = selection?.kind === "token" ? selection.requestId : trackedRequestId
+  const tokenPosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
+  const activeToken: Extract<Selection, { kind: "token" }> | null = selection?.kind === "token" ? selection : tokenRequestId && tokenPosition != null ? { kind: "token", requestId: tokenRequestId, position: tokenPosition } : null
+  const tokenBlocks = useMemo(() => tokenRequestId && tokenPosition != null ? blocks.filter((block) => [...block.contents, ...block.bindings].some((span) =>
+    span.requestId === tokenRequestId && tokenPosition >= span.tokenStart && tokenPosition < span.tokenEnd,
+  )) : [], [blocks, tokenRequestId, tokenPosition])
+  if (!cache.pools.length) return <group><FloorGrid y={DIE_Y - 0.25} /><SceneEmpty label="Full KV pool inventory not observed" detail={cache.reason ?? "Capture a new run with pool inventory enabled."} /></group>
+  const selected = selection?.kind === "block" ? blocks.find((block) => blockMatches(block, selection.key))
+    : selection?.kind === "token" ? tokenBlocks.find((block) => activeToken?.kvBlockKey != null && blockMatches(block, activeToken.kvBlockKey)) ?? tokenBlocks.find((block) => lastBlock.current != null && blockMatches(block, lastBlock.current)) ?? tokenBlocks[0]
+      : undefined
+  const tensorLayers = (cache as KvCacheProjection & { tensorLayers?: KvLayerConfiguration[] }).tensorLayers?.filter((layer) => layer.pool === selected?.pool) ?? []
+  if (activeToken?.kvLayerIndex != null && selected?.trust === "known" && selection?.kind !== "block" && tensorLayers.length) return <CacheTensorStage block={selected} layers={tensorLayers} selection={activeToken} labels={requestLabels} onSelect={onSelect} />
+  const span = cache.pools.length > 1 ? 9 : 11
+  const offset = (index: number) => (index - (cache.pools.length - 1) / 2) * (span + 2.5)
+  return <group>
+    <FloorGrid y={DIE_Y - 0.25} />
+    {cache.pools.map((pool, index) => (
+      <PoolDie key={pool.pool} pool={pool} span={span} x={offset(index)} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection?.kind === "block" ? selection : activeToken ?? selection}
+        selected={selected?.pool === pool.pool ? selected : null}
+        trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} evidenceKind={cache.evidenceKind} tensorSliceAvailable={tensorLayers.length > 0} onInspectTensor={() => { if (activeToken && selected && tensorLayers[0]) onSelect({ ...activeToken, kvLayerIndex: tensorLayers[0].layerIndex, kvHead: 0, kvKind: "K", kvBlockKey: selected.key }) }} onSelect={onSelect} />
+    ))}
+    {cache.status === "unknown" ? <SceneText text="Trace gap: inventory is frozen; current slot state is unknown" position={[0, DIE_Y, 7.4]} /> : null}
+  </group>
+}
+
+function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, selected, trackedRequestId, trackedTokenPosition, evidenceKind, tensorSliceAvailable, onInspectTensor, onSelect }: {
+  pool: KvPoolProjection; span: number; x: number; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null; selected: KvBlockProjection | null;
+  trackedRequestId?: string | null; trackedTokenPosition?: number | null; onSelect: (selection: Selection) => void
+  evidenceKind?: string
+  tensorSliceAvailable: boolean; onInspectTensor: () => void
+}) {
+  const layout = useMemo(() => dieLayout(pool.capacity, span), [pool.capacity, span])
+  const raycast = useMemo(() => createDieRaycast(layout), [layout])
+  const mesh = useRef<THREE.InstancedMesh>(null)
+  const hover = useHoverCursor()
+  const byId = useMemo(() => new Map(pool.blocks.map((block) => [block.blockId, block])), [pool.blocks])
+  const selectedRequest = selection?.kind === "request" ? selection.id : selection?.kind === "token" ? selection.requestId : null
+  const heightFor = (block: KvBlockProjection | undefined) => {
+    if (!block) return layout.pitch * 0.05
+    if (physicalBlockState(block) === "referenced") return Math.min(0.24, layout.pitch * 0.32)
+    if (physicalBlockState(block) === "cached") return Math.min(0.12, layout.pitch * 0.18)
+    return Math.min(0.035, layout.pitch * 0.06)
+  }
+  useLayoutEffect(() => {
+    const instance = mesh.current
+    if (!instance) return
+    const transform = new THREE.Object3D()
+    const tint = new THREE.Color()
+    for (let index = 0; index < layout.capacity; index += 1) {
+      const block = byId.get(index)
+      const [cx, cz] = dieCellPosition(index, layout)
+      const height = heightFor(block)
+      transform.position.set(cx, height / 2, cz)
+      transform.scale.set(layout.pitch * 0.78, height, layout.pitch * 0.78)
+      transform.updateMatrix()
+      instance.setMatrixAt(index, transform.matrix)
+      instance.setColorAt(index, tint.set(BLOCK_STATE_COLORS[physicalBlockState(block)]))
+    }
+    instance.instanceMatrix.needsUpdate = true
+    if (instance.instanceColor) instance.instanceColor.needsUpdate = true
+    instance.computeBoundingBox()
+    instance.computeBoundingSphere()
+  }, [layout, byId, requestOrder, selectedRequest, selected?.key])
+  const viewportWidth = useThree((state) => state.size.width)
+  const markCells = useMemo(() => pool.blocks.map((block) => {
+    const [cx, cz] = dieCellPosition(block.blockId, layout)
+    const focused = selectedRequest ?? trackedRequestId
+    return { block, x: cx, z: cz, height: heightFor(block), size: layout.pitch * 0.78,
+      selected: block.key === selected?.key || block.trust === "known" && Boolean(focused && block.bindings.some((binding) => binding.requestId === focused)) }
+  }), [pool.blocks, layout, selected?.key, selectedRequest, trackedRequestId])
+  const rulerColumns = Math.max(4, rulerStep(layout.columns))
+  const rulerRows = rulerStep(layout.rows)
+  const front = layout.depth / 2
+  const left = -layout.width / 2
+  const selectedPosition = selected ? dieCellPosition(selected.blockId, layout) : null
+  // A small die leaves room beside it, so the cartridge sits off the die instead of covering its other blocks.
+  const besideDie = layout.width < span * 0.75 && viewportWidth >= 900
+  const cartridgeSide = selectedPosition && selectedPosition[0] < 0 ? "left" : "right"
+  const cartridgeX = selectedPosition ? besideDie ? (cartridgeSide === "right" ? 1 : -1) * (layout.width / 2 + 0.45) : selectedPosition[0] : 0
+  const cartridgeAnchor = besideDie ? cartridgeSide : selectedPosition && selectedPosition[0] > layout.width * 0.15 ? "left" : "right"
+  // Keep clear of the canvas overlays: camera controls (a right column, or a top strip on phones) and the legend and evidence watermark below.
+  const cartridgeInsets = viewportWidth < 640 ? { top: 84, bottom: 104 } : { top: 72, right: 84, bottom: viewportWidth < 1000 ? 80 : 52 }
+  return <group position={[x, DIE_Y, 0]}>
+    <mesh position={[0, -0.09, 0]} raycast={() => null}>
+      <boxGeometry args={[layout.width + 0.5, 0.16, layout.depth + 0.5]} />
+      <meshStandardMaterial color="#0b131f" roughness={0.85} metalness={0.1} />
+    </mesh>
+    <BoxEdges size={[layout.width + 0.5, 0.16, layout.depth + 0.5]} position={[0, -0.09, 0]} color={SCENE_COLORS.edge} />
+    <instancedMesh ref={mesh} args={[undefined, undefined, Math.max(1, layout.capacity)]} raycast={raycast} {...hover.bind}
+      onClick={(event) => {
+        if (!sceneClick(event) || event.instanceId == null) return
+        event.stopPropagation()
+        const block = byId.get(event.instanceId)
+        if (block) onSelect({ kind: "block", key: block.key })
+      }}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial toneMapped={false} />
+    </instancedMesh>
+    <BlockMarks cells={markCells} requestOrder={requestOrder} />
+    {pool.capacity > 64 ? pool.blocks.filter((block) => block.isNull).map((block) => {
+      const [cx, cz] = dieCellPosition(block.blockId, layout)
+      return <SceneText key={`null-label-${block.blockId}`} text="Null" position={[cx, heightFor(block) + 0.05, cz]} muted />
+    }) : null}
+    {pool.capacity <= 64 ? pool.blocks.map((block) => {
+      const [cx, cz] = dieCellPosition(block.blockId, layout)
+      return <SceneText key={`block-label-${block.blockId}`} text={`${block.isNull ? "Null · " : ""}Block ${block.blockId}`} position={[cx, heightFor(block) + 0.04, cz + layout.pitch * 0.42]} muted />
+    }) : null}
+    {pool.capacity > 64 ? Array.from({ length: Math.ceil(layout.columns / rulerColumns) }, (_, step) => {
+      const column = step * rulerColumns
+      const [cx] = dieCellPosition(column, layout)
+      return <SceneText key={`c-${column}`} text={`Column ${column}`} position={[cx, -0.15, front + 0.55]} muted />
+    }) : null}
+    {pool.capacity > 64 ? Array.from({ length: Math.ceil(layout.rows / rulerRows) }, (_, step) => {
+      const row = step * rulerRows
+      const [, cz] = dieCellPosition(row * layout.columns, layout)
+      return <SceneText key={`r-${row}`} text={`Blocks ${row * layout.columns}–${Math.min(pool.capacity - 1, (row + 1) * layout.columns - 1)}`} position={[left - 1, -0.15, cz]} muted />
+    }) : null}
+    <SceneText text={`${poolDeviceLabel(pool)} / ${pool.pool} · ${pool.capacity.toLocaleString()} blocks · ${pool.tokenOccupancyStatus !== "observed" ? "slot layout unavailable" : pool.blockSize == null ? "group-specific slots" : `${pool.blockSize} token slots/block`}`} position={[0, -0.15, -front - 0.75]} muted />
+    {selected && selectedPosition ? (
+      <SceneLabel position={[cartridgeX, heightFor(selected) + 0.05, selectedPosition[1]] as Position3} anchor={cartridgeAnchor} interactive clamp={cartridgeInsets}>
+        <BlockCartridge key={selected.key} block={selected} pool={pool} requestOrder={requestOrder} requestLabels={requestLabels} selection={selection} trackedRequestId={trackedRequestId} trackedTokenPosition={trackedTokenPosition} evidenceKind={evidenceKind} tensorSliceAvailable={tensorSliceAvailable} onInspectTensor={onInspectTensor} narrow={besideDie} short={viewportWidth < 640} onSelect={onSelect} />
+      </SceneLabel>
+    ) : null}
+  </group>
+}
+
+function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, evidenceKind, tensorSliceAvailable, onInspectTensor, narrow = false, short = false, onSelect }: {
+  block: KvBlockProjection; pool: KvPoolProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
+  trackedRequestId?: string | null; trackedTokenPosition?: number | null; narrow?: boolean; short?: boolean; onSelect: (selection: Selection) => void
+  evidenceKind?: string
+  tensorSliceAvailable: boolean; onInspectTensor: () => void
+}) {
+  const nameOf = (requestId: string) => requestLabel(requestLabels, requestId)
+  const groups = new Set([...block.contents, ...block.bindings].map((span) => span.cacheGroup))
+  const sizes = [...new Set(pool.groups.filter((group) => group.pool === pool.pool && group.blockSize != null).map((group) => group.blockSize))]
+  const blockSize = pool.blockSize ?? (sizes.length === 1 ? sizes[0] : null)
+  const activeRequestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
+  const activePosition = selection?.kind === "token" ? selection.position : trackedTokenPosition
+  const header = (
+    <div className="mb-2 grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1">
+      <span className="grid h-[18px] shrink-0 place-items-center whitespace-nowrap border border-accent-400/45 px-1.5 font-mono text-[9.5px] font-semibold text-accent">Block {block.blockId}</span>
+      <span className="min-w-0 truncate font-mono text-[11px] font-semibold tracking-[0.04em] text-ink">Token slots</span>
+      <span className="col-span-2 row-start-2 min-w-0 truncate font-mono text-[10px] text-faint">{block.pool} · gen {block.generation} · {block.trust === "unknown" ? "refs unknown" : `${block.refCount} ref`}{blockSize && block.validTokenCount != null ? ` · ${block.validTokenCount}/${blockSize} computed` : ""}</span>
+      <span className="col-start-3 row-start-2 justify-self-end"><EvidenceTag kind={block.trust === "unknown" ? "unknown" : evidenceKind === "fixture" ? "synthetic" : "observed"}>{block.trust === "unknown" ? "Unknown" : evidenceKind === "fixture" ? "Synthetic" : "Observed"}</EvidenceTag></span>
+      <button
+        type="button"
+        className="-mr-1 col-start-3 row-start-1 grid size-6 min-h-0 shrink-0 place-items-center justify-self-end rounded-none border-0 bg-transparent p-0 text-faint hover:text-ink"
+        aria-label={`Close token slots for block ${block.blockId}`}
+        title="Close token slots"
+        onClick={() => onSelect({ kind: "component", id: "kv-cache" })}
+      >
+        <X className="size-3.5" aria-hidden="true" />
+      </button>
+    </div>
+  )
+  const shell = (body: ReactNode) => (
+    <div className={cn("cp-hud flex w-[440px] flex-col bg-[rgba(7,11,19,0.96)] p-3 shadow-[0_18px_50px_-24px_rgba(0,0,0,0.9)] [max-height:var(--label-max-height,none)]", narrow ? "max-w-[max(300px,34cqw)]" : "max-w-[min(440px,70vw)]")} data-active="true">
+      {header}{body}
+    </div>
+  )
+  if (block.isNull) return shell(<p className="m-0 text-xs text-muted">Reserved null placeholder. This cell cannot hold request KV contents.</p>)
+  if (block.tokenOccupancyStatus !== "observed") return shell(<p className="m-0 text-pretty text-xs text-muted">{block.tokenOccupancyReason ?? `Token contents ${block.tokenOccupancyStatus === "unknown" ? "unknown" : "unavailable"} for this cache layout.`}</p>)
+  if (groups.size > 1 || pool.groups.filter((group) => group.pool === pool.pool).length > 1) return shell(<p className="m-0 text-xs text-muted">Multiple cache groups have separate slot contents; see their captured bindings in the inspector.</p>)
+  if (!blockSize) return shell(<p className="m-0 text-xs text-muted">This pool has no single captured token-slot geometry.</p>)
+  const columns = Math.max(1, Math.min(4, Math.ceil(Math.sqrt(blockSize))))
+  const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
+  const origin = block.contents.at(-1)?.requestId ?? null
+  return shell(<>
+    <ol className="m-0 grid min-h-0 list-none gap-[5px] overflow-y-auto p-0" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }} aria-label={`Token slots in block ${block.blockId}`}>
+      {Array.from({ length: blockSize }, (_, slot) => {
+        const mapped = mappedBlockSlot(block, blockSize, slot, activeRequestId)
+        const known = block.trust === "known"
+        const isSelected = known && activeRequestId != null && mapped.requestId === activeRequestId && activePosition != null && mapped.position === activePosition
+        const holderColor = mapped.requestId ? requestColor(requestOrder, mapped.requestId) : "#2a3c58"
+        const status = !known ? "unknown" : mapped.span ? "computed" : mapped.binding ? "reserved" : "unwritten"
+        const statusLabel = status === "computed" ? "KV written" : status === "reserved" ? "Reserved" : status === "unwritten" ? "Unwritten" : "Unknown"
+        const piece = mapped.tokenPiece != null ? mapped.tokenPiece.replace(/\n/g, "↵") : null
+        return <li key={slot}>
+          <button
+            type="button"
+            className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left focus-visible:[outline-offset:-2px] disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
+            style={{
+              borderColor: status === "computed" || status === "reserved" ? "#617089" : "#24344b",
+              borderStyle: status === "reserved" ? "dashed" : "solid",
+              background: status === "computed" ? "#263347" : status === "reserved" ? "#111824" : status === "unknown" ? undefined : "#080d16",
+              boxShadow: known && mapped.binding ? `inset 4px 0 0 ${holderColor}` : undefined,
+              outline: isSelected ? "1.5px solid var(--accent)" : undefined,
+              outlineOffset: isSelected ? -2 : undefined,
+            }}
+            disabled={!known || mapped.position == null || mapped.requestId == null}
+            aria-label={`Slot ${slot}: ${statusLabel}${mapped.requestId ? `, ${nameOf(mapped.requestId)} position ${mapped.position}` : ""}${mapped.sourceRequestId ? `; written by ${nameOf(mapped.sourceRequestId)}` : ""}`}
+            onClick={() => { if (mapped.requestId && mapped.position != null) onSelect({ kind: "token", requestId: mapped.requestId, position: mapped.position }) }}
+          >
+            {status === "unknown" ? <span className="cp-hatch absolute inset-0 opacity-40" aria-hidden="true" /> : null}
+            <span className="relative flex justify-between font-mono text-[9px] text-muted"><span>{mapped.position == null ? "—" : `Pos ${mapped.position}`}</span><span>Slot {slot}</span></span>
+            <span className="relative mt-0.5 block truncate whitespace-pre font-mono text-xs text-ink [font-variant-ligatures:none]">
+              {piece == null ? <span className="text-muted">{statusLabel}</span> : <>{piece.startsWith(" ") ? <span className="text-faint">·</span> : null}{piece.startsWith(" ") ? piece.slice(1) : piece}</>}
+            </span>
+            <span className="relative block truncate font-mono text-[9px] text-muted">{mapped.tokenId == null ? "" : `ID ${mapped.tokenId}`}{piece != null ? ` · ${statusLabel}` : ""}</span>
+          </button>
+        </li>
+      })}
+    </ol>
+    <div className="mt-2 flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9.5px] text-faint">
+      {holders.map((holder) => <span key={holder} className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span>)}
+      {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {nameOf(origin)}</span> : null}
+      <span className="flex-1" />
+      <span>{physicalBlockStateLabel(physicalBlockState(block))} · {holders.length > 1 ? `Shared by ${holders.length} holders` : holders.length === 1 ? "Slot strip identifies holder" : "No current request references"} · inspect token for tensor details</span>
+    </div>
+    {selection?.kind === "token" ? <div className="mt-2 grid gap-1">
+      <button type="button" className="min-h-7 text-xs" disabled={!tensorSliceAvailable || block.trust === "unknown"} onClick={onInspectTensor}>Explore layer / KV head / K–V slice</button>
+      {!tensorSliceAvailable ? <p className="m-0 text-[10px] text-muted">Runtime layer-to-pool mapping was not captured.</p> : null}
+    </div> : null}
+  </>)
+}
+
+function rulerStep(count: number): number {
+  if (count <= 12) return 1
+  const raw = count / 7
+  const magnitude = 10 ** Math.floor(Math.log10(raw))
+  return [1, 2, 5, 10].map((factor) => factor * magnitude).find((value) => value >= raw) ?? magnitude * 10
+}
+
+function blockMatches(block: KvBlockProjection, key: string): boolean {
+  return key === block.key || key === `${block.pool}:${block.blockId}` || key === `${block.pool}:${block.blockId}:${block.generation}`
+}
+
+function poolDeviceLabel(pool: KvPoolProjection): string {
+  const devices = (pool as KvPoolProjection & { devices?: string[] }).devices
+  return devices?.length ? devices.join(", ") : "Device not captured"
+}
