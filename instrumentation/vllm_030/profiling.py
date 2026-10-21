@@ -42,7 +42,7 @@ class DiagnosticHooks:
         if self.check_sources:
             self.source_fingerprints = assert_profiler_runner_source(runner)
         modules = list(runner.model.named_modules())
-        layers = [(name, module) for name, module in modules if type(module).__name__ == "Qwen3DecoderLayer"]
+        layers = [(name, module) for name, module in modules if type(module).__name__ in {"Qwen3DecoderLayer", "Qwen3_5DecoderLayer"}]
         if not layers:
             raise RuntimeError("Diagnostic layer scopes require loaded dense Qwen3 decoder layers.")
         for name, layer in layers:
@@ -51,7 +51,10 @@ class DiagnosticHooks:
             except (IndexError, ValueError) as exc:
                 raise RuntimeError("Loaded Qwen3 layer identity is unavailable for diagnostic scopes.") from exc
             self._scope_forward(layer, f"explorer.layer/{index}")
-            self._scope_forward(layer.self_attn, f"explorer.component/{index}/attention")
+            if type(layer).__name__ == "Qwen3_5DecoderLayer" and getattr(layer, "layer_type", None) == "linear_attention":
+                self._scope_forward(layer.linear_attn, f"explorer.component/{index}/recurrent")
+            else:
+                self._scope_forward(layer.self_attn, f"explorer.component/{index}/attention")
             self._scope_forward(layer.mlp, f"explorer.component/{index}/ffn")
 
         original_execute = runner.execute_model

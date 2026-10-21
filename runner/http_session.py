@@ -26,6 +26,8 @@ from runner.workload import PROVISIONAL_LIMITS, WorkRequest, WorkloadError, pars
 
 HTTP_PATH = "/v1/explorer/generate"
 CANCELLATION_TIMEOUT_SECONDS = 30
+# Long diagnostic windows include native export, normalization and lossless wire encoding.
+DIAGNOSTIC_FINALIZATION_TIMEOUT_SECONDS = 600
 
 
 @dataclass
@@ -196,11 +198,23 @@ class VllmHttpSession:
         self._server.server_close()
         self._http.join(timeout=2)
         self._stop.set()
-        self._owner.join(timeout=30)
+        profile = getattr(self, "profiling_record", None)
+        close_timeout = DIAGNOSTIC_FINALIZATION_TIMEOUT_SECONDS if isinstance(profile, dict) and profile.get("enabled") else 30
+        self._owner.join(timeout=close_timeout)
         self._clients.shutdown(wait=not self._owner.is_alive(), cancel_futures=True)
         if self._owner.is_alive():
-            raise RuntimeError("the vLLM engine owner did not stop")
+            if isinstance(profile, dict) and profile.get("status") in {"recording", "finalizing"}:
+                profile.update(status="failed", completeness="unknown", attachment_status="unavailable", normalized_artifact=None,
+                               reason=f"Diagnostic finalization did not finish within the {close_timeout}s cleanup deadline; retained raw files may be incomplete.")
+            raise RuntimeError(f"the vLLM engine owner did not stop within the {close_timeout}s cleanup deadline")
         self._raise_owner_error()
+        profile = getattr(self, "profiling_record", None)
+        if isinstance(profile, dict) and profile.get("enabled") and profile.get("status") in {"recording", "finalizing"}:
+            profile.update(status="failed", completeness="unknown", attachment_status="unavailable", normalized_artifact=None,
+                           reason="The engine owner stopped before diagnostic finalization returned; no completed profile is claimed.")
+            raise RuntimeError("the diagnostic profiler did not finish finalizing")
+        if isinstance(profile, dict) and profile.get("enabled") and profile.get("status") == "failed":
+            raise RuntimeError(profile.get("reason") or "the diagnostic profiler failed during finalization")
         if response_error:
             raise RuntimeError(response_error)
 
@@ -484,5 +498,6 @@ class VllmHttpSession:
             "resolved_configuration",
             "profiling_record",
             "kv_cache_record",
+            "gpu_memory_record",
         ):
             setattr(self, name, getattr(base, name, None))

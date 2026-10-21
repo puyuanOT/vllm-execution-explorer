@@ -1,4 +1,7 @@
+import { Menu } from "@base-ui/react/menu"
 import {
+  Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -15,6 +18,8 @@ import { playbackSpeeds } from "../playback.ts"
 import { EvidenceTag, Segmented } from "../ui/controls.tsx"
 import { buildScope, SCOPE_CHANNELS, type ScopeMarker, type ScopeTick } from "./scope.ts"
 import type { PlaybackMode } from "./types.ts"
+import type { TimePoint } from "../../../replay/src/timeline.ts"
+import { RecordedTimeAxis } from "./RecordedTimeAxis.tsx"
 
 const GUTTER = 34
 const ROW = 8
@@ -28,20 +33,20 @@ export function PlaybackTransport({
   speed,
   mode,
   recordedAvailable,
-  teachingAvailable,
   measuredAvailable,
+  iterationsAvailable,
+  timePoints,
+  eventLabels,
   sequence,
   maxSequence,
   valueText,
   followLive,
   followAvailable,
   connected,
-  reduced,
   ticks,
   markers,
   gapPosition,
   currentPosition,
-  onReduced,
   onTogglePlay,
   onReplay,
   onPreviousEvent,
@@ -59,20 +64,20 @@ export function PlaybackTransport({
   speed: number
   mode: PlaybackMode
   recordedAvailable: boolean
-  teachingAvailable: boolean
   measuredAvailable: boolean
+  iterationsAvailable: boolean
+  timePoints: TimePoint[]
+  eventLabels: ReadonlyMap<number, string>
   sequence: number
   maxSequence: number
   valueText: string
   followLive: boolean
   followAvailable: boolean
   connected: boolean
-  reduced: boolean
   ticks: ScopeTick[]
   markers: ScopeMarker[]
   gapPosition: number | null
   currentPosition: number | null
-  onReduced: (value: boolean) => void
   onTogglePlay: () => void
   onReplay: () => void
   onPreviousEvent: () => void
@@ -95,14 +100,14 @@ export function PlaybackTransport({
   const value = Math.min(sequence, Math.max(maxSequence, 0))
   const readout = measured ? `${(sequence / 1000).toFixed(3)} / ${(maxSequence / 1000).toFixed(3)} ms` : `EVT ${value} / ${Math.max(maxSequence, 0)}`
   const note = measured
-    ? "Profiler clock. Host replay stays at its own playhead; no cross-clock alignment or token/head duration is inferred."
-    : mode === "teaching"
-      ? "Layer walkthrough follows the recorded batch through model structure. Stage timing is explanatory, not GPU time."
+    ? "GPU activity highlights recorded active layers. Host replay and memory keep their own playhead."
+    : mode === "iterations"
+      ? "Iteration stepping includes result-associated KV and output observations. Raw events retain every intermediate transition in observer order."
       : mode === "events"
-        ? "Event clock advances through recorded observations at a teaching pace."
-        : "Recorded time preserves observed host intervals at the selected speed; it is not GPU kernel timing."
-  const caveat = measured ? "Profiler clock · separate from replay"
-    : mode === "teaching" ? "Explanatory · not GPU time"
+        ? "Raw events advance through recorded observations in order; playback speed is illustrative."
+        : "Host time preserves observed host intervals at the selected speed; it is not GPU kernel timing."
+  const caveat = measured ? "GPU activity · separate from host"
+    : mode === "iterations" ? "Iteration boundaries · observer order"
       : mode === "events" ? "Event order · not elapsed time"
         : "Host intervals · not GPU kernel time"
   return (
@@ -116,7 +121,7 @@ export function PlaybackTransport({
           <button type="button" className={iconButton} onClick={onPreviousStep} disabled={playbackDisabled} aria-label={measured ? "Previous profiled batch" : "Previous scheduler step"} title={measured ? "Previous profiled batch  [" : "Previous scheduler step  ["}>
             <ChevronsLeft className="size-4" aria-hidden="true" />
           </button>
-          <button type="button" className={iconButton} onClick={onPreviousEvent} disabled={playbackDisabled} aria-label={measured ? "Previous measured activity" : "Previous recorded event"} title={measured ? "Previous measured activity  ←" : "Previous recorded event  ←"}>
+          <button type="button" className={iconButton} onClick={onPreviousEvent} disabled={playbackDisabled} aria-label={measured ? "Previous measured activity" : mode === "iterations" ? "Previous model iteration" : "Previous recorded event"} title={measured ? "Previous measured activity  ←" : mode === "iterations" ? "Previous model iteration  ←" : "Previous recorded event  ←"}>
             <ChevronLeft className="size-4" aria-hidden="true" />
           </button>
           <button
@@ -131,7 +136,7 @@ export function PlaybackTransport({
             {playing ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
             {playLabel}
           </button>
-          <button type="button" className={iconButton} onClick={onNextEvent} disabled={playbackDisabled} aria-label={measured ? "Next measured activity" : "Next recorded event"} title={measured ? "Next measured activity  →" : "Next recorded event  →"}>
+          <button type="button" className={iconButton} onClick={onNextEvent} disabled={playbackDisabled} aria-label={measured ? "Next measured activity" : mode === "iterations" ? "Next model iteration" : "Next recorded event"} title={measured ? "Next measured activity  →" : mode === "iterations" ? "Next model iteration  →" : "Next recorded event  →"}>
             <ChevronRight className="size-4" aria-hidden="true" />
           </button>
           <button type="button" className={iconButton} onClick={onNextStep} disabled={playbackDisabled} aria-label={measured ? "Next profiled batch" : "Next scheduler step"} title={measured ? "Next profiled batch  ]" : "Next scheduler step  ]"}>
@@ -152,8 +157,8 @@ export function PlaybackTransport({
             </button>
           ) : null}
         </div>
-        <Scope
-          label={measured ? "Profiler clock" : "Playhead"}
+        {mode === "recorded" ? <RecordedTimeAxis points={timePoints} sequence={value} labels={eventLabels} onSeek={onScrub} /> : <Scope
+          label={measured ? "GPU activity" : "Playhead"}
           readout={readout}
           ticks={ticks}
           markers={markers}
@@ -164,7 +169,7 @@ export function PlaybackTransport({
           disabled={playbackDisabled}
           valueText={valueText}
           onScrub={onScrub}
-        />
+        />}
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
         <p className="m-0 min-w-0 flex-1 truncate font-mono text-[10.5px] text-faint" title={`${valueText} ${note}${followAvailable ? (connected ? " Live capture continues while replay is paused." : " The live trace is reconnecting.") : ""}`}>
@@ -174,19 +179,42 @@ export function PlaybackTransport({
           {followAvailable ? (connected ? " Live capture continues while replay is paused." : " The live trace is reconnecting.") : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <EvidenceTag kind={mode === "teaching" ? "explanatory" : "neutral"}>{caveat}</EvidenceTag>
+          <EvidenceTag kind="neutral">{caveat}</EvidenceTag>
           <span className="cp-label">Clock</span>
           <Segmented<PlaybackMode>
             label="Playback mode"
             value={mode}
             onChange={onMode}
             options={[
-              { value: "events", label: "Events", disabled: maxSequence <= 0 && !measuredAvailable },
-              { value: "teaching", label: "Walkthrough", disabled: !teachingAvailable, title: teachingAvailable ? "Layer walkthrough · explanatory time" : "Layer walkthrough unavailable: no supported architecture was captured" },
-              { value: "recorded", label: "Rec time", disabled: !recordedAvailable, title: recordedAvailable ? "Recorded host intervals" : "Recorded time unavailable: no elapsed time was recorded" },
-              { value: "measured", label: "Profile", disabled: !measuredAvailable, title: measuredAvailable ? "Measured profile · profiler clock" : "Measured profile unavailable: this recording has no profiler attachment" },
+              { value: "iterations", label: "Iterations", disabled: !iterationsAvailable, title: "Step through observed model iterations" },
+              { value: "measured", label: "GPU activity", disabled: !measuredAvailable, title: measuredAvailable ? "Scrub measured CUDA activity to highlight recorded active layers" : "GPU activity unavailable: this recording has no profiler attachment" },
             ]}
           />
+          <Menu.Root>
+            <Menu.Trigger className={cn(
+              "inline-flex min-h-7 items-center gap-1.5 border-line-strong bg-surface px-2 font-mono text-[11px] text-muted",
+              (mode === "events" || mode === "recorded") && "border-accent-400/50 text-accent",
+            )}>
+              Advanced playback{mode === "events" ? " · Raw events" : mode === "recorded" ? " · Host time" : ""}
+              <ChevronDown className="size-3" aria-hidden="true" />
+            </Menu.Trigger>
+            <Menu.Portal>
+              <Menu.Positioner side="top" align="end" sideOffset={8} className="z-30">
+                <Menu.Popup className="min-w-64 border border-line-strong bg-surface p-1 shadow-lg outline-none" aria-label="Advanced playback modes">
+                  <Menu.RadioGroup value={mode} onValueChange={onMode}>
+                    <Menu.RadioItem value="events" label="Raw events" disabled={maxSequence <= 0 && !measuredAvailable} closeOnClick className="flex cursor-default items-start gap-2 px-3 py-2 text-sm text-ink outline-none data-[highlighted]:bg-raised data-[disabled]:opacity-50">
+                      <span className="grid size-4 shrink-0 place-items-center"><Menu.RadioItemIndicator><Check className="size-4 text-accent" aria-hidden="true" /></Menu.RadioItemIndicator></span>
+                      <span>Raw events<span className="mt-0.5 block text-xs text-muted">Every observation in event order</span></span>
+                    </Menu.RadioItem>
+                    <Menu.RadioItem value="recorded" label="Host time" disabled={!recordedAvailable} closeOnClick className="flex cursor-default items-start gap-2 px-3 py-2 text-sm text-ink outline-none data-[highlighted]:bg-raised data-[disabled]:opacity-50">
+                      <span className="grid size-4 shrink-0 place-items-center"><Menu.RadioItemIndicator><Check className="size-4 text-accent" aria-hidden="true" /></Menu.RadioItemIndicator></span>
+                      <span>Host time<span className="mt-0.5 block text-xs text-muted">Recorded host intervals and waits</span></span>
+                    </Menu.RadioItem>
+                  </Menu.RadioGroup>
+                </Menu.Popup>
+              </Menu.Positioner>
+            </Menu.Portal>
+          </Menu.Root>
           <label className="flex items-center gap-2">
             <span className="cp-label">Speed</span>
             <select
@@ -197,10 +225,6 @@ export function PlaybackTransport({
             >
               {playbackSpeeds(mode).map((option) => <option key={option} value={option}>{option}×</option>)}
             </select>
-          </label>
-          <label className="flex items-center gap-2 text-xs text-muted">
-            <input type="checkbox" className="size-4 accent-accent-400" checked={reduced} onChange={(event) => onReduced(event.target.checked)} />
-            Reduce motion
           </label>
         </div>
       </div>

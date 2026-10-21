@@ -66,6 +66,7 @@ export function toRunBody(scenario: ScenarioDraft, settings: EngineSettings): Ru
     model_destination: settings.modelDestination.trim() || null,
     dtype: settings.dtype,
     quantization: settings.quantization === "none" ? null : settings.quantization,
+    kv_cache_dtype: settings.kvCacheDtype,
     lora_adapters: settings.loraAdapters.map((adapter) => ({
       id: adapter.id,
       name: adapter.name.trim(),
@@ -103,6 +104,7 @@ export function toRunBody(scenario: ScenarioDraft, settings: EngineSettings): Ru
       scheduling_policy: settings.schedulingPolicy,
       long_prefill_token_threshold: Number(settings.longPrefillTokenThreshold),
       kv_cache_memory_bytes: settings.kvCacheMemoryBytes.trim() ? Number(settings.kvCacheMemoryBytes) : null,
+      kv_cache_dtype: settings.kvCacheDtype,
       fresh_prefix_cache: true,
     },
     profiling_configuration: diagnosticConfiguration(settings),

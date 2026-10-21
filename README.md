@@ -38,8 +38,13 @@ uv venv --python 3.11.15 --seed .venv
 npm ci --prefix web
 ```
 
-The saved GPU demos and regression fixtures are tracked in Git and need no
-regeneration. Replay has no separate npm dependencies.
+Saved demo manifests and small fixtures are tracked in Git. Large recordings use lossless compressed assets pinned to an immutable public commit. Online playback downloads the selected recording automatically. For offline playback and fixture tests, install `curl` and run once:
+
+```bash
+npm run recordings:download
+```
+
+This verifies the compressed parts, restores the original recording files, and checks every original SHA-256 and byte count. The resulting local cache is ignored by Git. Repeating the command verifies and reuses it; no GPU or model download is needed. Replay has no separate npm dependencies.
 
 Start the local controller and UI in separate terminals:
 
@@ -56,15 +61,14 @@ local controller at `http://127.0.0.1:8765` through Vite's `/api` proxy.
 The default draft contains six requests in batches at 0 ms, 100 ms, and 120 ms.
 Live execution starts only when **Prepare and capture** is pressed.
 
-A fresh browser selects live vLLM on the local host. To explore the application
-without connecting a GPU, press **Open real GPU demo** in Configure's launch
-bar, or open **Explore**. This replays a saved GPU run with its original workload
-and settings; it preserves your editable draft and starts no live inference.
-The recording library offers additional saved GPU lessons.
+A fresh browser opens **Explore** with a real GPU demo. Choose a recorded model, weight precision, KV-cache dtype, and LoRA configuration, then press **Load demo**. Unsupported combinations are not presented as captured evidence. **Capture your own run** opens the configuration workspace. Demo playback preserves your editable draft and starts no live inference.
 
 ## Verification
 
+Prepare the verified offline fixtures first:
+
 ```bash
+npm run recordings:download
 .venv/bin/python -m pytest -q
 .venv/bin/python -m compileall -q runner instrumentation
 npm test --prefix replay
@@ -110,3 +114,11 @@ The v0.1 workflow passed UI-driven acceptance on an NVIDIA A10 with vLLM 0.30.0.
 The preserved structural evidence for the final operator-local transfer run contains 270 ordered events for six requests and passes all eight integrity checks. See [`docs/acceptance`](docs/acceptance/README.md) for the sanitized recording, checksums, environment, and limitations.
 
 FP8 did not start for the tested OPT checkpoint on the A10 and remains an explicitly reported model/runtime incompatibility. Bitsandbytes stays disabled when its vLLM plugin is absent. Private or gated Hugging Face access, multi-GPU execution, instrumentation-overhead measurement, and CUDA-kernel tracing are not part of the accepted v0.1 evidence.
+
+## Public website
+
+[Open vLLM Execution Explorer](https://vllm-execution-explorer.vast-rhino-1030.chatgpt.site/). The public build preserves Explore and the configuration workspace; live cluster capture requires the local controller. It never accepts SSH credentials for a hosted capture.
+
+`npm ci` installs the frontend dependencies; `npm run build` creates the public static build in `dist/` with local capture actions disabled. `npm run build --prefix web` creates the local application build with capture enabled. The static build excludes decoded recording caches and native profiler archives, and streams the same verified recording transports from the immutable public asset commit. `application-revision.json` identifies the application revision used for a publication.
+
+Curated qualification reports, reproduction scripts, and small test fixtures live under `docs/qualification`. Full capture archives are published separately as versioned [release assets](https://github.com/puyuanOT/vllm-execution-explorer/releases). Scratch output and browser caches are not source artifacts.

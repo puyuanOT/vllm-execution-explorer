@@ -18,6 +18,7 @@ from runner.workload import WorkRequest, WorkloadError, canonical_sampling, requ
 CONFIGURATION_VERSION = 1
 MODEL_SOURCE_KINDS = frozenset({"huggingface", "execution_host", "operator_local"})
 DTYPES = frozenset({"auto", "float16", "bfloat16", "float32"})
+KV_DTYPES = frozenset({"auto", "float16", "bfloat16", "fp8", "fp8_e4m3", "fp8_e5m2"})
 QUANTIZATION_KINDS = frozenset({"none", "awq", "gptq", "bitsandbytes", "fp8"})
 
 
@@ -106,6 +107,7 @@ def apply_legacy_fields(body: Any, configuration: dict[str, Any]) -> None:
     body.scheduling_policy = vllm["scheduling_policy"]
     body.long_prefill_token_threshold = vllm["long_prefill_token_threshold"]
     body.kv_cache_memory_bytes = vllm["kv_cache_memory_bytes"]
+    body.kv_cache_dtype = vllm["kv_cache_dtype"]
     body.profiling_configuration = copy_configuration(configuration.get("profiling") or {"mode": "off", "max_steps": 8})
     body.dtype = model["dtype"]
     body.quantization = model["quantization"]["kind"]
@@ -124,6 +126,8 @@ def launch_blockers(configuration: dict[str, Any], requests: list[WorkRequest], 
         vllm = configuration["vllm"]
         if vllm["scheduling_policy"] != "fcfs" or vllm["long_prefill_token_threshold"] or vllm["kv_cache_memory_bytes"] is not None:
             blockers.append("The demo fixture does not apply priority scheduling, a long-prefill cap, or an explicit KV memory budget. Use a live vLLM host for these controls.")
+        if vllm["kv_cache_dtype"] != "auto":
+            blockers.append("The demo fixture does not allocate typed KV tensors. Use a live vLLM host for KV precision controls.")
         if any(request.input_mode == "synthetic" for request in requests):
             blockers.append("The demo fixture cannot verify synthetic token lengths with the selected tokenizer.")
         if sampling != canonical_sampling(None):
@@ -179,6 +183,9 @@ def _parse_vllm(payload: dict[str, Any]) -> dict[str, Any]:
     if threshold and not chunked:
         raise ConfigurationError("A long-prefill token cap requires chunked prefill.", field="vllm_configuration.long_prefill_token_threshold")
     cache_bytes = raw.get("kv_cache_memory_bytes", payload.get("kv_cache_memory_bytes"))
+    cache_dtype = raw.get("kv_cache_dtype", payload.get("kv_cache_dtype", "auto"))
+    if cache_dtype not in KV_DTYPES:
+        raise ConfigurationError(f"KV cache dtype must be one of {sorted(KV_DTYPES)}", field="vllm_configuration.kv_cache_dtype")
     if cache_bytes is not None:
         cache_bytes = require_int(cache_bytes, "KV memory bytes", field="vllm_configuration.kv_cache_memory_bytes", minimum=1, maximum=2**53-1)
     utilization = raw.get("gpu_memory_utilization", payload.get("gpu_memory_utilization", 0.9))
@@ -203,6 +210,7 @@ def _parse_vllm(payload: dict[str, Any]) -> dict[str, Any]:
         "scheduling_policy": policy,
         "long_prefill_token_threshold": threshold,
         "kv_cache_memory_bytes": cache_bytes,
+        "kv_cache_dtype": cache_dtype,
         "fresh_prefix_cache": True,
     }
 
@@ -216,7 +224,7 @@ def _parse_profiling(payload: dict[str, Any]) -> dict[str, Any]:
     mode = raw.get("mode", "off")
     if mode not in {"off", "eager_diagnostic"}:
         raise ConfigurationError("Profiling mode must be off or eager_diagnostic.", field="profiling_configuration.mode")
-    steps = require_int(raw.get("max_steps", 8), "profile step limit", field="profiling_configuration.max_steps", minimum=1, maximum=16)
+    steps = require_int(raw.get("max_steps", 8), "profile step limit", field="profiling_configuration.max_steps", minimum=1, maximum=1024)
     result: dict[str, Any] = {"mode": mode, "max_steps": steps}
     # Preserve legacy snapshots when the new optional controls were not submitted.
     if "start_step" in raw:

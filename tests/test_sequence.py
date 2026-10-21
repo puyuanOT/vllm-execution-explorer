@@ -321,10 +321,11 @@ def test_cleanup_failure_still_saves_the_manifest(tmp_path: Path):
     started = client.post("/api/runs", json=_fixture_body())
     assert started.status_code == 200
     snapshot = _wait(client)
-    assert snapshot["status"] == "completed"
+    assert snapshot["status"] == "failed"
     assert snapshot["active"] is False
     assert "cleanup exploded" in snapshot["message"]
     manifest = json.loads((tmp_path / "runs" / snapshot["run_id"] / "manifest.json").read_text())
+    assert manifest["completion_status"] == "failed"
     assert manifest["workload_plan"]["batches"]
     assert manifest["controller_origin"]["provenance"]
 

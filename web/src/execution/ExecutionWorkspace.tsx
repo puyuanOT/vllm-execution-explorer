@@ -1,6 +1,7 @@
 import type { MeasuredSceneProfile } from "../architecture/model.ts"
+import { GpuMemoryPanel } from "./GpuMemoryPanel.tsx"
 import type { ProfileKvObservations } from "../../../replay/src/profiling.ts"
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AudioLines, Box, ChevronRight, Maximize2, PanelRight, RotateCcw, RotateCw, Scan, Search, SquarePen, ZoomIn, ZoomOut } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, AudioLines, Box, ChevronRight, Cpu, Maximize2, PanelRight, RotateCcw, RotateCw, Scan, Search, SquarePen, ZoomIn, ZoomOut } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import { initialState, type RecordingManifest, type ReplayState, type TraceEvent } from "../../../replay/src/reduce.ts"
@@ -20,8 +21,11 @@ import type { Selection, WorkspaceView } from "./types.ts"
 import type { EvidenceKind } from "./evidence.ts"
 import { LayerTokenMatrix } from "./LayerTokenMatrix.tsx"
 import { projectKvConfiguration } from "../../../replay/src/kv.ts"
-import { BLOCK_STATE_COLORS } from "../architecture/model.ts"
+import { KvLegendSymbol } from "./KvLegendSymbol.tsx"
 import { CacheTensorControls } from "../architecture/CacheTensorStage.tsx"
+import { IterationGpuPanel } from "./IterationGpuPanel.tsx"
+import { activeIterationIntervals, iterationProfile, selectedLayerIndex } from "./iterationProfile.ts"
+import { ModelIterationBar } from "./ModelIterationBar.tsx"
 
 const EMPTY_REPLAY = initialState()
 
@@ -32,8 +36,8 @@ export function ExecutionWorkspace({
   measuredProfile,
   profileObservations,
   profileTimeUs,
-  teachingProgress,
-  onTeachingProgress,
+  profileError,
+  onPausePlayback,
   trackedRequestId,
   trackedTokenPosition,
   requestOrder,
@@ -42,7 +46,6 @@ export function ExecutionWorkspace({
   highlightedIds,
   view,
   onView,
-  animate,
   timeBasisLabel,
   evidence,
   evidenceKind,
@@ -56,6 +59,8 @@ export function ExecutionWorkspace({
   onOpenInspector,
   onSelect,
   onClearTracking,
+  memoryEvents = [],
+  memoryLive = false,
 }: {
   samples: SampleProjection[]
   state: ReplayState | null
@@ -63,18 +68,16 @@ export function ExecutionWorkspace({
   measuredProfile?: MeasuredSceneProfile
   profileObservations?: ProfileKvObservations | null
   profileTimeUs?: number | null
-  teachingProgress?: number
-  onTeachingProgress: (value: number) => void
+  profileError?: string
+  onPausePlayback?: () => void
   trackedRequestId: string | null
   trackedTokenPosition: number | null
   requestOrder: string[]
   colors: Record<string, string>
   selection: Selection | null
   highlightedIds: Set<string>
-  highlightedStepIds: Set<string>
   view: WorkspaceView
   onView: (view: WorkspaceView) => void
-  animate: boolean
   timeBasisLabel: string
   evidence: string
   evidenceKind: EvidenceKind
@@ -88,11 +91,16 @@ export function ExecutionWorkspace({
   onOpenInspector?: () => void
   onSelect: (selection: Selection) => void
   onClearTracking?: () => void
+  memoryEvents?: TraceEvent[]
+  memoryLive?: boolean
 }) {
   const [focus, setFocus] = useState<WorkflowComponentId | null>(null)
   const [architectureFocus, setArchitectureFocus] = useState<ArchitectureFocus | null>(null)
   const [cameraCommand, setCameraCommand] = useState<CameraCommand | null>(null)
   const [focusControlsOpen, setFocusControlsOpen] = useState(() => typeof window === "undefined" || window.matchMedia("(min-height: 860px)").matches)
+  const [componentSummaryOpen, setComponentSummaryOpen] = useState(false)
+  const [iterationOpen, setIterationOpen] = useState(false)
+  const [iterationCursor, setIterationCursor] = useState<{ key: string; timeUs: number } | null>(null)
   const selectedComponent = selection?.kind === "component" ? selection.id : null
   const replay = state ?? EMPTY_REPLAY
   const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
@@ -102,6 +110,20 @@ export function ExecutionWorkspace({
     return { ...projection, pools: configuration.pools, evidenceKind: configuration.evidenceKind, tensorLayers: configuration.layers }
   }, [manifest, replay])
   const labels = useMemo(() => new Map(samples.map((item) => [item.sample.id, item.sample.label])), [samples])
+  const hostStep = selection?.kind === "step" ? replay.steps.find((step) => step.id === selection.id) ?? replay.steps.at(-1) : replay.steps.at(-1)
+  const inspectionKey = `${manifest?.run_id ?? "draft"}:${hostStep?.id ?? "none"}`
+  const nativeIteration = useMemo(() => iterationProfile(profileObservations, hostStep?.id ?? null), [profileObservations, hostStep?.id])
+  const inspectionLayer = selectedLayerIndex(selection)
+  const localTimeUs = iterationCursor?.key === inspectionKey ? iterationCursor.timeUs
+    : nativeIteration.intervals.find(({ write }) => inspectionLayer == null || write.layerIndex === inspectionLayer)?.activity.startUs ?? nativeIteration.extent?.startUs ?? 0
+  const inspectionScene = useMemo<MeasuredSceneProfile | undefined>(() => {
+    if (!iterationOpen || measuredProfile || !hostStep || !nativeIteration.intervals.length) return undefined
+    const active = activeIterationIntervals(nativeIteration.intervals, localTimeUs)
+    return { stepId: hostStep.id, packedRows: nativeIteration.packedRows,
+      activeLayers: [...new Set(active.map(({ write }) => write.layerIndex))],
+      evidenceKind: manifest?.execution_kind === "fixture" ? "fixture" : manifest?.execution_kind === "gpu" ? "gpu" : "unknown" }
+  }, [iterationOpen, measuredProfile, hostStep?.id, nativeIteration, localTimeUs, manifest?.execution_kind])
+  const sceneProfile = measuredProfile ?? inspectionScene
   const cacheSlice = useMemo(() => {
     if (selection?.kind !== "token" || selection.kvLayerIndex == null) return null
     const blocks = cache.pools.flatMap((pool) => pool.blocks).filter((block) => [...block.contents, ...block.bindings].some((span) => span.requestId === selection.requestId && selection.position >= span.tokenStart && selection.position < span.tokenEnd))
@@ -114,12 +136,15 @@ export function ExecutionWorkspace({
   useEffect(() => {
     setFocus(null)
     setArchitectureFocus(null)
-  }, [requestOrder])
+    setIterationOpen(false)
+    setIterationCursor(null)
+    setComponentSummaryOpen(false)
+  }, [manifest?.run_id])
 
   const measuredMode = Boolean(measuredProfile)
   useEffect(() => {
-    if (measuredMode) { setFocus("model-execution"); setArchitectureFocus({ kind: "model" }) }
-  }, [measuredMode, requestOrder])
+    if (measuredMode) setIterationOpen(false)
+  }, [measuredMode, manifest?.run_id])
 
   function selectComponent(component: WorkflowComponentId) {
     onSelect({ kind: "component", id: component })
@@ -149,12 +174,16 @@ export function ExecutionWorkspace({
 
   return (
     <section className="cp-workspace flex min-h-0 min-w-0 flex-col overflow-y-auto bg-canvas" aria-label="Execution explorer">
-      <header className="flex min-h-[46px] flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[#060a11] px-3.5 py-1.5">
+      <header className="flex min-h-[46px] shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-[#060a11] px-3.5 py-1.5">
         <div className="flex min-w-fit flex-1 items-baseline gap-3">
           <h1 className="shrink-0 text-[15px] font-semibold text-ink">{title}</h1>
           <p className="m-0 hidden w-0 min-w-0 flex-1 truncate text-xs text-faint xl:block" title={timeBasisLabel}>{timeBasisLabel}</p>
         </div>
         <RequestFinder samples={samples} onSelect={onSelect} />
+        {!measuredMode ? <button type="button" className="inline-flex min-h-8 items-center gap-2 px-2 font-mono text-[11px] text-accent" disabled={!iterationOpen && !hostStep} aria-expanded={iterationOpen} onClick={() => {
+          if (!iterationOpen) { onPausePlayback?.(); setFocus("model-execution"); setArchitectureFocus({ kind: "model" }) }
+          setIterationOpen(!iterationOpen)
+        }}><Cpu className="size-3.5" aria-hidden="true" />{iterationOpen ? "Hide iteration inspection" : "Inspect this iteration"}</button> : null}
         <Segmented<WorkspaceView>
           label="Execution view"
           value={view}
@@ -176,17 +205,17 @@ export function ExecutionWorkspace({
         ) : null}
       </header>
 
-      {submittedNote ? <p className="m-0 border-b border-line bg-[#060a11] px-3.5 py-1 text-xs text-muted">{submittedNote}</p> : null}
+      {submittedNote ? <p className="m-0 shrink-0 border-b border-line bg-[#060a11] px-3.5 py-1 text-xs text-muted">{submittedNote}</p> : null}
       {warning ? (
-        <p className="m-0 border-b border-amber-700/50 bg-amber-400/[0.06] px-3.5 py-1.5 text-pretty text-xs text-amber-200" role="status">
+        <p className="m-0 shrink-0 border-b border-amber-700/50 bg-amber-400/[0.06] px-3.5 py-1.5 text-pretty text-xs text-amber-200" role="status">
           {warning}
         </p>
       ) : null}
 
       {view === "timeline" ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-2.5 p-3">
+        <div className={cn("flex flex-col gap-2.5 p-3", iterationOpen && !measuredMode ? "shrink-0" : "min-h-0 flex-1")}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <EvidenceChip kind={evidenceKind} evidence={evidence} />
+            {evidenceKind !== "gpu" ? <EvidenceChip kind={evidenceKind} evidence={evidence} /> : null}
             <SequencerLegend />
           </div>
           <RequestSequencer
@@ -201,28 +230,29 @@ export function ExecutionWorkspace({
           />
         </div>
       ) : (
-        <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className={cn("relative flex min-h-min flex-col", iterationOpen && !measuredMode ? "shrink-0" : "flex-1")}>
+          <ModelIterationBar state={replay} manifest={manifest} profile={sceneProfile} activeStepId={hostStep?.id}
+            onSelectRequest={(requestId) => onSelect({ kind: "request", id: requestId })}
+            requestOrder={requestOrder} requestLabels={labels} selection={selection} />
           <p className="sr-only">
             The visual overview contains request intake, scheduler, KV-cache manager, model execution, and output.
-            Use the component controls below the canvas for equivalent keyboard access.
+            Expand Component summary below the overview canvas for equivalent keyboard access.
           </p>
 
-          <div className="scene-viewport relative min-h-[max(62vh,22rem)] flex-1 overflow-hidden tall:min-h-72">
+          <div className="scene-viewport relative min-h-[max(62vh,22rem)] flex-1 overflow-hidden tall:min-h-[22.5rem]">
             <div className="absolute inset-0">
               <ExecutionScene
                 state={replay}
                 manifest={manifest}
-                measuredProfile={measuredProfile}
+                measuredProfile={sceneProfile}
                 profileAvailable={Boolean(profileObservations)}
                 architectureFocus={architectureFocus}
-                teachingProgress={teachingProgress}
                 trackedRequestId={trackedRequestId}
                 trackedTokenPosition={trackedTokenPosition}
                 kvCache={cache}
                 requestOrder={requestOrder}
                 requestLabels={labels}
                 selection={selection}
-                animate={animate}
                 focus={focus}
                 cameraCommand={cameraCommand}
                 onSelect={onSelect}
@@ -231,7 +261,7 @@ export function ExecutionWorkspace({
               />
             </div>
 
-            <div className="pointer-events-none absolute left-3 right-14 top-3 z-10 flex items-start gap-3">
+            <div className="pointer-events-none absolute left-3 right-36 top-3 z-10 flex items-start gap-3 sm:right-28">
               <div className="pointer-events-auto grid shrink-0 gap-1.5">
                 {focus ? (
                   <nav className="cp-hud flex h-7 items-center gap-1.5 px-2 font-mono text-[11px] tracking-[0.04em]" aria-label="Component breadcrumb">
@@ -249,12 +279,11 @@ export function ExecutionWorkspace({
                 ) : (
                   <p className="cp-hud m-0 flex h-7 items-center gap-2 px-2.5 font-mono text-[11px] text-ink"><Scan className="size-3.5 text-faint" aria-hidden="true" />Overview</p>
                 )}
-                <p className="m-0 hidden text-[11.5px] text-faint md:block"><b className="font-medium text-muted">Click</b> to inspect · <b className="font-medium text-muted">double-click</b> to drill in · <b className="font-medium text-muted">drag</b> to orbit · <b className="font-medium text-muted">right-drag</b> to pan · <b className="font-medium text-muted">scroll</b> to zoom</p>
               </div>
               <EventTicker event={currentEvent} labels={labels} />
             </div>
 
-            <div className="absolute right-3 top-3 z-10 grid grid-cols-5 gap-px border border-line-strong bg-surface p-[3px] sm:grid-cols-2" role="group" aria-label="3D camera controls">
+            <div className="absolute right-3 top-3 z-10 grid grid-cols-4 gap-px border border-line-strong bg-surface p-[3px] sm:grid-cols-2" role="group" aria-label="3D camera controls">
               {([
                 ["orbit-left", "Orbit camera left", RotateCcw],
                 ["orbit-right", "Orbit camera right", RotateCw],
@@ -264,7 +293,6 @@ export function ExecutionWorkspace({
                 ["pan-right", "Pan camera right", ArrowRight],
                 ["pan-up", "Pan camera up", ArrowUp],
                 ["pan-down", "Pan camera down", ArrowDown],
-                ["reset", "Reset camera", Maximize2],
               ] as const).map((item) => {
                 const [action, name, Icon] = item
                 const hint = action.startsWith("pan") ? " · or right-drag / Ctrl-drag" : action.startsWith("orbit") ? " · or left-drag" : action.startsWith("zoom") ? " · or scroll" : ""
@@ -281,11 +309,14 @@ export function ExecutionWorkspace({
                   </button>
                 )
               })}
+              <button type="button" className="col-span-4 flex min-h-7 items-center justify-center gap-1.5 border-0 border-t border-line-strong bg-transparent px-2 py-1 text-[10.5px] text-muted hover:text-ink sm:col-span-2" title="Reset the current view's camera orientation, pan, and zoom" onClick={() => moveCamera("reset")}>
+                <RotateCcw className="size-3" aria-hidden="true" />Reset
+              </button>
             </div>
 
             <div className="pointer-events-none absolute bottom-3 left-3 right-3 z-10 flex flex-wrap items-end justify-between gap-2">
               <SceneLegend focus={focus} state={replay} labels={labels} colors={colors} cache={cache} latestStep={latestStep} snapshotsAvailable={Boolean(profileObservations?.tensorSnapshots.length)} />
-              <Watermark kind={evidenceKind} evidence={evidence} />
+              {evidenceKind !== "gpu" ? <Watermark kind={evidenceKind} evidence={evidence} /> : null}
             </div>
           </div>
 
@@ -297,16 +328,21 @@ export function ExecutionWorkspace({
                   {focus === "model-execution" ? "Model structure controls" : focus === "kv-cache" ? "Find a physical KV block" : "Recorded objects"}
                 </summary>
                 <div className="pt-2">
-                  {focus === "model-execution" ? <ArchitectureNavigation architecture={architecture} focus={architectureFocus} onExplore={exploreArchitecture} onSelect={onSelect} progress={teachingProgress} onProgress={onTeachingProgress} /> : focus === "kv-cache" ? <PoolNavigation cache={cache} onSelect={onSelect} /> : <FocusedObjectBar component={focus} state={state} samples={samples} selection={selection} onSelect={onSelect} />}
+                  {focus === "model-execution" ? <ArchitectureNavigation architecture={architecture} focus={architectureFocus} onExplore={exploreArchitecture} onSelect={onSelect} /> : focus === "kv-cache" ? <PoolNavigation cache={cache} onSelect={onSelect} /> : <FocusedObjectBar component={focus} state={state} samples={samples} selection={selection} onSelect={onSelect} />}
                 </div>
               </details>
             </div>
           ) : (
-            <Telemetry telemetry={telemetry} selected={selectedComponent} state={state} onSelect={selectComponent} onExplore={exploreComponent} />
+            <details open={componentSummaryOpen} onToggle={(event) => setComponentSummaryOpen(event.currentTarget.open)} className="shrink-0 border-t border-line bg-[#060a11]">
+              <summary className="cursor-pointer px-3.5 py-2 text-xs text-muted focus-visible:text-ink">Component summary</summary>
+              <Telemetry telemetry={telemetry} selected={selectedComponent} state={state} onSelect={selectComponent} onExplore={exploreComponent} />
+            </details>
           )}
-          {focus === "model-execution" ? <LayerTokenMatrix state={replay} manifest={manifest} profile={measuredMode ? profileObservations : null} timeUs={measuredMode ? profileTimeUs : null} stepId={measuredProfile?.stepId} requestId={trackedRequestId} tokenPosition={trackedTokenPosition} teachingProgress={teachingProgress} labels={labels} onSelect={onSelect} onClearTracking={onClearTracking} /> : null}
+          {focus === "model-execution" && (!iterationOpen || measuredMode) ? <LayerTokenMatrix state={replay} manifest={manifest} profile={measuredMode ? profileObservations : null} timeUs={measuredMode ? profileTimeUs : null} stepId={measuredProfile?.stepId} requestId={trackedRequestId} tokenPosition={trackedTokenPosition} labels={labels} onSelect={onSelect} onClearTracking={onClearTracking} /> : null}
         </div>
       )}
+      {iterationOpen && !measuredMode && hostStep ? <IterationGpuPanel key={inspectionKey} state={replay} manifest={manifest} observations={profileObservations ?? null} stepId={hostStep.id} timeUs={localTimeUs} layerCount={architecture.layerCount} labels={labels} selection={selection} requestId={trackedRequestId} tokenPosition={trackedTokenPosition} error={profileError} onTime={(timeUs) => setIterationCursor({ key: inspectionKey, timeUs })} onSelect={onSelect} onClearTracking={onClearTracking} onClose={() => setIterationOpen(false)} /> : null}
+      {manifest?.execution_kind === "gpu" ? <GpuMemoryPanel events={memoryEvents} manifest={manifest} sequence={sequence} live={memoryLive} /> : null}
     </section>
   )
 }
@@ -346,11 +382,11 @@ function SceneLegend({ focus, state, labels, colors, cache, latestStep, snapshot
     const free = blocks.length - referenced - cached - nulls
     return (
       <div className={chip}>
-        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.referenced }} />Referenced <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : referenced.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.cached }} />Reusable prefix <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : cached.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.available }} />Available <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : free.toLocaleString()}</b></span>
-        <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: BLOCK_STATE_COLORS.null }} />Reserved null <b className="font-medium text-ink">{nulls.toLocaleString()}</b></span>
-        <span>Fill = allocation state · rim = request holder</span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="referenced" />Referenced <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : referenced.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="cached" />Reusable prefix <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : cached.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="available" />Available <b className="font-medium text-ink">{cache.status === "unknown" ? "?" : free.toLocaleString()}</b></span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="null" />Null <b className="font-medium text-ink">{nulls.toLocaleString()}</b></span>
+        <KvSelectionLegend />
         {cache.status === "unknown" ? <span className="text-amber-300">Trace gap · current slot state unknown</span> : null}
       </div>
     )
@@ -359,25 +395,35 @@ function SceneLegend({ focus, state, labels, colors, cache, latestStep, snapshot
     return (
       <div className={chip}>
         <span className="flex items-center gap-1.5"><i className="size-2 bg-accent" />Selected</span>
-        <span className="flex items-center gap-1.5"><i className="size-2 border border-dashed border-explain" />Walkthrough position</span>
         <span className="flex items-center gap-1.5"><i className="size-2 bg-amber-400" />Profiler activity</span>
         <span className="flex items-center gap-1.5"><i className="cp-hatch size-2 border border-[#45556f]" />{snapshotsAvailable ? "Selected K/V snapshots available" : "Numerical K/V snapshots not captured"}</span>
       </div>
     )
   }
-  if (!latestStep) return <span />
-  const waiting = latestStep.queueAfter?.waiting.length ?? null
+  const waiting = latestStep?.queueAfter?.waiting.length ?? null
   return (
     <div className={chip}>
-      <span className="text-faint">In {latestStep.id}</span>
-      {latestStep.requests.slice(0, 6).map((request) => (
+      {cache.pools.length ? <>
+        <span className="font-semibold text-ink">KV</span>
+        <KvSelectionLegend />
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="referenced" />Referenced</span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="cached" />Reusable prefix</span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="available" />Available</span>
+        <span className="flex items-center gap-1.5"><KvLegendSymbol kind="null" />Null</span>
+      </> : null}
+      {latestStep ? <span className="text-faint">In {latestStep.id}</span> : null}
+      {latestStep?.requests.slice(0, 6).map((request) => (
         <span key={request.requestId} className="flex items-center gap-1.5"><i className="size-2" style={{ background: colors[request.requestId] ?? "#7a8799" }} />{labels.get(request.requestId) ?? request.requestId}</span>
       ))}
-      {latestStep.requests.length > 6 ? <span>+{latestStep.requests.length - 6} more</span> : null}
+      {latestStep && latestStep.requests.length > 6 ? <span>+{latestStep.requests.length - 6} more</span> : null}
       {waiting != null ? <span className="text-faint">{waiting} waiting</span> : null}
       {state.trust === "unknown" ? <span className="text-amber-300">State after the trace gap is unknown</span> : null}
     </div>
   )
+}
+
+function KvSelectionLegend() {
+  return <span className="flex items-center gap-1.5"><KvLegendSymbol kind="selected" />Selected</span>
 }
 
 function Watermark({ kind, evidence }: { kind: EvidenceKind; evidence: string }) {

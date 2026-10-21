@@ -3,11 +3,10 @@ import * as THREE from "three"
 
 import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
 import type { Selection } from "../execution/types.ts"
-import { requestLabel } from "../explore/model.ts"
 import { requestColor } from "../theme.ts"
-import { activeTeachingStep, architectureFocusLabel, architectureLabel, kvHeadForQuery, observedProfileTokenPositions, poolCellPosition, poolGridLayout, projectArchitecture, scheduledTokenPositions, teachingLayer } from "./model.ts"
+import { activeTeachingStep, architectureFocusLabel, architectureLabel, kvHeadForQuery, observedProfileTokenPositions, poolCellPosition, poolGridLayout, projectArchitecture, scheduledTokenPositions } from "./model.ts"
 import type { ArchitectureFocus, MeasuredSceneProfile, ModelArchitecture, ScheduledTokenPosition } from "./model.ts"
-import { BoxEdges, Connector, FloorGrid, Polyline, SceneEmpty, SceneLabel, SceneText, SceneTile, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./primitives.tsx"
+import { BoxEdges, Connector, FloorGrid, Polyline, SceneEmpty, SceneText, SceneTile, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./primitives.tsx"
 import { createPoolRaycast } from "./poolPicking.ts"
 
 export interface ModelStageProps {
@@ -18,7 +17,6 @@ export interface ModelStageProps {
   selection: Selection | null
   architectureFocus?: ArchitectureFocus | null
   activeStepId?: string | null
-  teachingProgress?: number
   trackedRequestId?: string | null
   trackedTokenPosition?: number | null
   measuredProfile?: MeasuredSceneProfile
@@ -35,28 +33,24 @@ export function ModelStage(props: ModelStageProps) {
   }
   const step = activeTeachingStep(props.state, props.activeStepId)
   const overview = focus.kind === "model"
+  const linearFocus = focus.kind !== "model" && focus.kind !== "ffn" && architecture.layerTypes[focus.layerIndex] === "linear_attention"
   const profile = props.measuredProfile
-  const profileTokenCount = profile?.packedRows.filter((row) => !row.isPadding && row.requestId != null && row.tokenPosition != null).length ?? 0
   const evidence = profile ? profile.evidenceKind === "fixture" ? "Synthetic batch/layer activity · fixture profiler clock" : profile.evidenceKind === "gpu" ? "Measured batch/layer activity · profiler clock" : "Profiler batch/layer activity · source unverified"
-    : props.state.trust === "known" ? props.profileAvailable ? "Logical model structure · GPU layer timing available in Profile mode" : "Logical model structure · GPU layer timing not captured" : "Trace gap · structure is known; current token participation is unknown"
-  const tracked = props.trackedRequestId && overview && !profile
-    ? `${requestLabel(props.requestLabels, props.trackedRequestId)}${props.trackedTokenPosition == null ? "" : ` / token position ${props.trackedTokenPosition}`} / ${step?.requests.some((request) => request.requestId === props.trackedRequestId && (props.trackedTokenPosition == null || props.trackedTokenPosition >= request.rangeStart && props.trackedTokenPosition < request.rangeStart + request.rangeLength)) ? "scheduled in this step" : "not scheduled in this step"}`
-    : null
+    : props.state.trust === "known" ? props.profileAvailable ? "Logical model structure · layer activity available in GPU activity" : "Logical model structure · GPU layer timing not captured" : "Trace gap · structure is known; current token participation is unknown"
   const bottomY = overview ? -4.75 : -4.15
   return <group>
     <FloorGrid y={overview ? -6.2 : -5.5} />
     {overview ? <SceneText text={architectureLabel(props.manifest)} position={[0, 4.3, 0]} strong /> : null}
     {focus.kind === "ffn" ? <SceneText text={architectureFocusLabel(focus)} position={[0, 2.9, 0]} strong /> : null}
-    <SceneText text={evidence} position={[0, overview ? 3.85 : 3.9, 0]} muted />
-    {tracked ? <SceneText text={tracked} position={[0, 3.45, 0]} muted /> : null}
+    {!overview ? <SceneText text={evidence} position={[0, 3.9, 0]} muted /> : null}
     {focus.kind === "model" ? <LayerStack {...props} architecture={architecture} />
       : focus.kind === "layer" ? <LayerStage {...props} architecture={architecture} layerIndex={focus.layerIndex} />
         : focus.kind === "ffn" ? <FfnStage architecture={architecture} measuredActive={profile?.activeModules?.some((module) => module.layerIndex === focus.layerIndex && module.module === "ffn")} />
+          : linearFocus ? <GatedDeltaNetStage architecture={architecture} layerIndex={focus.layerIndex} measuredActive={profile?.activeModules?.some((module) => module.layerIndex === focus.layerIndex && module.module === "recurrent")} />
           : focus.kind === "head" ? <HeadStage {...props} architecture={architecture} focus={focus} />
             : <AttentionStage {...props} architecture={architecture} layerIndex={focus.layerIndex} />}
-    {profile ? <MeasuredParticipantInputs {...props} profile={profile} y={bottomY}
-      summary={profileTokenCount ? `${profile.stepId ?? "Measured batch"}: ${profileTokenCount} observed packed inputs / padding excluded` : "No observed packed-row mapping for this profiler position"} />
-      : step && props.state.trust === "known" ? <ParticipantInputs {...props} y={bottomY} summary={`${step.id}: ${step.totalScheduledTokens} scheduled input positions / ${step.requests.length} request${step.requests.length === 1 ? "" : "s"}`} />
+    {profile ? <MeasuredParticipantInputs {...props} profile={profile} y={bottomY} />
+      : step && props.state.trust === "known" ? <ParticipantInputs {...props} y={bottomY} />
         : <SceneText text={step ? "Trace gap · current token participation is unknown" : "No scheduler step has reached this playhead"} position={[0, bottomY, 0.7]} muted />}
   </group>
 }
@@ -65,14 +59,13 @@ export function LayerStack({ architecture, compact = false, baseY, ...props }: M
   const count = architecture.layerCount ?? 0
   const mesh = useRef<THREE.InstancedMesh>(null)
   const hover = useHoverCursor()
-  const activeLayer = !props.measuredProfile && props.state.trust === "known" && activeTeachingStep(props.state, props.activeStepId)
-    ? teachingLayer(props.teachingProgress, count) : null
   const measuredLayers = useMemo(() => new Set(props.measuredProfile?.activeLayers.filter((layer) => Number.isInteger(layer) && layer >= 0 && layer < count) ?? []), [props.measuredProfile?.activeLayers, count])
   const selectedLayer = props.selection?.kind === "layer" || props.selection?.kind === "module" || props.selection?.kind === "head" ? props.selection.layerIndex : null
   const height = compact ? 3.74 : 5.15
   const width = compact ? 2.9 : 3.2
   const depth = compact ? 2.0 : 1.8
   const spacing = height / Math.max(1, count)
+  const heightForLayer = (layer: number) => Math.max(spacing * (architecture.recurrent ? architecture.layerTypes[layer] === "linear_attention" ? 0.38 : 0.72 : 0.5), 0.012)
   const top = compact ? (baseY ?? 0) + height : height / 2
   const layerY = (layer: number) => top - (layer + 0.5) * spacing
   useLayoutEffect(() => {
@@ -82,19 +75,18 @@ export function LayerStack({ architecture, compact = false, baseY, ...props }: M
     const color = new THREE.Color()
     for (let layer = 0; layer < count; layer += 1) {
       transform.position.set(0, layerY(layer), 0)
-      transform.scale.set(width, Math.max(spacing * 0.5, 0.012), depth)
+      transform.scale.set(width, heightForLayer(layer), depth)
       transform.updateMatrix()
       instance.setMatrixAt(layer, transform.matrix)
-      color.set(layer === selectedLayer ? SCENE_COLORS.surfaceSelected
-        : measuredLayers.has(layer) ? "#6b5126"
-          : layer === activeLayer ? "#3d3477"
-            : "#1b2a42")
+      color.set(measuredLayers.has(layer) ? "#9e7231"
+        : layer === selectedLayer ? SCENE_COLORS.surfaceSelected
+          : architecture.layerTypes[layer] === "linear_attention" ? "#2b3444" : "#1b2a42")
       instance.setColorAt(layer, color)
     }
     instance.instanceMatrix.needsUpdate = true
     if (instance.instanceColor) instance.instanceColor.needsUpdate = true
     instance.computeBoundingSphere()
-  }, [count, height, spacing, width, depth, top, activeLayer, measuredLayers, selectedLayer])
+  }, [count, height, spacing, width, depth, top, measuredLayers, selectedLayer, architecture.layerTypes])
   const markers = [...new Set([0, Math.floor(count / 4), Math.floor(count / 2), Math.floor(count * 3 / 4), count - 1])]
   const plate: Position3 = [width, Math.max(spacing * 0.5, 0.012), depth]
   return <group>
@@ -111,27 +103,29 @@ export function LayerStack({ architecture, compact = false, baseY, ...props }: M
       }}>
       <boxGeometry args={[1, 1, 1]} /><meshStandardMaterial roughness={0.7} metalness={0.1} />
     </instancedMesh>
-    <StackRims count={count} plate={plate} layerY={layerY} />
-    {markers.map((layer) => <BoxEdges key={layer} size={plate} position={[0, layerY(layer), 0]} color={SCENE_COLORS.edgeMarker} />)}
-    {selectedLayer != null && selectedLayer < count ? <BoxEdges size={plate} position={[0, layerY(selectedLayer), 0]} color={SCENE_COLORS.accent} /> : null}
-    {activeLayer != null ? <BoxEdges size={plate} position={[0, layerY(activeLayer), 0]} color={SCENE_COLORS.explain} /> : null}
-    {[...measuredLayers].map((layer) => <BoxEdges key={`m-${layer}`} size={plate} position={[0, layerY(layer), 0]} color={SCENE_COLORS.measured} />)}
-    <BoxEdges size={[width + 0.35, height + 0.4, depth + 0.35]} position={[0, top - height / 2, 0]} color={SCENE_COLORS.edge} opacity={hover.hovered ? 1 : 0.85} />
-    {markers.map((layer) => <SceneText key={`label-${layer}`} text={`L${layer + 1}`} position={[width / 2 + 0.5, layerY(layer), depth / 2]} muted={compact} strong={!compact} />)}
+    <StackRims count={count} plate={plate} layerY={layerY} layerKinds={architecture.recurrent ? architecture.layerTypes : undefined} />
+    {markers.map((layer) => <BoxEdges key={layer} size={[width, heightForLayer(layer), depth]} position={[0, layerY(layer), 0]} color={SCENE_COLORS.edgeMarker} width={1} />)}
+    {selectedLayer != null && selectedLayer >= 0 && selectedLayer < count ? <BoxEdges size={[width + 0.18, heightForLayer(selectedLayer) + 0.07, depth + 0.18]} position={[0, layerY(selectedLayer), 0]} color={SCENE_COLORS.accent} width={2.25} /> : null}
+    {[...measuredLayers].map((layer) => <group key={`m-${layer}`} position={[0, layerY(layer), 0]}>
+      <mesh position={[0, 0, depth / 2 + 0.025]} raycast={() => null}>
+        <planeGeometry args={[width, heightForLayer(layer)]} />
+        <meshBasicMaterial color={SCENE_COLORS.measured} toneMapped={false} />
+      </mesh>
+      <BoxEdges size={[width, heightForLayer(layer), depth]} color={SCENE_COLORS.measured} width={3} />
+    </group>)}
+    <BoxEdges size={[width + 0.35, height + 0.4, depth + 0.35]} position={[0, top - height / 2, 0]} color={SCENE_COLORS.edge} opacity={hover.hovered ? 1 : 0.95} width={2.25} />
+    {markers.map((layer) => <SceneText key={`label-${layer}`} text={`L${layer + 1}${architecture.recurrent ? architecture.layerTypes[layer] === "linear_attention" ? " · GDN" : " · Attention" : ""}`} position={[width / 2 + (architecture.recurrent ? 0.8 : 0.5), layerY(layer), depth / 2]} muted={compact} strong={!compact} />)}
     {!compact ? <>
       <SceneText text="Token embeddings" position={[0, top + 0.45, 0]} />
       <SceneText text="Norm → LM head → sampling" position={[0, top - height - 0.6, 0]} muted />
     </> : null}
-    {activeLayer != null && !compact ? <>
-      <Polyline points={[[-3.6, layerY(activeLayer), 0.2], [-width / 2 - 0.12, layerY(activeLayer), 0.2]]} color={SCENE_COLORS.explain} dashed />
-      <SceneText text={`Walkthrough position · layer ${activeLayer + 1}`} position={[-3.6, layerY(activeLayer) + 0.32, 0.2]} />
-    </> : null}
-    {props.measuredProfile && !compact ? <SceneText text={measuredLayers.size ? `Profiler activity: ${[...measuredLayers].map((layer) => `L${layer + 1}`).join(", ")}` : "No mapped layer active at this profiler instant"}
+    {props.measuredProfile && !compact ? <SceneText text={measuredLayers.size ? `Active: ${[...measuredLayers].map((layer) => `Layer ${layer + 1}`).join(", ")}` : "No mapped layer activity"}
       position={[-3.9, 0, 1]} /> : null}
   </group>
 }
 
-function StackRims({ count, plate, layerY }: { count: number; plate: Position3; layerY: (layer: number) => number }) {
+function StackRims({ count, plate, layerY, layerKinds }: { count: number; plate: Position3; layerY: (layer: number) => number; layerKinds?: string[] }) {
+  const kindKey = layerKinds?.join(",") ?? ""
   const lines = useMemo(() => {
     const unit = new THREE.EdgesGeometry(new THREE.BoxGeometry(...plate))
     const source = unit.getAttribute("position").array as ArrayLike<number>
@@ -141,7 +135,7 @@ function StackRims({ count, plate, layerY }: { count: number; plate: Position3; 
       for (let index = 0; index < source.length; index += 3) {
         const target = layer * source.length + index
         positions[target] = source[index]
-        positions[target + 1] = source[index + 1] + offset
+        positions[target + 1] = source[index + 1] * (layerKinds ? layerKinds[layer] === "linear_attention" ? 0.76 : 1.44 : 1) + offset
         positions[target + 2] = source[index + 2]
       }
     }
@@ -151,20 +145,21 @@ function StackRims({ count, plate, layerY }: { count: number; plate: Position3; 
     const object = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: SCENE_COLORS.edgeDim }))
     object.raycast = () => undefined
     return object
-  }, [count, plate[0], plate[1], plate[2], layerY(0)])
+  }, [count, plate[0], plate[1], plate[2], layerY(0), kindKey])
   useLayoutEffect(() => () => { lines.geometry.dispose(); (lines.material as THREE.Material).dispose() }, [lines])
   return <primitive object={lines} />
 }
 
 function LayerStage({ architecture, layerIndex, ...props }: ModelStageProps & { architecture: ModelArchitecture; layerIndex: number }) {
-  const moduleActive = (module: "attention" | "ffn") => props.measuredProfile?.activeModules?.some((entry) => entry.layerIndex === layerIndex && entry.module === module)
+  const moduleActive = (module: "attention" | "ffn" | "recurrent") => props.measuredProfile?.activeModules?.some((entry) => entry.layerIndex === layerIndex && entry.module === module)
+  if (architecture.layerTypes[layerIndex] === "linear_attention") return <GatedDeltaNetStage architecture={architecture} layerIndex={layerIndex} measuredActive={moduleActive("recurrent")} />
   return <group>
     <SceneText text={`Layer ${layerIndex + 1}`} position={[0, 2.85, 0]} strong />
     <Connector from={[-5, 0, 0]} to={[-3.25, 0, 0]} />
     <Connector from={[-0.35, 0, 0]} to={[0.85, 0, 0]} />
     <Connector from={[4.05, 0, 0]} to={[5.4, 0, 0]} />
     <SceneTile position={[-1.8, 0, 0]} label="Self-attention"
-      detail={`${architecture.queryHeads ?? "?"} Q / ${architecture.kvHeads ?? "?"} KV heads`} width={2.9}
+      detail={`${architecture.queryHeads ?? "?"} Q / ${architecture.kvHeads ?? "?"} KV heads${architecture.attentionOutputGate ? " · gated output" : ""}`} width={2.9}
       color={moduleActive("attention") ? SCENE_COLORS.measured : SCENE_COLORS.accent}
       selected={props.selection?.kind === "module" && props.selection.layerIndex === layerIndex && props.selection.module === "attention"}
       onSelect={() => props.onSelect({ kind: "module", layerIndex, module: "attention" })}
@@ -175,13 +170,28 @@ function LayerStage({ architecture, layerIndex, ...props }: ModelStageProps & { 
       selected={props.selection?.kind === "module" && props.selection.layerIndex === layerIndex && props.selection.module === "ffn"}
       onSelect={() => props.onSelect({ kind: "module", layerIndex, module: "ffn" })}
       onExplore={() => props.onArchitectureExplore?.({ kind: "ffn", layerIndex })} />
-    <SceneText text={architecture.modelType === "qwen3" ? "RMSNorm" : "LayerNorm"} position={[-4.3, 0.55, 0]} muted />
-    <SceneText text={architecture.modelType === "qwen3" ? "+ residual → RMSNorm" : "+ residual → LayerNorm"} position={[0.25, 0.75, 0]} muted />
+    <SceneText text="RMSNorm" position={[-4.3, 0.55, 0]} muted />
+    <SceneText text="+ residual → RMSNorm" position={[0.25, 0.75, 0]} muted />
     <Polyline points={[[-4.5, 0.2, -0.25], [-4.5, 1.65, -0.25], [0.25, 1.65, -0.25], [0.25, 0.25, -0.25]]} color={SCENE_COLORS.lineDim} />
     <SceneText text="Residual path" position={[-2.3, 1.9, -0.25]} muted />
     <Polyline points={[[0.25, -0.2, -0.25], [0.25, -1.45, -0.25], [4.85, -1.45, -0.25], [4.85, -0.25, -0.25]]} color={SCENE_COLORS.lineDim} />
     <SceneText text="Feed-forward residual" position={[2.6, -1.75, -0.25]} muted />
     <SceneText text={props.measuredProfile ? "Amber: mapped profiler scope active · activation values not captured" : "Operator structure; no activation values were captured"} position={[0, -2.3, 0]} muted />
+  </group>
+}
+
+function GatedDeltaNetStage({ architecture, layerIndex, measuredActive }: { architecture: ModelArchitecture; layerIndex: number; measuredActive?: boolean }) {
+  const recurrent = architecture.recurrent
+  return <group>
+    <SceneText text={`Layer ${layerIndex + 1} · Gated DeltaNet`} position={[0, 2.85, 0]} strong />
+    <SceneTile position={[-3.8, 0.25, 0]} label="Input projections + convolution" detail={`Convolution kernel ${recurrent?.convKernelSize ?? "not captured"}`} width={3.5} />
+    <SceneTile position={[0, 0.25, 0]} label="Gated recurrent update" detail={recurrent ? `${recurrent.keyHeads} key / ${recurrent.valueHeads} value heads` : "Recurrent geometry unavailable"} width={3.4} color={measuredActive ? SCENE_COLORS.measured : SCENE_COLORS.accent} />
+    <SceneTile position={[3.8, 0.25, 0]} label="Output projection + dense FFN" detail={`${architecture.hiddenSize ?? "?"} hidden dimensions`} width={3.4} />
+    <Connector from={[-2, 0.25, 0]} to={[-1.75, 0.25, 0]} /><Connector from={[1.75, 0.25, 0]} to={[2.05, 0.25, 0]} />
+    <SceneTile position={[0, -1.45, 1]} label="Recurrent state" detail={recurrent ? `${recurrent.valueHeads} value heads · ${recurrent.keyHeadDim} × ${recurrent.valueHeadDim} state per head` : "State dimensions unavailable"} width={4.4} height={0.95} />
+    <Polyline points={[[0, -0.2, 0], [0, -0.55, 1], [0, -0.95, 1]]} dashed />
+    <SceneText text="Recurrent state is separate from the full-attention KV pool" position={[0, -2.3, 1]} muted />
+    <SceneText text={measuredActive ? "Captured GDN scope active · state values and update timing not captured" : "Captured model structure · recurrent state values not captured"} position={[0, -2.75, 1]} muted />
   </group>
 }
 
@@ -261,7 +271,7 @@ function AttentionStage({ architecture, layerIndex, ...props }: ModelStageProps 
         <SceneText text={`KV${index + 1}`} position={[x, y - 0.55, z + 0.5]} muted />
       </group>
     })}
-    <SceneText text={`Walkthrough position · layer ${layerIndex + 1}`} position={[-wallHalf + 1.4, wallBottom - 0.22, -1.55]} muted />
+    <SceneText text={`Layer ${layerIndex + 1}`} position={[-wallHalf + 1.4, wallBottom - 0.22, -1.55]} muted />
     <SceneText text={`Head dimension ${architecture.headDim ?? "not recorded"}; edges show model KV sharing, not tensor values`} position={[0, -2.15, 1.2]} muted />
   </group>
 }
@@ -289,11 +299,11 @@ function HeadStage({ architecture, focus }: ModelStageProps & { architecture: Mo
     ? `Q${focus.headIndex * queriesPerKv + 1}–${(focus.headIndex + 1) * queriesPerKv}` : "Shared query group"
   return <group>
     <SceneText text={`Layer ${focus.layerIndex + 1} / ${focus.headKind === "query" ? "query" : "KV"} head ${focus.headIndex + 1}`} position={[0, 2.85, 0]} strong />
-    {architecture.modelType === "qwen3" ? <SceneText text="Q/K RMSNorm → RoPE → grouped-query attention" position={[0, 2.3, 0]} muted /> : null}
+    <SceneText text="Q/K RMSNorm → RoPE → grouped-query attention" position={[0, 2.3, 0]} muted />
     <SceneTile position={[-3.4, 0.8, 0.2]} label={queryLabel} detail={`Dimension ${architecture.headDim ?? "unknown"}`} width={2.6} />
     <SceneTile position={[-0.1, 0.8, -0.7]} label={`K${kv == null ? "?" : kv + 1}`} detail="Computed prefix keys" width={2.6} />
     <SceneTile position={[-0.1, -0.85, -0.7]} label={`V${kv == null ? "?" : kv + 1}`} detail="Computed prefix values" width={2.6} />
-    <SceneTile position={[3.6, 0, 0]} label="Attention output" detail="Causal attention → output projection" width={3} />
+    <SceneTile position={[3.6, 0, 0]} label="Attention output" detail={architecture.attentionOutputGate ? "Attention → sigmoid gate → output projection" : "Causal attention → output projection"} width={3} />
     <Connector from={[-2.1, 0.8, 0.2]} to={[2.05, 0.1, 0]} />
     <Connector from={[1.2, 0.8, -0.7]} to={[2.05, 0.1, 0]} />
     <Connector from={[1.2, -0.85, -0.7]} to={[2.05, -0.1, 0]} />
@@ -303,7 +313,7 @@ function HeadStage({ architecture, focus }: ModelStageProps & { architecture: Mo
 }
 
 function FfnStage({ architecture, measuredActive }: { architecture: ModelArchitecture; measuredActive?: boolean }) {
-  const gated = architecture.modelType === "qwen3"
+  const gated = architecture.modelType === "qwen3" || architecture.recurrent != null
   return <group>
     <SceneTile position={[-3.6, 0, 0]} label={gated ? "Gate + up projections" : "First projection"} detail={`${architecture.hiddenSize ?? "?"} → ${architecture.intermediateSize ?? "?"}`} width={3.2} color={measuredActive ? SCENE_COLORS.measured : SCENE_COLORS.accent} />
     <SceneTile position={[0.1, 0, 0]} label={gated ? `${architecture.activation ?? "Activation"} × up` : architecture.activation ?? "Activation"} detail={gated ? "Elementwise gating" : "Configured activation"} width={2.6} />
@@ -313,67 +323,27 @@ function FfnStage({ architecture, measuredActive }: { architecture: ModelArchite
   </group>
 }
 
-function InputCaption({ position, lines }: { position: Position3; lines: Array<{ text: string; tone?: "strong" | "muted" }> }) {
-  return <SceneLabel position={position} anchor="right">
-    <span className="grid gap-0.5 leading-snug">
-      {lines.map((line) => <span key={line.text} className={line.tone === "muted" ? "scene-tag" : line.tone === "strong" ? "scene-text text-ink" : "scene-text"}>{line.text}</span>)}
-    </span>
-  </SceneLabel>
-}
-
-function ParticipantInputs({ state, requestOrder, requestLabels, selection, activeStepId, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { y: number; summary: string }) {
+/** The stable iteration band carries request counts/ranges; only pickable inputs live in the scene. */
+function ParticipantInputs({ state, requestOrder, selection, activeStepId, trackedRequestId, trackedTokenPosition, onSelect, y }: ModelStageProps & { y: number }) {
   const step = activeTeachingStep(state, activeStepId)
   const tokens = useMemo(() => step ? scheduledTokenPositions(step) : [], [step])
   if (!step || state.trust !== "known") return null
   const requestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
-  const request = step.requests.find((item) => item.requestId === requestId)
   const position = selection?.kind === "token" ? selection.position : trackedTokenPosition
-  return <group>
-    <group position={[-3.9, y + 0.16, 0.7]}>
-      <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
-      <SceneText text="Scheduled input positions" position={[0, 0.9, 0]} muted />
-    </group>
-    {request ? <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, request.requestId)}
-      color={requestColor(requestOrder, request.requestId)} selected
-      detail={`${request.promptTokens} prefill / ${request.generationTokens} decode`}
-      onSelect={() => onSelect({ kind: "request", id: request.requestId })} /> : <SceneLabel position={[-1.8, y + 0.25, 0.7]} anchor="right" interactive>
-      <div className="grid max-h-28 w-52 gap-1 overflow-auto" aria-label="Requests scheduled in this step">
-        {step.requests.slice(0, 12).map((item) => <button key={item.requestId} type="button" className="cp-hud w-full px-2 py-1 text-left font-mono text-[10px] text-muted" onClick={() => onSelect({ kind: "request", id: item.requestId })}>
-          <span className="block text-ink">{requestLabel(requestLabels, item.requestId)}</span>
-          <span>Positions {item.rangeStart}–{item.rangeStart + item.rangeLength - 1} · {item.promptTokens} prefill / {item.generationTokens} decode</span>
-        </button>)}
-        {step.requests.length > 12 ? <span className="text-xs text-muted">{step.requests.length - 12} more requests in the layer matrix</span> : null}
-      </div>
-    </SceneLabel>}
-    <InputCaption position={[0.75, y, 0.8]} lines={[
-      { text: summary, tone: "strong" },
-      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / position ${position}${request && position >= request.rangeStart && position < request.rangeStart + request.rangeLength ? ` / ${position < request.numPromptTokens ? "prefill" : "decode"}` : " / outside this batch"}` : `${step.requests.length} requests · ${step.totalScheduledTokens} positions` },
-      { text: "Decode lighter · explanatory layout", tone: "muted" },
-    ]} />
+  return <group position={[-3.9, y + 0.16, 0.7]}>
+    <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
+    <SceneText text="Scheduled input positions" position={[0, 0.9, 0]} muted />
   </group>
 }
 
-function MeasuredParticipantInputs({ profile, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect, y, summary }: ModelStageProps & { profile: MeasuredSceneProfile; y: number; summary: string }) {
+function MeasuredParticipantInputs({ profile, requestOrder, selection, trackedRequestId, trackedTokenPosition, onSelect, y }: ModelStageProps & { profile: MeasuredSceneProfile; y: number }) {
   const tokens = useMemo(() => observedProfileTokenPositions(profile.packedRows), [profile.packedRows])
-  if (!tokens.length) return <SceneText text={summary} position={[0, y, 0.7]} muted />
+  if (!tokens.length) return null
   const requestId = selection?.kind === "token" ? selection.requestId : selection?.kind === "request" ? selection.id : trackedRequestId
   const position = selection?.kind === "token" ? selection.position : trackedTokenPosition
-  const mapped = tokens.filter((token) => token.requestId === requestId)
-  const shownRequest = mapped[0]?.requestId ?? null
-  const shownRows = tokens.filter((token) => token.requestId === shownRequest)
-  return <group>
-    <group position={[-3.9, y + 0.16, 0.7]}>
-      <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
-      <SceneText text={profile.evidenceKind === "fixture" ? "Fixture packed rows" : "Observed packed rows"} position={[0, 0.9, 0]} muted />
-    </group>
-    {shownRequest ? <SceneTile position={[-0.65, y, 0.7]} width={2.7} label={requestLabel(requestLabels, shownRequest)} detail={`${shownRows.length} mapped input positions`}
-      color={requestColor(requestOrder, shownRequest)} selected={shownRequest === requestId}
-      onSelect={() => onSelect({ kind: "request", id: shownRequest })} /> : <SceneText text={`${new Set(tokens.map((token) => token.requestId)).size} requests · whole packed batch`} position={[-0.65, y, 0.7]} />}
-    <InputCaption position={[0.75, y, 0.8]} lines={[
-      { text: summary, tone: "strong" },
-      { text: requestId && position != null ? `${requestLabel(requestLabels, requestId)} / p${position}${mapped.some((token) => token.position === position) ? " / mapped" : " / outside this batch"}` : `${tokens.length} real input rows · padding excluded` },
-      { text: "Batch/layer timing · no token or head duration", tone: "muted" },
-    ]} />
+  return <group position={[-3.9, y + 0.16, 0.7]}>
+    <TokenBatch tokens={tokens} requestOrder={requestOrder} selectedRequestId={requestId ?? null} selectedPosition={position ?? null} onSelect={onSelect} />
+    <SceneText text={profile.evidenceKind === "fixture" ? "Fixture packed rows" : "Observed packed rows"} position={[0, 0.9, 0]} muted />
   </group>
 }
 

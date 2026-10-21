@@ -115,6 +115,23 @@ test("layer matrix follows batch GPU cache writes, not host result or CPU return
   assert.equal(projectLayerTokenMatrix(state(), manifest, attachment, { maxTokens: 2 }).truncated, true)
 })
 
+test("matrix switches between recordings with colliding activity IDs without reusing native timing", () => {
+  const original = parseProfileAttachment(JSON.stringify(source()), manifest)
+  const changed = source()
+  changed.run_id = "cache-test-next"
+  for (const activity of changed.activities) activity.start += 1000
+  const nextManifest = { ...manifest, run_id: changed.run_id }
+  const replacement = parseProfileAttachment(JSON.stringify(changed), nextManifest)
+  const project = (attachment: typeof original, recording: RecordingManifest, timeUs: number) =>
+    projectLayerTokenMatrix(state(), recording, attachment, { stepId: "step-1", timeUs })
+  const first = project(original, manifest, 105)
+  const statuses = (result: typeof first) => result.cells.filter(cell => cell.position === 2).map(cell => cell.state)
+  assert.deepEqual(statuses(first), ["operation_active", "scheduled"])
+  assert.deepEqual(statuses(project(replacement, nextManifest, 105)), ["scheduled", "scheduled"])
+  assert.deepEqual(statuses(project(replacement, nextManifest, 1105)), ["operation_active", "scheduled"])
+  assert.deepEqual(project(original, manifest, 105), first)
+})
+
 test("legacy, unsupported, missing and synthetic layer evidence stay explicit", () => {
   const legacySource = source() as Record<string, unknown>
   delete legacySource.cache_writes

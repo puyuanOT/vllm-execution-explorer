@@ -1,4 +1,4 @@
-import { Archive, Disc3, FlaskConical } from "lucide-react"
+import { Disc3, FlaskConical, SlidersHorizontal } from "lucide-react"
 
 import { cn } from "../lib/cn.ts"
 import type { AppRoute } from "../hooks/useAppRoute.ts"
@@ -9,20 +9,20 @@ export type HeaderEvidence = EvidenceKind | null
 
 export function AppHeader({
   route,
+  busy = false,
   status,
   recording,
   evidence,
   controller,
   onNavigate,
-  onRecordings,
 }: {
   route: AppRoute
+  busy?: boolean
   status: string
   recording?: string | null
   evidence?: HeaderEvidence
-  controller: { label: string; tone: Tone }
+  controller: { label: string; tone: Tone } | null
   onNavigate: (route: AppRoute) => void
-  onRecordings: () => void
 }) {
   return (
     <header className="flex min-h-[52px] flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-[#060a11] px-4 py-1.5">
@@ -41,21 +41,13 @@ export function AppHeader({
       </div>
 
       <nav className="flex self-stretch" aria-label="Primary">
-        {(["configure", "explore"] as const).map((item, index) => (
-          <button
-            key={item}
-            type="button"
-            className={cn(
-              "flex min-h-11 items-center gap-2 rounded-none border-0 bg-transparent px-4 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-faint hover:text-ink",
-              route === item && "text-ink shadow-[inset_0_-2px_0_theme(colors.accent.400)]",
-            )}
-            aria-current={route === item ? "page" : undefined}
-            onClick={() => onNavigate(item)}
-          >
-            <span className={route === item ? "text-accent" : "text-[#3a4960]"}>{String(index + 1).padStart(2, "0")}</span>
-            {item === "configure" ? "Configure" : "Explore"}
-          </button>
-        ))}
+        <button
+          type="button"
+          className={cn("flex min-h-11 items-center border-0 bg-transparent px-4 font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-muted hover:text-ink", route === "explore" && "text-ink shadow-[inset_0_-2px_0_theme(colors.accent.400)]")}
+          disabled={busy}
+          aria-current={route === "explore" ? "page" : undefined}
+          onClick={() => onNavigate("explore")}
+        >Explore</button>
       </nav>
 
       <span className="flex-1" />
@@ -66,18 +58,19 @@ export function AppHeader({
         {evidence === "gpu" ? <Chip tone="gpu"><Led /><span>Observed GPU recording</span></Chip> : null}
         {evidence === "unverified" ? <Chip tone="warning"><span>GPU execution unverified</span></Chip> : null}
         {evidence === "draft" ? <Chip tone="warning"><span>Draft preview · not execution evidence</span></Chip> : null}
-        <span className="flex h-6 max-w-72 items-center gap-2 border-line font-mono text-[10.5px] text-faint sm:border-l sm:pl-3" role="status" title={status}>
+        {controller ? <span className="flex h-6 max-w-72 items-center gap-2 border-line font-mono text-[10.5px] text-faint sm:border-l sm:pl-3" role="status" title={status}>
           <Led tone={controller.tone} />
           <span className="truncate"><b className="sr-only font-medium text-muted sm:not-sr-only">{controller.label}</b><span className="sr-only 2xl:not-sr-only">{status ? ` · ${status}` : ""}</span></span>
-        </span>
+        </span> : null}
         <button
           type="button"
-          className="grid size-8 place-items-center border-line-strong bg-raised p-0 text-muted hover:text-ink"
-          aria-label="Open recordings"
-          title="Recordings"
-          onClick={onRecordings}
+          className={cn("inline-flex min-h-8 items-center gap-2 border border-line-strong bg-raised px-3 text-xs text-muted hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent", route === "configure" && "border-accent text-ink")}
+          disabled={busy}
+          aria-current={route === "configure" ? "page" : undefined}
+          onClick={() => onNavigate("configure")}
         >
-          <Archive aria-hidden="true" className="size-4" />
+          <SlidersHorizontal aria-hidden="true" className="size-3.5" />
+          Capture your own run
         </button>
       </div>
     </header>

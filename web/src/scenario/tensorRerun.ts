@@ -12,7 +12,7 @@ export function tensorRerunSettings(current: EngineSettings, manifest: Recording
   const sampling = record(configuration.sampling ?? manifest.sampling)
   const engine = record(configuration.vllm ?? manifest.engine_settings)
   const next: EngineSettings = {
-    ...current, engine: "vllm", profilingMode: "eager_diagnostic", profilingMaxSteps: "8",
+    ...current, demoLoraMode: null, engine: "vllm", profilingMode: "eager_diagnostic", profilingMaxSteps: "8",
     profilingStartStep: String(target.startStep ?? 1), profilingTriggerRequestId: target.requestId,
     tensorCapture: true, tensorPreset: "custom", tensorRequestId: target.requestId,
     tensorTokenPositions: String(target.tokenPosition), tensorLayerIndices: String(target.layerIndex),
@@ -36,6 +36,8 @@ export function tensorRerunSettings(current: EngineSettings, manifest: Recording
   }
   if (typeof engine.kv_cache_memory_bytes === "number") next.kvCacheMemoryBytes = String(engine.kv_cache_memory_bytes)
   else if (engine.kv_cache_memory_bytes === null) next.kvCacheMemoryBytes = ""
+  if (["auto", "float16", "bfloat16", "fp8", "fp8_e4m3", "fp8_e5m2"].includes(String(engine.kv_cache_dtype))) next.kvCacheDtype = engine.kv_cache_dtype as EngineSettings["kvCacheDtype"]
+  else next.kvCacheDtype = "auto"
   if (typeof engine.enable_prefix_caching === "boolean") next.prefixCaching = engine.enable_prefix_caching
   if (typeof engine.enable_chunked_prefill === "boolean") next.chunkedPrefill = engine.enable_chunked_prefill
   if (engine.scheduling_policy === "fcfs" || engine.scheduling_policy === "priority") next.schedulingPolicy = engine.scheduling_policy

@@ -9,7 +9,7 @@ from runner.configuration import ConfigurationError, parse_run_configuration
 from runner.profile_trace import normalize_trace
 from runner.profiling import DiagnosticProfile, profile_record
 from runner.workload import parse_run_workload
-from vllm_030.cache_tensors import CacheWriteCapture, cache_quantization, loaded_cache_tensors
+from vllm_030.cache_tensors import CacheWriteCapture, cache_quantization, decode_fp8_byte, loaded_cache_tensors
 
 
 class Values:
@@ -61,7 +61,7 @@ class Cache:
         return 128
 
     def element_size(self):
-        return 2
+        return 1 if self.dtype == "torch.uint8" else 2
 
     def stride(self):
         return (32, 16, 8, 1)
@@ -104,7 +104,25 @@ def test_quantization_records_effective_mode_and_scale_presence_without_reading_
     assert metadata["scales"]["V"]["status"] == "unavailable"
 
 
-def capture_fixture(max_bytes=64, slot_address=6, request_id=None):
+class Scale(Values):
+    dtype = "torch.float32"
+    device = "cuda:0"
+
+    def __init__(self, values):
+        super().__init__(values)
+        self.shape = (len(values),)
+
+    def numel(self):
+        return len(self.values)
+
+    def is_contiguous(self):
+        return True
+
+    def element_size(self):
+        return 4
+
+
+def capture_fixture(max_bytes=64, slot_address=6, request_id=None, fp8=None):
     cache = Cache()
     record = {"layer_index": 0, "pool": "pool-0", "cache_group": 0, "device": "cuda:0", "dtype": "float16", "layout_status": "qualified",
               "kernel_block_size": 2, "manager_block_size": 4, "kernel_blocks_per_manager_block": 2, "num_kernel_blocks": 4, "num_kv_heads": 2, "head_dim": 4}
@@ -120,10 +138,16 @@ def capture_fixture(max_bytes=64, slot_address=6, request_id=None):
     hooks = SimpleNamespace(current_step="step-3", _current_mapping={"mapping_status": "observed", "packed_rows": [{"row": 0, "request_id": "a", "token_position": 2, "is_padding": False}]},
                             record_function=record_function, runner=SimpleNamespace(input_batch=SimpleNamespace(req_id_to_index={"a": 0}, block_table=[SimpleNamespace(block_table=SimpleNamespace(np=Table()))])),
                             _patch=lambda target, name, replacement: setattr(target, name, replacement), source_fingerprints={})
-    records = {"model.layers.0.attn": {"record": record, "module": SimpleNamespace(impl=impl)}}
+    module = SimpleNamespace(impl=impl)
+    if fp8:
+        cache.dtype = "torch.uint8"
+        cache.data[3][0][0] = [0, 56, 64, 0, 0, 184, 192, 0]
+        record.update(dtype="uint8", numerical_encoding=fp8)
+        module._k_scale, module._v_scale = Scale([2.0]), Scale([4.0])
+    records = {"model.layers.0.attn": {"record": record, "module": module}}
     capture = CacheWriteCapture(hooks, records, {"enabled": True, "request_id": request_id, "head_indices": [0], "dimension_start": 1, "dimension_count": 2, "max_bytes": max_bytes}, lambda _pool, _block: 5)
     capture.install()
-    impl.do_kv_cache_update(None, None, None, cache, Values([slot_address]))
+    impl.do_kv_cache_update(module, None, None, cache, Values([slot_address]))
     return capture, cache, contexts
 
 
@@ -147,6 +171,58 @@ def test_snapshot_byte_cap_and_unobserved_selection_remain_explicit():
     capture, _cache, _contexts = capture_fixture(request_id="not-in-window")
     capture.finalize()
     assert capture.capture_record()["status"] == "unavailable" and "targeted rerun" in capture.capture_record()["reason"]
+
+
+def test_fp8_snapshots_preserve_raw_bytes_and_update_time_scales_before_reuse():
+    capture, cache, _contexts = capture_fixture(fp8="fp8_e4m3")
+    module = capture.records["model.layers.0.attn"]["module"]
+    module._k_scale.values[0] = 100.0
+    module._v_scale.values[0] = 200.0
+    cache.data[3][0][0] = [0] * 8
+    capture.finalize()
+    keys, values = capture.snapshots
+    assert keys["dtype"] == "uint8" and keys["values"] == [1.0, 2.0]
+    assert keys["quantization"]["raw_bits"] == [56, 64]
+    assert keys["quantization"]["scale"]["value"] == 2.0
+    assert keys["quantization"]["reconstructed_values"] == [2.0, 4.0]
+    assert values["values"] == [-1.0, -2.0]
+    assert values["quantization"]["scale"]["value"] == 4.0
+    assert values["quantization"]["reconstructed_values"] == [-4.0, -8.0]
+    assert keys["byte_count"] == 6 and capture.capture_record()["retained_bytes"] == 12
+    capture, _cache, _contexts = capture_fixture(fp8="fp8_e4m3", max_bytes=6)
+    capture.finalize()
+    assert len(capture.snapshots) == 1 and capture.capture_record()["status"] == "partial"
+
+
+def test_fp8_decoding_has_the_native_cuda_finite_e4m3_and_ieee_e5m2_ranges():
+    assert decode_fp8_byte(0x38, "fp8_e4m3") == 1.0
+    assert decode_fp8_byte(0x7e, "fp8_e4m3") == 448.0
+    assert decode_fp8_byte(0x01, "fp8_e4m3") == 2**-9
+    assert decode_fp8_byte(0x3c, "fp8_e5m2") == 1.0
+    assert decode_fp8_byte(0x7b, "fp8_e5m2") == 57344.0
+    assert decode_fp8_byte(0x01, "fp8_e5m2") == 2**-16
+
+
+def test_fp8_layout_requires_native_encoding_and_both_kernel_compatible_scales(monkeypatch):
+    monkeypatch.setattr("vllm_030.cache_tensors.cuda_fp8_platform", lambda: True)
+    FlashAttentionImpl = type("FlashAttentionImpl", (), {"head_size": 4, "kv_cache_dtype": "fp8_e4m3", "do_kv_cache_update": lambda *_args: None})
+    cache = Cache()
+    cache.dtype = "torch.uint8"
+    module = SimpleNamespace(layer_name="model.layers.0.self_attn.attn", kv_cache=cache, impl=FlashAttentionImpl(), _k_scale=Scale([2.0, 3.0]), _v_scale=Scale([4.0, 5.0]))
+    runner = SimpleNamespace(model=SimpleNamespace(named_modules=lambda: [(module.layer_name, module)]), _kernel_block_sizes=[2])
+    inventory = {"groups": [{"cache_group": 0, "pool": "pool-0", "block_size": 4, "token_slot_mapping": "qualified_full_attention", "layer_names": [module.layer_name]}]}
+    monkeypatch.setattr("vllm_030.cache_tensors.inspect.getsource", lambda *_args: "kv_cache.transpose(1, 2).split(self.head_size, dim=-1) reshape_and_cache_flash( slot_mapping, self.kv_cache_dtype, layer._k_scale, layer._v_scale,")
+    metadata, _records = loaded_cache_tensors(runner, inventory)
+    assert metadata["layers"][0]["numerical_encoding"] == "fp8_e4m3"
+    assert metadata["layers"][0]["layout_status"] == "qualified"
+    module._v_scale = Scale([1.0, 2.0, 3.0])
+    assert loaded_cache_tensors(runner, inventory)[0]["layers"][0]["layout_status"] == "unavailable"
+    module._v_scale = Scale([4.0, 5.0])
+    module.impl.kv_cache_dtype = "unknown_uint8"
+    assert loaded_cache_tensors(runner, inventory)[0]["layers"][0]["layout_status"] == "unavailable"
+    module.impl.kv_cache_dtype = "fp8_e4m3"
+    monkeypatch.setattr("vllm_030.cache_tensors.cuda_fp8_platform", lambda: False)
+    assert loaded_cache_tensors(runner, inventory)[0]["layers"][0]["layout_status"] == "unavailable"
 
 
 @pytest.mark.parametrize("address", [-1, 99])

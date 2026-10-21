@@ -3,8 +3,11 @@ import { test } from "node:test"
 
 import { explainBlock, explainRequest } from "./explain.ts"
 import {
+  applyEvent,
   attachContent,
+  buildCheckpoints,
   createPlayer,
+  initialState,
   parseRecordingJson,
   replay,
   type ContentRecord,
@@ -116,6 +119,75 @@ test("replay is deterministic and seeks match the event prefix", () => {
   assert.equal(player.at(8).requests.a.recomputing, true)
   assert.equal(player.at(8).requests.a.reservedCursor, 0)
   assert.equal(player.at(8).requests.a.preemptionReason, null)
+})
+
+test("public event application and checkpoint seek results preserve independent historical states", () => {
+  const before = initialState()
+  const received = applyEvent(before, event(1, "request_received", { request_id: "a" }))
+  assert.deepEqual(before, initialState())
+  const queued = applyEvent(received, event(2, "request_queued", { request_id: "a" }))
+  assert.equal(received.requests.a.status, "received")
+  assert.equal(queued.requests.a.status, "queued")
+  const events = sample()
+  const snapshots = buildCheckpoints(events, 1)
+  const firstRequest = snapshots[1].state.requests.a
+  const finalRequest = snapshots.at(-1)!.state.requests.a
+  assert.notEqual(firstRequest, finalRequest)
+  finalRequest.status = "changed"
+  assert.equal(firstRequest.status, "received")
+  const player = createPlayer(events)
+  const original = player.at(events.at(-1)!.sequence)
+  const changed = player.at(original.lastSequence)
+  changed.requests.a.blockIds.push(999)
+  changed.steps[0].requests[0].rangeLength = 999
+  player.steps[0].status = "scheduled"
+  assert.deepEqual(player.at(original.lastSequence), original)
+  assert.deepEqual(player.at(1), snapshots[1].state)
+})
+
+test("long recordings bound checkpoint retention while every sampled raw prefix matches immutable event application", () => {
+  const events = Array.from({ length: 8192 }, (_, index) => {
+    const sequence = index + 1
+    if (sequence === 1) return event(sequence, "request_received", { request_id: "a" })
+    if (sequence % 64 === 0) return event(sequence, "tokens_accepted", { request_id: "a", token_count: 1, output_position_start: sequence / 64 - 1 })
+    return event(sequence, "capture_ready")
+  })
+  const checkpoints = buildCheckpoints(events)
+  assert.ok(checkpoints.length <= 128)
+  assert.equal(checkpoints[0].sequence, 0)
+  assert.equal(checkpoints.at(-1)!.sequence, events.length)
+  assert.equal(checkpoints.at(-1)!.state.requests.a.acceptedTokenCount, 128)
+  const player = createPlayer(events)
+  const samples = new Set([0, 1, 63, 64, 65, 4095, 4096, 4097, 8191, 8192,
+    ...checkpoints.flatMap(point => [Math.max(0, point.sequence - 1), point.sequence])])
+  let expected = initialState()
+  assert.deepEqual(player.at(0), expected)
+  for (const item of events) {
+    expected = applyEvent(expected, item)
+    if (samples.has(item.sequence)) assert.deepEqual(player.at(item.sequence), expected)
+  }
+  const end = player.at(events.length)
+  const backwards = player.at(4096)
+  assert.equal(backwards.requests.a.acceptedTokenCount, 64)
+  assert.deepEqual(player.at(events.length), end)
+})
+
+test("bounded checkpoints freeze at the first trace gap and preserve rejection of invalid known prefixes", () => {
+  const events = Array.from({ length: 5000 }, (_, index) => index === 99
+    ? event(index + 1, "trace_gap", { reason: "lost", missing_sequence_start: 101, missing_sequence_end: 102 })
+    : event(index + 1, "capture_ready"))
+  events[100].schema_version = "invalid-after-gap"
+  const player = createPlayer(events)
+  assert.equal(player.maxSequence, 100)
+  assert.equal(player.at(99).trust, "known")
+  const frozen = replay(events.slice(0, 100))
+  assert.equal(frozen.trust, "unknown")
+  assert.deepEqual(player.at(100), frozen)
+  assert.deepEqual(player.at(5000), frozen)
+  assert.throws(() => createPlayer([event(2, "capture_ready")]), /expected sequence 1/)
+  const initial = initialState()
+  assert.throws(() => applyEvent(initial, event(2, "capture_ready")), /expected sequence 1/)
+  assert.deepEqual(initial, initialState())
 })
 
 test("HTTP capture boundaries apply recorded intake facts without regressing later state", () => {

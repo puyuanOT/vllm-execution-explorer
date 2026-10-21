@@ -97,13 +97,15 @@ function isSettings(value: unknown): value is EngineSettings {
   // Missing fields in older drafts inherit defaults; malformed present fields
   // must not reach components that call string or array methods on them.
   for (const [key, fallback] of Object.entries(defaultSettings())) {
-    if (key in value && !Array.isArray(fallback) && typeof value[key] !== typeof fallback) return false
+    if (key !== "demoLoraMode" && key in value && !Array.isArray(fallback) && typeof value[key] !== typeof fallback) return false
   }
+  if ("demoLoraMode" in value && value.demoLoraMode !== null && !["none", "all", "mixed"].includes(value.demoLoraMode as string)) return false
   const choices: Record<string, readonly string[]> = {
     hostKind: ["local", "ssh"],
     modelSource: ["huggingface", "host", "operator"],
     dtype: ["auto", "float16", "bfloat16", "float32"],
     quantization: ["none", "awq", "gptq", "bitsandbytes", "fp8"],
+    kvCacheDtype: ["auto", "float16", "bfloat16", "fp8", "fp8_e4m3", "fp8_e5m2"],
     schedulingPolicy: ["fcfs", "priority"],
     profilingMode: ["off", "eager_diagnostic"],
     tensorPreset: ["small", "custom"],

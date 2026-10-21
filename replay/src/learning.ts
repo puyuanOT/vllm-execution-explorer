@@ -8,6 +8,7 @@ export interface ArchitectureProjection {
   reason: string | null
   modelType: string | null
   activation?: string | null
+  attentionOutputGate?: boolean
   source: string | null
   layerCount: number | null
   hiddenSize: number | null
@@ -15,6 +16,8 @@ export interface ArchitectureProjection {
   kvHeads: number | null
   headDim: number | null
   intermediateSize: number | null
+  layerTypes: Array<"full_attention" | "linear_attention">
+  recurrent: { keyHeads: number; valueHeads: number; keyHeadDim: number; valueHeadDim: number; convKernelSize: number } | null
 }
 
 export interface SchedulerProjection {
@@ -99,6 +102,7 @@ export function projectArchitecture(manifest?: RecordingManifest | null): Archit
     reason: typeof architecture.reason === "string" ? architecture.reason : null,
     modelType: string(architecture.model_type),
     activation: string(architecture.activation),
+    attentionOutputGate: architecture.attention_output_gate === true,
     source: string(architecture.source),
     layerCount: positiveInteger(architecture.num_layers),
     hiddenSize: positiveInteger(architecture.hidden_size),
@@ -106,9 +110,25 @@ export function projectArchitecture(manifest?: RecordingManifest | null): Archit
     kvHeads: positiveInteger(architecture.num_key_value_heads),
     headDim: positiveInteger(architecture.head_dim),
     intermediateSize: positiveInteger(architecture.intermediate_size),
+    layerTypes: [],
+    recurrent: null,
   }
   value.supported = architecture.supported === true
     && [value.layerCount, value.hiddenSize, value.queryHeads, value.kvHeads, value.headDim, value.intermediateSize].every((dimension) => dimension != null)
+  if (value.modelType === "qwen3_5_text") {
+    const types = architecture.layer_types
+    const recurrent = object(architecture.recurrent)
+    const dimensions = ["key_heads", "value_heads", "key_head_dim", "value_head_dim", "conv_kernel_size"].map((key) => positiveInteger(recurrent[key]))
+    const valid = Array.isArray(types) && types.length === value.layerCount
+      && types.every((kind) => kind === "full_attention" || kind === "linear_attention") && dimensions.every((dimension) => dimension != null)
+    value.supported = value.supported && valid
+    if (valid) {
+      value.layerTypes = types as ArchitectureProjection["layerTypes"]
+      value.recurrent = { keyHeads: dimensions[0]!, valueHeads: dimensions[1]!, keyHeadDim: dimensions[2]!, valueHeadDim: dimensions[3]!, convKernelSize: dimensions[4]! }
+    }
+  } else if (value.supported && value.layerCount != null) {
+    value.layerTypes = Array.from({ length: value.layerCount }, () => "full_attention")
+  }
   if (!value.supported && !value.reason) value.reason = "This recording has no supported model architecture observation."
   return value
 }

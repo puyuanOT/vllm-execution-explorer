@@ -36,9 +36,9 @@ export function DiagnosticCapture({ settings, issues, requests = [], onSettings 
         </select>
         <FieldError id="setting-profiling-mode-error" message={issueFor("setting-profiling-mode")} />
       </label>
-      {settings.profilingMode !== "off" ? numberField("profilingMaxSteps", "setting-profiling-steps", "Maximum captured scheduler steps", "1–16 steps; the default is eight.") : null}
+      {settings.profilingMode !== "off" ? numberField("profilingMaxSteps", "setting-profiling-steps", "Maximum captured scheduler steps", "1–1024 steps; the default is eight. Trace size limits still apply.") : null}
     </div>
-    <FieldHint id="setting-profiling-hint">Diagnostics use one GPU with dense Qwen3 and CUDA graphs disabled. Native GPU intervals describe shared batch operations, including supported layer cache writes. Recording and tensor readback add overhead.</FieldHint>
+    <FieldHint id="setting-profiling-hint">Diagnostics use supported Qwen models on one GPU with CUDA graphs disabled. Native GPU intervals describe shared batch operations, including supported layer cache writes. Recording and tensor readback add overhead.</FieldHint>
     {settings.profilingMode !== "off" ? <div className="mt-5 space-y-5 border-t border-slate-800 pt-5">
       <div className="grid items-start gap-4 md:grid-cols-2">
         {numberField("profilingStartStep", "setting-profiling-start", "Earliest scheduler step", "Step numbering starts at 1. Capture waits until this step and any selected arrival trigger.")}
@@ -48,6 +48,10 @@ export function DiagnosticCapture({ settings, issues, requests = [], onSettings 
         description="Choose targets before recording. Values omitted from a recording require a targeted rerun. Native BF16/FP16 slices are supported; other layouts report availability."
         onChange={(tensorCapture) => onSettings({ ...settings, tensorCapture })} />
       {settings.tensorCapture ? <div className="space-y-4">
+        {settings.modelSource === "huggingface" && settings.model.trim() === "Qwen/Qwen3-4B-Instruct-2507" ? <div className="border border-slate-800 p-3">
+          <button type="button" className="text-xs" onClick={() => onSettings({ ...settings, tensorPreset: "custom", tensorTokenPositions: "0,1", tensorLayerIndices: Array.from({length:36}, (_, index) => index).join(","), tensorHeadIndices: "0,1,2,3,4,5,6,7", tensorDimensionStart: "0", tensorDimensionCount: "128", tensorMaxBytes: "1048576", profilingStartStep: "1", profilingTriggerRequestId: "" })}>Use two-token full-head lesson</button>
+          <p className="mb-0 mt-2 text-pretty text-xs text-slate-400">Select positions 0 and 1, all 36 layers and 8 KV heads, and all 128 dimensions of K and V for the qualified Qwen3-4B architecture. BF16 values require 288 KiB for one snapshot per token. A new capture is required; this does not add values to existing recordings.</p>
+        </div> : null}
         <div className="grid items-start gap-4 md:grid-cols-2">
           <label htmlFor="setting-profiling-tensor-preset" className="block text-xs font-medium text-slate-400">Tensor selection
             <select id="setting-profiling-tensor-preset" className={inputClass} value={settings.tensorPreset} aria-invalid={Boolean(issueFor("setting-profiling-tensor-preset"))} aria-describedby="setting-profiling-tensor-preset-hint setting-profiling-tensor-preset-error"

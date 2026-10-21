@@ -1,7 +1,9 @@
 import { defaultSettings, staggeredExample } from "./example.ts"
+import { operatorDemoScenario } from "./operatorDemo.ts"
 import type { EngineSettings, SampleDraft, ScenarioDraft } from "./types.ts"
 
 export const LEARNING_EXAMPLES = [
+  { id: "operator-demo", label: "Operator incident review", description: "Six realistic engineering requests in three arrival groups, with shared incident context and 64–256-token output limits. New GPU capture required." },
   { id: "staggered", label: "Staggered arrivals", description: "Six requests arrive at 0, 100 and 120 ms. Observe changing batch membership." },
   { id: "prefix", label: "Partial prefix reuse", description: "Two prompts share a long prefix and differ at the end. Prefix caching is enabled; inspect the recorded hits and remaining prefill." },
   { id: "chunked", label: "Chunked prefill", description: "A 512-token input shares a 64-token scheduling budget with a short request. Inspect which positions each step schedules." },
@@ -10,6 +12,17 @@ export const LEARNING_EXAMPLES = [
 export type LearningExampleId = typeof LEARNING_EXAMPLES[number]["id"]
 
 export function learningExample(id: LearningExampleId, settings: EngineSettings): { scenario: ScenarioDraft; settings: EngineSettings } {
+  if (id === "operator-demo") {
+    const hybrid = settings.model.replace(/-FP8$/, "") === "Qwen/Qwen3.8-27B"
+    return {
+      scenario: operatorDemoScenario({ loraMode: settings.demoLoraMode, adapterId: settings.loraAdapters.find(adapter => adapter.location.trim())?.id }),
+      settings: { ...settings, prefixCaching: true, chunkedPrefill: true, maxModelLen: "2048", maxNumSeqs: "3",
+        tokenBudget: hybrid ? "1024" : "64", longPrefillTokenThreshold: hybrid ? "784" : "64",
+        kvCacheMemoryBytes: String((hybrid ? 1024 : 512) * 1024 ** 2), schedulingPolicy: "fcfs",
+        profilingMode: "eager_diagnostic", profilingMaxSteps: "1024", profilingStartStep: "1", profilingTriggerRequestId: "",
+        tensorCapture: false, tensorRequestId: "" },
+    }
+  }
   if (id === "staggered") {
     const defaults = defaultSettings()
     return { scenario: staggeredExample(), settings: { ...settings, prefixCaching: false, chunkedPrefill: true, maxModelLen: defaults.maxModelLen, tokenBudget: defaults.tokenBudget, maxNumSeqs: defaults.maxNumSeqs, kvCacheMemoryBytes: "", schedulingPolicy: "fcfs", longPrefillTokenThreshold: "0" } }

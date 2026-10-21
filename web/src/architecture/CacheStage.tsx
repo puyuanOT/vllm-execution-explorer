@@ -12,11 +12,11 @@ import { EvidenceTag } from "../ui/controls.tsx"
 import { BLOCK_STATE_COLORS, dieCellPosition, dieLayout, mappedBlockSlot, physicalBlockState, physicalBlockStateLabel } from "./model.ts"
 import { createDieRaycast } from "./poolPicking.ts"
 import { CacheTensorStage } from "./CacheTensorStage.tsx"
+import { BlockMarks } from "./BlockMarks.tsx"
 import type { KvLayerConfiguration } from "../../../replay/src/kv.ts"
 import { BoxEdges, FloorGrid, SceneEmpty, SceneLabel, SceneText, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./primitives.tsx"
 
 const DIE_Y = -1.0
-const RIM_LIMIT = 400
 
 export function CacheStage({ cache, requestOrder, requestLabels, selection, trackedRequestId, trackedTokenPosition, onSelect }: {
   cache: KvCacheProjection; requestOrder: string[]; requestLabels?: ReadonlyMap<string, string>; selection: Selection | null;
@@ -64,9 +64,8 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
   const selectedRequest = selection?.kind === "request" ? selection.id : selection?.kind === "token" ? selection.requestId : null
   const heightFor = (block: KvBlockProjection | undefined) => {
     if (!block) return layout.pitch * 0.05
-    if (selected && block.key === selected.key) return Math.max(0.6, Math.min(1.15, layout.pitch * 6))
-    if (!block.isNull && block.refCount > 0) return Math.min(0.24, layout.pitch * 0.32)
-    if (block.hasHash) return Math.min(0.12, layout.pitch * 0.18)
+    if (physicalBlockState(block) === "referenced") return Math.min(0.24, layout.pitch * 0.32)
+    if (physicalBlockState(block) === "cached") return Math.min(0.12, layout.pitch * 0.18)
     return Math.min(0.035, layout.pitch * 0.06)
   }
   useLayoutEffect(() => {
@@ -90,7 +89,12 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
     instance.computeBoundingSphere()
   }, [layout, byId, requestOrder, selectedRequest, selected?.key])
   const viewportWidth = useThree((state) => state.size.width)
-  const special = useMemo(() => pool.blocks.filter((block) => block.isNull || block.refCount > 0 || block.hasHash || block.key === selected?.key).slice(0, RIM_LIMIT), [pool.blocks, selected?.key])
+  const markCells = useMemo(() => pool.blocks.map((block) => {
+    const [cx, cz] = dieCellPosition(block.blockId, layout)
+    const focused = selectedRequest ?? trackedRequestId
+    return { block, x: cx, z: cz, height: heightFor(block), size: layout.pitch * 0.78,
+      selected: block.key === selected?.key || block.trust === "known" && Boolean(focused && block.bindings.some((binding) => binding.requestId === focused)) }
+  }), [pool.blocks, layout, selected?.key, selectedRequest, trackedRequestId])
   const rulerColumns = Math.max(4, rulerStep(layout.columns))
   const rulerRows = rulerStep(layout.rows)
   const front = layout.depth / 2
@@ -119,19 +123,14 @@ function PoolDie({ pool, span, x, requestOrder, requestLabels, selection, select
       <boxGeometry args={[1, 1, 1]} />
       <meshBasicMaterial toneMapped={false} />
     </instancedMesh>
-    {special.map((block) => {
+    <BlockMarks cells={markCells} requestOrder={requestOrder} />
+    {pool.capacity > 64 ? pool.blocks.filter((block) => block.isNull).map((block) => {
       const [cx, cz] = dieCellPosition(block.blockId, layout)
-      const height = heightFor(block)
-      const isSelected = block.key === selected?.key
-      const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
-      const focused = selectedRequest ?? trackedRequestId
-      const rim = isSelected ? SCENE_COLORS.accentSoft : focused && holders.includes(focused) ? requestColor(requestOrder, focused)
-        : holders.length === 1 ? requestColor(requestOrder, holders[0]) : holders.length > 1 ? SCENE_COLORS.accent : SCENE_COLORS.edgeMarker
-      return <BoxEdges key={block.key} size={[layout.pitch * 0.8, height, layout.pitch * 0.8]} position={[cx, height / 2, cz]} color={rim} />
-    })}
+      return <SceneText key={`null-label-${block.blockId}`} text="Null" position={[cx, heightFor(block) + 0.05, cz]} muted />
+    }) : null}
     {pool.capacity <= 64 ? pool.blocks.map((block) => {
       const [cx, cz] = dieCellPosition(block.blockId, layout)
-      return <SceneText key={`block-label-${block.blockId}`} text={`Block ${block.blockId}`} position={[cx, heightFor(block) + 0.04, cz + layout.pitch * 0.42]} muted />
+      return <SceneText key={`block-label-${block.blockId}`} text={`${block.isNull ? "Null · " : ""}Block ${block.blockId}`} position={[cx, heightFor(block) + 0.04, cz + layout.pitch * 0.42]} muted />
     }) : null}
     {pool.capacity > 64 ? Array.from({ length: Math.ceil(layout.columns / rulerColumns) }, (_, step) => {
       const column = step * rulerColumns
@@ -200,30 +199,31 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
         const known = block.trust === "known"
         const isSelected = known && activeRequestId != null && mapped.requestId === activeRequestId && activePosition != null && mapped.position === activePosition
         const holderColor = mapped.requestId ? requestColor(requestOrder, mapped.requestId) : "#2a3c58"
-        const originColor = mapped.sourceRequestId ? requestColor(requestOrder, mapped.sourceRequestId) : holderColor
         const status = !known ? "unknown" : mapped.span ? "computed" : mapped.binding ? "reserved" : "unwritten"
+        const statusLabel = status === "computed" ? "KV written" : status === "reserved" ? "Reserved" : status === "unwritten" ? "Unwritten" : "Unknown"
         const piece = mapped.tokenPiece != null ? mapped.tokenPiece.replace(/\n/g, "↵") : null
         return <li key={slot}>
           <button
             type="button"
             className={cn("relative block w-full min-h-0 overflow-hidden rounded-none pl-2 pr-1.5 text-left focus-visible:[outline-offset:-2px] disabled:cursor-default disabled:opacity-100", short ? "h-11 py-0.5" : "h-[52px] py-1")}
             style={{
-              borderColor: status === "computed" || status === "reserved" ? `color-mix(in srgb, ${holderColor} 35%, transparent)` : "#1c2a41",
-              background: status === "computed" ? "#14243b" : status === "reserved" ? "#181a27" : status === "unknown" ? undefined : "#080d16",
-              boxShadow: status === "computed" ? `inset 3px 0 0 ${originColor}` : undefined,
+              borderColor: status === "computed" || status === "reserved" ? "#617089" : "#24344b",
+              borderStyle: status === "reserved" ? "dashed" : "solid",
+              background: status === "computed" ? "#263347" : status === "reserved" ? "#111824" : status === "unknown" ? undefined : "#080d16",
+              boxShadow: known && mapped.binding ? `inset 4px 0 0 ${holderColor}` : undefined,
               outline: isSelected ? "1.5px solid var(--accent)" : undefined,
               outlineOffset: isSelected ? -2 : undefined,
             }}
             disabled={!known || mapped.position == null || mapped.requestId == null}
-            aria-label={`Slot ${slot}: ${status}${mapped.requestId ? `, ${nameOf(mapped.requestId)} position ${mapped.position}` : ""}${mapped.sourceRequestId && mapped.sourceRequestId !== mapped.requestId ? `; content source ${nameOf(mapped.sourceRequestId)}` : ""}`}
+            aria-label={`Slot ${slot}: ${statusLabel}${mapped.requestId ? `, ${nameOf(mapped.requestId)} position ${mapped.position}` : ""}${mapped.sourceRequestId ? `; written by ${nameOf(mapped.sourceRequestId)}` : ""}`}
             onClick={() => { if (mapped.requestId && mapped.position != null) onSelect({ kind: "token", requestId: mapped.requestId, position: mapped.position }) }}
           >
             {status === "unknown" ? <span className="cp-hatch absolute inset-0 opacity-40" aria-hidden="true" /> : null}
             <span className="relative flex justify-between font-mono text-[9px] text-muted"><span>{mapped.position == null ? "—" : `Pos ${mapped.position}`}</span><span>Slot {slot}</span></span>
             <span className="relative mt-0.5 block truncate whitespace-pre font-mono text-xs text-ink [font-variant-ligatures:none]">
-              {piece == null ? <span className="text-faint">{status}</span> : <>{piece.startsWith(" ") ? <span className="text-faint">·</span> : null}{piece.startsWith(" ") ? piece.slice(1) : piece}</>}
+              {piece == null ? <span className="text-muted">{statusLabel}</span> : <>{piece.startsWith(" ") ? <span className="text-faint">·</span> : null}{piece.startsWith(" ") ? piece.slice(1) : piece}</>}
             </span>
-            <span className="relative block truncate font-mono text-[9px] text-muted">{mapped.tokenId == null ? "" : `ID ${mapped.tokenId}`}{piece != null ? ` · ${status}` : ""}</span>
+            <span className="relative block truncate font-mono text-[9px] text-muted">{mapped.tokenId == null ? "" : `ID ${mapped.tokenId}`}{piece != null ? ` · ${statusLabel}` : ""}</span>
           </button>
         </li>
       })}
@@ -232,7 +232,7 @@ function BlockCartridge({ block, pool, requestOrder, requestLabels, selection, t
       {holders.map((holder) => <span key={holder} className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, holder) }} />Holder {nameOf(holder)}</span>)}
       {origin ? <span className="flex items-center gap-1.5"><i className="size-2" style={{ background: requestColor(requestOrder, origin) }} />Written by {nameOf(origin)}</span> : null}
       <span className="flex-1" />
-      <span>{physicalBlockStateLabel(physicalBlockState(block))} · {holders.length > 1 ? "Shared by holders" : "Rim identifies holder"} · inspect token for tensor details</span>
+      <span>{physicalBlockStateLabel(physicalBlockState(block))} · {holders.length > 1 ? `Shared by ${holders.length} holders` : holders.length === 1 ? "Slot strip identifies holder" : "No current request references"} · inspect token for tensor details</span>
     </div>
     {selection?.kind === "token" ? <div className="mt-2 grid gap-1">
       <button type="button" className="min-h-7 text-xs" disabled={!tensorSliceAvailable || block.trust === "unknown"} onClick={onInspectTensor}>Explore layer / KV head / K–V slice</button>

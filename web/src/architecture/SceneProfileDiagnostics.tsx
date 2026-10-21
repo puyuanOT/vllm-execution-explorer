@@ -36,7 +36,7 @@ export function SceneProfileDiagnostics({ sceneProps, focusKey }: { sceneProps: 
   const frameStart = useRef<number | null>(null)
   const context = useRef({ runId: "", focusKey: "", mode: "", sequence: 0, poolCount: 0, poolCapacity: 0, poolCapacities: [] as number[] })
   const flush = useRef<(reason: string) => void>(() => {})
-  const mode = sceneProps.measuredProfile ? "measured" : sceneProps.teachingProgress != null ? "teaching" : "events"
+  const mode = sceneProps.measuredProfile ? "measured" : "events"
   const runId = sceneProps.manifest?.run_id ?? "unknown"
 
   useLayoutEffect(() => {

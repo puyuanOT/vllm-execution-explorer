@@ -1,7 +1,9 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import { test } from "node:test"
 import type { RecordingManifest } from "./reduce.ts"
-import { createProfileIntervalIndex, parseProfileAttachment, profileActivitiesAt, projectMeasuredProfile, readProfileArtifact } from "./profiling.ts"
+import { createProfileIntervalIndex, parseProfileAttachment, profileActivitiesAt, projectMeasuredProfile, projectMeasuredProfileView, readProfileArtifact } from "./profiling.ts"
 
 const clock = { domain: "torch.profiler.chrome_trace", unit: "microseconds", origin: "trace_local" }
 const manifest: RecordingManifest = { run_id: "profile-test", profiling: {
@@ -33,6 +35,85 @@ function source() {
   }
 }
 
+test("production compact encoding preserves native playback, cache addresses and selection", () => {
+  const original = source() as Record<string, any>
+  original.activities = original.activities.map((row: Record<string, any>) => ({ process_id: 1, thread_id: 9, related_activity_ids: ["cpu"], ...row }))
+  original.activities[3].extra_native_field = "retained fallback"
+  Object.assign(original.activities[0].scope, { operation: "kv_cache_write", operation_id: "cache-write-0" })
+  original.cache_writes = [{ operation_id: "cache-write-0", step_id: "step-1", layer_index: 2,
+    layer_name: "model.layers.2.self_attn", status: "observed", observation_boundary: "native update returned",
+    gpu_activity_ids: ["a"], participants: [{ row: 0, request_id: "b", token_position: 9,
+      pool: "pool-0", cache_group: 0, block_id: 3, allocation_generation: 2, slot: 9, kernel_block_id: 3, kernel_slot: 9 }] }]
+  original.normalization = { status: "completed", gpu_activity_count: 3 }
+  const encoded = JSON.parse(execFileSync("python3", ["-c",
+    "import json,sys; from runner.profile_codec import encode_compact_profile; print(json.dumps(encode_compact_profile(json.load(sys.stdin))))"],
+  { cwd: fileURLToPath(new URL("../../", import.meta.url)), input: JSON.stringify(original), encoding: "utf8" }))
+  const expected = parseProfileAttachment(JSON.stringify(original), manifest)
+  const actual = parseProfileAttachment(JSON.stringify(encoded), manifest)
+  for (const field of ["activities", "steps", "cacheWrites", "tensorSnapshots", "tensorCapture"] as const) assert.deepEqual(actual[field], expected[field])
+  for (const timeUs of [999_900, 1_000_006, 1_000_030]) {
+    const before = projectMeasuredProfile(manifest, expected, { stepId: "step-1", timeUs })
+    const after = projectMeasuredProfile(manifest, actual, { stepId: "step-1", timeUs })
+    assert.deepEqual(after.activeActivities, before.activeActivities)
+    assert.deepEqual(after.layers, before.layers)
+    assert.deepEqual(after.cacheWrites, before.cacheWrites)
+  }
+  for (const mutate of [
+    (value: Record<string, any>) => { value.activities[0].push("extra field") },
+    (value: Record<string, any>) => { value.activities[0][2] = value.activity_names.length },
+    (value: Record<string, any>) => { value.activities[0][9] = true },
+    (value: Record<string, any>) => { value.activities[0][10] = [-1] },
+    (value: Record<string, any>) => { value.activities[1][0] = value.activities[0][0] },
+    (value: Record<string, any>) => { value.cache_writes[0].participant_ids[0] = value.cache_participants.length },
+    (value: Record<string, any>) => { value.cache_writes[0].gpu_activity_refs[0] = 0.5 },
+    (value: Record<string, any>) => { value.cache_writes[0].participants = [] },
+    (value: Record<string, any>) => { value.normalization.attachment_encoding.encoded_activity_count += 1 },
+    (value: Record<string, any>) => { value.normalization.attachment_encoding.unique_scope_count = true },
+    (value: Record<string, any>) => { value.normalization.attachment_encoding.kind = "unknown" },
+    (value: Record<string, any>) => { delete value.activity_scopes },
+    (value: Record<string, any>) => { value.cache_participants.push(value.cache_participants[0]); value.normalization.attachment_encoding.unique_participant_count += 1 },
+  ]) {
+    const bad = structuredClone(encoded)
+    mutate(bad)
+    assert.throws(() => parseProfileAttachment(JSON.stringify(bad), manifest))
+  }
+})
+
+test("lossless shared activity names preserve every parsed activity and projection", () => {
+  const original = source()
+  const names = [...new Set(original.activities.map((activity) => activity.name))]
+  const value = { ...original, activity_names: names,
+    normalization: { attachment_encoding: { kind: "activity_name_dictionary_v1", unique_name_count: names.length, encoded_activity_count: original.activities.length } },
+    activities: original.activities.map(({ name, ...activity }) => ({ ...activity, name_id: names.indexOf(name) })),
+  }
+  const plain = parseProfileAttachment(JSON.stringify(original), manifest)
+  const expanded = parseProfileAttachment(JSON.stringify(value), manifest)
+  assert.deepEqual(expanded.activities, plain.activities)
+  assert.deepEqual(expanded.steps, plain.steps)
+  for (const timeUs of [999_900, 1_000_006, 1_000_030]) {
+    const before = projectMeasuredProfile(manifest, plain, { stepId: "step-1", timeUs })
+    const after = projectMeasuredProfile(manifest, expanded, { stepId: "step-1", timeUs })
+    assert.deepEqual(after.activities, before.activities)
+    assert.deepEqual(after.activeActivities, before.activeActivities)
+    assert.deepEqual(after.layers, before.layers)
+  }
+  for (const mutate of [
+    (value: Record<string, any>) => { value.activities[0].name = "ambiguous" },
+    (value: Record<string, any>) => { value.activities[0].name_id = names.length },
+    (value: Record<string, any>) => { value.activities[0].name_id = -1 },
+    (value: Record<string, any>) => { value.activities[0].name_id = 0.5 },
+    (value: Record<string, any>) => { value.activities[0].name_id = true },
+    (value: Record<string, any>) => { delete value.activity_names },
+    (value: Record<string, any>) => { delete value.normalization.attachment_encoding },
+    (value: Record<string, any>) => { value.normalization.attachment_encoding.encoded_activity_count += 1 },
+    (value: Record<string, any>) => { value.activity_names.push(value.activity_names[0]) },
+  ]) {
+    const bad = structuredClone(value)
+    mutate(bad)
+    assert.throws(() => parseProfileAttachment(JSON.stringify(bad), manifest))
+  }
+})
+
 test("measured scope uses native profiler time and packed post-reorder rows, with no token/head duration", () => {
   const attachment = parseProfileAttachment(JSON.stringify(source()), manifest)
   const result = projectMeasuredProfile(manifest, attachment, { stepId: "step-1", layerIndex: 2, component: "attention", timeUs: 1_000_006 })
@@ -53,6 +134,22 @@ test("measured scope uses native profiler time and packed post-reorder rows, wit
   result.activities[0].scope.layerIndex = 999
   assert.equal(attachment.steps[0].packedRows[0].requestId, "b")
   assert.equal(attachment.activities[0].scope.layerIndex, 2)
+})
+
+test("explicit read-only profile view preserves every projected value without duplicating source observations", () => {
+  const attachment = parseProfileAttachment(JSON.stringify(source()), manifest)
+  for (const selection of [{}, { stepId: "step-1", layerIndex: 2, timeUs: 1_000_006 }, { stepId: "missing" }]) {
+    const view = projectMeasuredProfileView(manifest, attachment, selection)
+    assert.deepEqual(view, projectMeasuredProfile(manifest, attachment, selection))
+    for (const activity of view.activities) assert.equal(activity, attachment.activities.find(original => original.id === activity.id))
+    assert.equal(view.steps, attachment.steps)
+  }
+  const replacement = parseProfileAttachment(JSON.stringify(source()), manifest)
+  const first = projectMeasuredProfileView(manifest, attachment)
+  const next = projectMeasuredProfileView(manifest, replacement)
+  assert.notEqual(first.activities[0], next.activities[0])
+  assert.equal(first.activities, attachment.activities)
+  assert.equal(next.activities, replacement.activities)
 })
 
 test("profiler selection is independent of host replay and cannot map activity names to a layer", () => {
@@ -100,6 +197,32 @@ test("partial capture retains measured intervals with bounded qualification and 
   assert.equal(projection.activeActivities.length, 0)
   assert.equal(projection.activities[0].startUs, 1_000_000.25)
   assert.deepEqual(projection.extent, { startUs: 999_900, endUs: 1_000_032 })
+})
+
+test("bounded unrelated CPU detail preserves measured GPU projection and cache-write correlations", () => {
+  const value = source()
+  Object.assign(value, { normalization: { status: "partial", source_activity_count: 20, gpu_activity_count: 3,
+    attachment_retention: { status: "cpu_detail_bounded", original_activity_count: 20, retained_activity_count: 4,
+      omitted_cpu_activity_count: 16, omitted_gpu_activity_count: 0, gpu_activities_complete: true } },
+    cache_writes: [{ operation_id: "cache-write-0", step_id: "step-1", layer_index: 2, layer_name: "model.layers.2.self_attn",
+      status: "observed", observation_boundary: "AttentionImpl.do_kv_cache_update.returned", gpu_activity_ids: ["a"],
+      participants: [{ row: 0, request_id: "b", token_position: 9 }] }] })
+  Object.assign(value.activities[0].scope, { operation: "kv_cache_write", operation_id: "cache-write-0" })
+  const partial = structuredClone(manifest)
+  Object.assign(partial.profiling as object, { status: "partial", completeness: "bounded",
+    reason: "Unrelated CPU detail was omitted; all normalized CUDA activities remain and the full native trace is retained." })
+  const attachment = parseProfileAttachment(JSON.stringify(value), partial)
+  const projection = projectMeasuredProfile(partial, attachment, { stepId: "step-1", layerIndex: 2, timeUs: 1_000_006 })
+  assert.equal(projection.status, "observed")
+  assert.equal(projection.completeness, "bounded")
+  assert.match(projection.reason!, /Unrelated CPU detail/)
+  assert.deepEqual(projection.activeActivities.map((activity) => activity.id), ["a", "b"])
+  assert.equal(projection.cacheWrites[0].status, "observed")
+  assert.deepEqual(projection.cacheWrites[0].gpuActivityIds, ["a"])
+  assert.equal(projection.selectedStep?.packedRows.length, 4)
+  assert.equal(projection.unmappedActivityCount, 1)
+  assert.deepEqual(projection.layers[0].devices[0].busyUs, 15)
+  assert.deepEqual(projection.normalization, attachment.normalization)
 })
 
 test("device summaries do not merge devices or treat CPU launch spans as GPU busy time", () => {

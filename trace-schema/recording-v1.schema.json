@@ -31,6 +31,7 @@
       ],
       "properties": {
         "schema_version": { "const": "1.0.0" },
+        "gpu_memory": { "$ref": "#/$defs/gpuMemory" },
         "run_configuration": { "$ref": "#/$defs/runConfiguration" },
         "capture": { "$ref": "#/$defs/capture" },
         "provenance": { "$ref": "#/$defs/provenance" },
@@ -38,6 +39,21 @@
           "type": "array",
           "items": { "$ref": "#/$defs/dispatchObservation" }
         }
+      },
+      "additionalProperties": true
+    },
+    "gpuMemory": {
+      "type": "object",
+      "required": ["contract_version", "status", "clock_domain", "sample_interval_ms", "source", "process_pid"],
+      "properties": {
+        "contract_version": { "const": 1 },
+        "status": { "enum": ["recording", "completed", "partial"] },
+        "clock_domain": { "const": "time.monotonic_ns" },
+        "sample_interval_ms": { "type": "integer", "minimum": 1 },
+        "process_pid": { "type": "integer", "minimum": 1 },
+        "source": { "type": "string" },
+        "device_peak_kind": { "const": "highest_successful_sample" },
+        "allocator_peak_kind": { "const": "allocator_counter_since_initialization_or_last_external_reset" }
       },
       "additionalProperties": true
     },

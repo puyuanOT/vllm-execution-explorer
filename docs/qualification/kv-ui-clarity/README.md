@@ -47,10 +47,33 @@ dismissal, reopening, tracking retention, and caption removal. They do not
 establish numerical snapshot availability for position 46: that slice remains
 explicitly **Not captured**, as expected for this saved demo's capture targets.
 
+## Separate source and saved-replay audits
+
+`decode-reservation-audit.md` and its JSON retain the position-173 decode
+chronology, actual production projections, native layer-write mappings,
+immutable source links, and matching hook fingerprints.
+
+`demo-lifecycle-projections.json` independently checks the saved recording at
+events 138, 141, and 178 through the production replay, sample, and KV-pool
+projection functions:
+
+- Event 138: prime remains `Decode scheduled`, 3/4 accepted outputs, text
+  `The first thing`, and 11 reusable-prefix blocks.
+- Event 141: prime is `Completed`, 4/4 outputs, full text
+  `The first thing recorded`; 11 reusable-prefix blocks remain.
+- Event 178: Block 1's current holder is `prefix-reader`; its retained content
+  writer remains `prefix-prime`. The pool has one reusable-prefix block left
+  after prefix blocks were referenced again.
+
+All eight lifecycle assertions pass. A fresh browser check for these three
+events was attempted after the earlier dismissal verification, but the CUA
+browser inventory was empty and in-app tab creation was unavailable. These
+are reproduced **production replay projections**, not a new browser
+verification. No native-browser fallback or new GPU run was performed.
+
 ## Checks
 
 - Web tests: 73 passed, zero failures (`web-tests.txt`).
 - TypeScript check and production Vite build: passed (`web-build.txt`).
 - `git diff --check`: passed.
 - Existing Vite bundle-size advisory remains; it is unrelated to this change.
-

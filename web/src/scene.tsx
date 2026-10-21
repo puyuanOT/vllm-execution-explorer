@@ -1,16 +1,17 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Canvas, useThree } from "@react-three/fiber"
 import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from "react"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import * as THREE from "three"
 
-import { projectArchitecture, projectKvCache, projectScheduler, type KvBlockProjection, type KvCacheProjection } from "../../replay/src/learning.ts"
+import { projectArchitecture, projectKvCache, projectScheduler, type KvCacheProjection } from "../../replay/src/learning.ts"
 import type { QueueEntry, RecordingManifest, ReplayState } from "../../replay/src/reduce.ts"
 import { CacheStage } from "./architecture/CacheStage.tsx"
-import { activeTeachingStep, architectureLabel, dieCellPosition, dieLayout, type ArchitectureFocus, type MeasuredSceneProfile } from "./architecture/model.ts"
+import { activeTeachingStep, architectureLabel, BLOCK_STATE_COLORS, dieCellPosition, dieLayout, physicalBlockState, type ArchitectureFocus, type MeasuredSceneProfile } from "./architecture/model.ts"
+import { BlockMarks } from "./architecture/BlockMarks.tsx"
 import { LayerStack, ModelStage } from "./architecture/ModelStage.tsx"
 import { SceneProfileDiagnostics } from "./architecture/SceneProfileDiagnostics.tsx"
 import { BoxEdges, Connector, FloorGrid, Polyline, SceneCard, SceneEmpty, SceneText, SceneTile, SCENE_COLORS, sceneClick, useHoverCursor, type Position3 } from "./architecture/primitives.tsx"
-import { componentSnapshot, requestLabel, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
+import { componentSnapshot, observedRequestIds, requestLabel, WORKFLOW_COMPONENTS, type WorkflowComponentId } from "./explore/model.ts"
 import type { Selection } from "./execution/types.ts"
 import { requestColor } from "./theme.ts"
 
@@ -24,11 +25,9 @@ export interface SceneProps {
   requestOrder: string[]
   requestLabels?: ReadonlyMap<string, string>
   selection: Selection | null
-  animate: boolean
   focus?: WorkflowComponentId | null
   architectureFocus?: ArchitectureFocus | null
   activeStepId?: string | null
-  teachingProgress?: number
   trackedRequestId?: string | null
   trackedTokenPosition?: number | null
   measuredProfile?: MeasuredSceneProfile
@@ -45,15 +44,16 @@ const KV_BANK = { x: -1.95, z: 4.1, width: 4.1, depth: 2.2 }
 
 export function ExecutionScene(props: SceneProps) {
   const tensorDrill = props.focus === "kv-cache" && props.selection?.kind === "token" && props.selection.kvLayerIndex != null
-  const focusKey = `${props.focus ?? "overview"}/${JSON.stringify(props.architectureFocus ?? { kind: "model" })}/${tensorDrill ? "tensor" : "pool"}`
+  const viewKey = `${props.focus ?? "overview"}/${JSON.stringify(props.architectureFocus ?? { kind: "model" })}`
+  const focusKey = `${viewKey}/${tensorDrill ? "tensor" : "pool"}`
   return <Canvas camera={{ position: [0, 6, 18], fov: 34 }} frameloop="demand" dpr={[1, 1.75]}
     aria-label={props.focus ? `${componentLabel(props.focus)} focused 3D view` : "vLLM serving workflow and model architecture 3D overview"}>
     <color attach="background" args={[SCENE_COLORS.background]} />
     <fogExp2 attach="fog" args={[SCENE_COLORS.background, props.focus === "kv-cache" ? 0.03 : 0.022]} />
     <hemisphereLight args={["#c3d3e8", "#05080e", 0.75]} />
     <directionalLight position={[6, 12, 9]} intensity={0.75} color="#dfe9f5" />
-    <CameraRig focusKey={focusKey} focus={props.focus ?? null} architectureFocus={props.architectureFocus ?? null}
-      poolCount={props.kvCache?.pools.length ?? 1} tensorDrill={tensorDrill} command={props.cameraCommand ?? null} />
+    <CameraRig viewKey={viewKey} focus={props.focus ?? null} architectureFocus={props.architectureFocus ?? null}
+      poolCount={props.kvCache?.pools.length ?? 1} tensorDrill={tensorDrill} selectionCleared={props.selection == null} command={props.cameraCommand ?? null} />
     <Invalidate {...props} />
     {import.meta.env.VITE_EXPLORER_SCENE_PROFILE === "1" ? <SceneProfileDiagnostics sceneProps={props} focusKey={focusKey} /> : null}
     {props.focus ? <FocusedStage {...props} focus={props.focus} /> : <WorkflowOverview {...props} />}
@@ -75,9 +75,9 @@ function stageFrame(focus: WorkflowComponentId | null, architectureFocus: Archit
   return { target: [0, 0.6, 0], direction: [0.04, 0.14, 1], width: 13, height: 8 }
 }
 
-function CameraRig({ focusKey, focus, architectureFocus, poolCount, tensorDrill, command }: {
-  focusKey: string; focus: WorkflowComponentId | null; architectureFocus: ArchitectureFocus | null;
-  poolCount: number; tensorDrill: boolean; command: CameraCommand | null
+function CameraRig({ viewKey, focus, architectureFocus, poolCount, tensorDrill, selectionCleared, command }: {
+  viewKey: string; focus: WorkflowComponentId | null; architectureFocus: ArchitectureFocus | null;
+  poolCount: number; tensorDrill: boolean; selectionCleared: boolean; command: CameraCommand | null
 }) {
   const camera = useThree((item) => item.camera)
   const gl = useThree((item) => item.gl)
@@ -85,6 +85,8 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, tensorDrill,
   const invalidate = useThree((item) => item.invalidate)
   const controls = useRef<OrbitControls | null>(null)
   const lastCommand = useRef<number | null>(command?.id ?? null)
+  const previousView = useRef({ viewKey, tensorDrill })
+  const preserveReturnedCamera = useRef(false)
   useLayoutEffect(() => {
     const next = new OrbitControls(camera, gl.domElement)
     const onChange = () => invalidate()
@@ -100,14 +102,21 @@ function CameraRig({ focusKey, focus, architectureFocus, poolCount, tensorDrill,
     return () => { next.removeEventListener("change", onChange); next.dispose(); controls.current = null }
   }, [camera, gl, invalidate])
   useLayoutEffect(() => {
-    resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount, tensorDrill), size)
+    const previous = previousView.current
+    if (previous.viewKey !== viewKey || tensorDrill) preserveReturnedCamera.current = false
+    else if (previous.tensorDrill && selectionCleared) preserveReturnedCamera.current = true
+    previousView.current = { viewKey, tensorDrill }
+    // Removing tensor controls can resize the canvas after selection clears. Keep the
+    // returned camera until explicit Reset, another drill, or scene navigation.
+    if (!preserveReturnedCamera.current) resetCamera(camera, controls.current, stageFrame(focus, architectureFocus, poolCount, tensorDrill), size)
     invalidate()
-  }, [camera, focusKey, poolCount, size.width, size.height, invalidate])
+  }, [camera, viewKey, tensorDrill, poolCount, size.width, size.height, invalidate])
   useEffect(() => {
     const active = controls.current
     if (!active || !command || command.id === lastCommand.current) return
     lastCommand.current = command.id
     if (command.action === "reset") {
+      preserveReturnedCamera.current = false
       resetCamera(camera, active, stageFrame(focus, architectureFocus, poolCount, tensorDrill), size)
     } else if (command.action.startsWith("pan-")) {
       camera.updateMatrixWorld()
@@ -156,7 +165,7 @@ function resetCamera(camera: THREE.Camera, controls: OrbitControls | null, frame
 function Invalidate(props: SceneProps) {
   const invalidate = useThree((item) => item.invalidate)
   useEffect(() => { invalidate() }, [props.state, props.selection, props.focus, props.architectureFocus,
-    props.teachingProgress, props.manifest, props.kvCache, props.trackedRequestId, props.trackedTokenPosition, props.measuredProfile, props.animate, invalidate])
+    props.manifest, props.kvCache, props.trackedRequestId, props.trackedTokenPosition, props.measuredProfile, invalidate])
   return null
 }
 
@@ -171,7 +180,7 @@ function Module({ position, size, selected, onSelect, onExplore, children }: {
       <boxGeometry args={size} />
       <meshStandardMaterial color={SCENE_COLORS.surface} roughness={0.75} metalness={0.1} />
     </mesh>
-    <BoxEdges size={size} color={selected ? SCENE_COLORS.accent : hover.hovered ? SCENE_COLORS.edgeMarker : SCENE_COLORS.edge} />
+    <BoxEdges size={size} color={selected ? SCENE_COLORS.accent : hover.hovered ? SCENE_COLORS.edgeMarker : SCENE_COLORS.edge} width={2} />
     {children}
   </group>
 }
@@ -184,32 +193,16 @@ function Cube({ position, color, size = 0.22, hollow = false }: { position: Posi
   </mesh>
 }
 
-function Packets({ from, to, colors, animate, size = 0.14 }: { from: Position3; to: Position3; colors: string[]; animate: boolean; size?: number }) {
-  const group = useRef<THREE.Group>(null)
-  const phase = useRef(0)
-  const invalidate = useThree((state) => state.invalidate)
-  const start = useMemo(() => new THREE.Vector3(...from), [from[0], from[1], from[2]])
-  const end = useMemo(() => new THREE.Vector3(...to), [to[0], to[1], to[2]])
-  const place = (offset: number) => {
-    const children = group.current?.children ?? []
-    children.forEach((child, index) => {
-      const t = ((index + 0.5) / Math.max(1, children.length) * 0.82 + 0.09 + offset) % 1
-      child.position.lerpVectors(start, end, t)
-    })
-  }
-  useLayoutEffect(() => { place(animate ? phase.current : 0) })
-  useEffect(() => { if (animate) invalidate() }, [animate, invalidate])
-  useFrame((_, delta) => {
-    if (!animate) return
-    phase.current = (phase.current + delta * 0.12) % 1
-    place(phase.current)
-    invalidate()
-  })
-  return <group ref={group}>
-    {colors.map((color, index) => <mesh key={`${color}-${index}`} raycast={() => null}>
-      <boxGeometry args={[size, size, size]} />
-      <meshBasicMaterial color={new THREE.Color(color).multiplyScalar(0.85)} toneMapped={false} />
-    </mesh>)}
+function Packets({ from, to, colors, size = 0.14 }: { from: Position3; to: Position3; colors: string[]; size?: number }) {
+  return <group>
+    {colors.map((color, index) => {
+      const t = (index + 0.5) / Math.max(1, colors.length) * 0.82 + 0.09
+      const position: Position3 = [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, from[2] + (to[2] - from[2]) * t]
+      return <mesh key={`${color}-${index}`} position={position} raycast={() => null}>
+        <boxGeometry args={[size, size, size]} />
+        <meshBasicMaterial color={new THREE.Color(color).multiplyScalar(0.85)} toneMapped={false} />
+      </mesh>
+    })}
   </group>
 }
 
@@ -220,7 +213,7 @@ function WorkflowOverview(props: SceneProps) {
   const selectedComponent = props.selection?.kind === "component" ? props.selection.id : null
   const select = (id: WorkflowComponentId) => () => props.onSelect({ kind: "component", id })
   const explore = (id: WorkflowComponentId) => () => props.onExplore?.(id)
-  const observed = props.requestOrder.filter((id) => props.state.requests[id]).concat(Object.keys(props.state.requests).filter((id) => !props.requestOrder.includes(id)))
+  const observed = observedRequestIds(props.state, props.requestOrder)
   const latest = props.state.steps.at(-1) ?? null
   const running = latest?.queueAfter?.running ?? []
   const waiting = latest?.queueAfter?.waiting ?? []
@@ -262,7 +255,7 @@ function WorkflowOverview(props: SceneProps) {
     {architecture.supported ? <group position={[X.tower, 0, 0]}>
       <LayerStack {...props} architecture={architecture} compact baseY={FLOOR + 0.35} />
       <SceneCard position={[0, towerTop + 0.15, 0]} code="MDL" name={architectureLabel(props.manifest)} value={String(architecture.layerCount)}
-        detail={`layers · ${architecture.queryHeads} Q / ${architecture.kvHeads} KV heads`} active={selectedComponent === "model-execution"} />
+        detail={architecture.recurrent ? `layers · ${architecture.layerTypes.filter((kind) => kind === "linear_attention").length} GDN / ${architecture.layerTypes.filter((kind) => kind === "full_attention").length} Attention` : `layers · ${architecture.queryHeads} Q / ${architecture.kvHeads} KV heads`} active={selectedComponent === "model-execution"} />
     </group> : <>
       <Module position={[X.tower, FLOOR + 0.65, 0]} size={[2.9, 1.3, 2]} selected={selectedComponent === "model-execution"} onSelect={select("model-execution")} onExplore={explore("model-execution")} />
       <SceneCard position={[X.tower, FLOOR + 1.55, 0]} code="MDL" name="Model execution" value={snapshot("model-execution").metric} detail={snapshot("model-execution").metricLabel} active={selectedComponent === "model-execution"} />
@@ -284,12 +277,12 @@ function WorkflowOverview(props: SceneProps) {
       value={cache.pools.length ? `${referenced.toLocaleString()}/${capacity.toLocaleString()}` : "—"}
       detail={!cache.pools.length ? "pool inventory not observed" : cache.status === "unknown" ? "blocks · state unknown after gap" : "blocks referenced"} active={selectedComponent === "kv-cache"} />
 
-    {flows.map(([from, to], index) => <Polyline key={index} points={[from, to]} color={SCENE_COLORS.line} />)}
-    <Packets from={flows[1][0]} to={flows[1][1]} colors={(latest?.requests ?? []).slice(0, 6).map((request) => color(request.requestId))} animate={props.animate} />
-    <Packets from={flows[2][0]} to={flows[2][1]} colors={emitted.slice(0, 6).map(color)} animate={props.animate} size={0.12} />
+    {flows.map(([from, to], index) => <Polyline key={index} points={[from, to]} color={SCENE_COLORS.line} width={2} />)}
+    <Packets from={flows[1][0]} to={flows[1][1]} colors={(latest?.requests ?? []).slice(0, 6).map((request) => color(request.requestId))} />
+    <Packets from={flows[2][0]} to={flows[2][1]} colors={emitted.slice(0, 6).map(color)} size={0.12} />
     <Polyline points={[[X.scheduler + 0.5, FLOOR + 0.03, 0.86], [X.scheduler + 0.5, FLOOR + 0.03, KV_BANK.z], [bankLeft, FLOOR + 0.03, KV_BANK.z]]} color={SCENE_COLORS.lineDim} dashed />
     <Polyline points={[[bankRight, FLOOR + 0.03, KV_BANK.z], [X.tower, FLOOR + 0.03, KV_BANK.z], [X.tower, FLOOR + 0.03, 1.18]]} color={SCENE_COLORS.lineDim} dashed />
-    <Polyline points={[[X.tower, towerTop, -0.4], [X.tower, towerTop + 0.5, -0.4], [X.scheduler, towerTop + 0.5, -0.4], [X.scheduler, FLOOR + 1.45, -0.4]]} color="#24344c" dashed dash={0.2} gap={0.14} />
+    <Polyline points={[[X.tower, towerTop, -0.4], [X.tower, towerTop + 0.5, -0.4], [X.scheduler, towerTop + 0.5, -0.4], [X.scheduler, FLOOR + 1.45, -0.4]]} color={SCENE_COLORS.lineDim} dashed dash={0.2} gap={0.14} width={1.25} />
     <SceneText text="Next scheduler cycle" position={[X.scheduler + 1.6, towerTop + 0.5, -0.4]} muted />
     <SceneText text="Block table" position={[X.scheduler + 0.5, FLOOR + 0.02, 2.4]} muted />
     <SceneText text="KV reads" position={[X.tower, FLOOR + 0.02, 2.6]} muted />
@@ -304,6 +297,12 @@ function KvBank({ cache, requestOrder, selected, onSelect, onExplore }: {
   const layout = useMemo(() => dieLayout(blocks.length, 3.9, KV_BANK.width / KV_BANK.depth), [blocks.length])
   const mesh = useRef<THREE.InstancedMesh>(null)
   const hover = useHoverCursor()
+  const heightFor = (block: (typeof blocks)[number]) => physicalBlockState(block) === "referenced" ? Math.min(0.34, layout.pitch * 0.4)
+    : physicalBlockState(block) === "cached" ? Math.min(0.12, layout.pitch * 0.18) : Math.min(0.035, layout.pitch * 0.06)
+  const markCells = useMemo(() => blocks.map((block, index) => {
+    const [x, z] = dieCellPosition(index, layout)
+    return { block, x, z, height: heightFor(block), size: layout.pitch * 0.8 }
+  }), [blocks, layout])
   useLayoutEffect(() => {
     const instance = mesh.current
     if (!instance) return
@@ -311,13 +310,12 @@ function KvBank({ cache, requestOrder, selected, onSelect, onExplore }: {
     const tint = new THREE.Color()
     blocks.forEach((block, index) => {
       const [x, z] = dieCellPosition(index, layout)
-      const referenced = !block.isNull && block.refCount > 0
-      const height = referenced ? Math.min(0.34, layout.pitch * 0.4) : Math.min(0.08, layout.pitch * 0.12)
+      const height = heightFor(block)
       transform.position.set(x, height / 2, z)
       transform.scale.set(layout.pitch * 0.8, height, layout.pitch * 0.8)
       transform.updateMatrix()
       instance.setMatrixAt(index, transform.matrix)
-      instance.setColorAt(index, tint.set(bankColor(block, requestOrder)))
+      instance.setColorAt(index, tint.set(BLOCK_STATE_COLORS[physicalBlockState(block)]))
     })
     instance.count = blocks.length
     instance.instanceMatrix.needsUpdate = true
@@ -343,20 +341,10 @@ function KvBank({ cache, requestOrder, selected, onSelect, onExplore }: {
         <boxGeometry args={[1, 1, 1]} />
         <meshBasicMaterial toneMapped={false} />
       </instancedMesh>
+      <BlockMarks cells={markCells} requestOrder={requestOrder} />
+      {blocks.some((block) => block.isNull) && layout.pitch >= 0.6 ? <SceneText text="Null" position={[-layout.width / 2 + layout.pitch / 2, 0.07, layout.depth / 2 - layout.pitch / 2]} muted /> : null}
     </group> : <SceneText text="Pool inventory not observed" position={[0, 0.3, 0]} muted />}
   </group>
-}
-
-function bankColor(block: KvBlockProjection, requestOrder: string[]): string {
-  if (block.isNull) return SCENE_COLORS.reserved
-  if (block.trust === "unknown") return SCENE_COLORS.unknown
-  if (block.refCount > 0) {
-    const holders = [...new Set(block.bindings.map((binding) => binding.requestId))]
-    const tint = new THREE.Color(holders.length === 1 ? requestColor(requestOrder, holders[0]) : SCENE_COLORS.accent).multiplyScalar(0.5)
-    return `#${tint.getHexString()}`
-  }
-  if (block.hasHash) return "#3a2e18"
-  return SCENE_COLORS.free
 }
 
 function FocusedStage(props: SceneProps & { focus: WorkflowComponentId }) {
@@ -437,8 +425,7 @@ function QueueColumn({ waiting, running, x, onSelect, requestOrder, requestLabel
 }
 
 function orderedRequests(state: ReplayState, requestOrder: string[]) {
-  const order = [...new Set([...requestOrder, ...Object.keys(state.requests)])]
-  return order.map((id) => state.requests[id]).filter((request) => request != null)
+  return observedRequestIds(state, requestOrder).map((id) => state.requests[id])
 }
 function gridPosition(index: number, columns: number): [number, number, number] {
   return [(index % columns - (columns - 1) / 2) * 2.75, 2.5 - Math.floor(index / columns) * 1.3, 0]

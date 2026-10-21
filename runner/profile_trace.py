@@ -9,10 +9,10 @@ from typing import Any
 
 
 PROFILE_CLOCK = {"domain": "torch.profiler.chrome_trace", "unit": "microseconds", "origin": "trace_local"}
-MAX_ACTIVITIES = 250_000
+MAX_ACTIVITIES = 4_000_000
 _STEP = re.compile(r"^explorer\.step/(step-[0-9]+)$")
 _LAYER = re.compile(r"^explorer\.layer/([0-9]+)$")
-_COMPONENT = re.compile(r"^explorer\.component/([0-9]+)/(attention|ffn)$")
+_COMPONENT = re.compile(r"^explorer\.component/([0-9]+)/(attention|recurrent|ffn)$")
 _CACHE_WRITE = re.compile(r"^explorer\.cache_write/([0-9]+)/(cache-write-[0-9]+)$")
 
 
@@ -22,8 +22,27 @@ def normalize_trace(trace: dict[str, Any], *, run_id: str, steps: list[dict[str,
         raise ValueError("The native profiler trace has no traceEvents array.")
     timed = [(index, event) for index, event in enumerate(events) if isinstance(event, dict) and event.get("ph") == "X" and _number(event.get("ts")) and _number(event.get("dur")) and event["dur"] >= 0]
     truncated = len(timed) > max_activities
-    timed = timed[:max_activities]
-    cpu = [(index, event) for index, event in timed if not _gpu_kind(event)]
+    scope_events = timed
+    retention = None
+    if truncated:
+        required = _required_native_events(timed)
+        if len(required) <= max_activities:
+            # Resolve scope inheritance and ambiguity from the complete native CPU stream.
+            # Only output detail is reduced; activity IDs remain original trace-event indices.
+            retention = {
+                "status": "cpu_detail_bounded", "activity_limit": max_activities,
+                "original_activity_count": len(timed), "retained_activity_count": len(required),
+                "omitted_cpu_activity_count": len(timed) - len(required), "omitted_gpu_activity_count": 0,
+                "gpu_activities_complete": True,
+                "preserved": "All native CUDA activities, CPU correlation candidates, launch records and explicit diagnostic scopes; source activity IDs and ordering are unchanged.",
+            }
+            timed = required
+        else:
+            # Required evidence itself cannot fit. Preserve the historical bounded window
+            # without claiming complete GPU coverage or referring to omitted CPU records.
+            timed = timed[:max_activities]
+            scope_events = timed
+    cpu = [(index, event) for index, event in scope_events if not _gpu_kind(event)]
     by_thread: dict[tuple[Any, Any], list[tuple[int, dict]]] = defaultdict(list)
     for index, event in cpu:
         by_thread[(event.get("pid"), event.get("tid"))].append((index, event))
@@ -76,14 +95,33 @@ def normalize_trace(trace: dict[str, Any], *, run_id: str, steps: list[dict[str,
             "related_activity_ids": related,
         })
     cuda = [activity for activity in activities if activity["kind"].startswith("cuda_")]
+    normalization = {"status": "partial" if truncated else "completed", "source_activity_count": len([event for event in events if isinstance(event, dict) and event.get("ph") == "X"]),
+                     "activity_limit": max_activities, "gpu_activity_count": len(cuda),
+                     "correlated_gpu_activity_count": sum(activity["scope"]["correlation"] == "runtime_flow" for activity in cuda)}
+    if retention is not None:
+        normalization["attachment_retention"] = retention
     return {
         "contract_version": 1, "run_id": run_id, "mode": "eager_diagnostic", "execution_mode": "eager",
         "backend": "torch.profiler", "clock": dict(PROFILE_CLOCK), "steps": steps, "activities": activities,
-        "normalization": {"status": "partial" if truncated else "completed", "source_activity_count": len([event for event in events if isinstance(event, dict) and event.get("ph") == "X"]),
-                          "activity_limit": max_activities, "gpu_activity_count": len(cuda),
-                          "correlated_gpu_activity_count": sum(activity["scope"]["correlation"] == "runtime_flow" for activity in cuda)},
+        "normalization": normalization,
         "evidence": "Native profiler durations describe batch/layer CPU scopes and individually observed CUDA activities. Packed rows identify participating tokens; no per-token or per-head latency is measured.",
     }
+
+
+def _required_native_events(timed: list[tuple[int, dict[str, Any]]]) -> list[tuple[int, dict[str, Any]]]:
+    """Keep every CUDA event and both native-correlation candidate sets, including ambiguity."""
+    keys: set[tuple[str, str]] = set()
+    for _index, event in timed:
+        if _gpu_kind(event):
+            args = event.get("args") if isinstance(event.get("args"), dict) else {}
+            keys.update((key, str(args[key])) for key in ("correlation", "External id") if args.get(key) is not None)
+    required = []
+    for index, event in timed:
+        args = event.get("args") if isinstance(event.get("args"), dict) else {}
+        if _gpu_kind(event) or str(event.get("name", "")).startswith(("explorer.", "cudaLaunch", "cuLaunch")) or any(
+            (key, str(args[key])) in keys for key in ("correlation", "External id") if args.get(key) is not None):
+            required.append((index, event))
+    return required
 
 
 def _explicit_scope(name: str) -> dict[str, Any] | None:

@@ -1,0 +1,9 @@
+# Independent final reviews
+
+All three reviewers approved the task-scoped changes with no demonstrated blocking finding. Reviews used the current source, `output/playwright/oct13-realistic-demos/task-scoped.diff`, published artifact bytes, and final qualification/browser/test receipts.
+
+- **Correctness:** checked Python/TypeScript compact codec integrity and references; immutable public replay APIs and independent checkpoints; backward/gap seeks; replacement coordination, live ownership, abort and finalization recovery. Independently reran 33 replay and 10 workload/loader/ownership tests, all passing. Approved without actionable bugs.
+- **Evidence/integrity:** independently reran every full raw CUDA/CPU-correlation audit on the six published captures: 2,396,346 CUDA records and 2,396,346 CPU links, exact fields/order and zero mismatches. Re-tokenized all 36 prompts and checked actual accepted IDs/counts/reasons, precision/routes/timing, source identity, assessment/publication hashes, all 30 historical artifact hashes, and browser/test receipts. Approved without actionable integrity findings.
+- **Simplification/maintainability:** checked shared observation consumers, replay ownership/checkpoints, codecs, memory-safe replacement, and abortable single-owner live finalization. Current read-only consumers do not mutate shared records. Independently reran 43 targeted tests, all passing. Approved; one nonblocking follow-up is removing the now-unused `shouldLoadExpectedRecording` helper and its obsolete fallback tests. It was left intact to keep this final verified change focused.
+
+No GPU inference or artifact bytes changed during final reviews. Reviewers explicitly distinguished actual output lengths from caps, preserved natural/length stops and failed attempts, and accepted the documented hybrid reasoning-only output and partial CPU-detail retention without claiming complete answer quality or GPU-performance comparability.

@@ -676,7 +676,7 @@ function elapsedFrom(monotonicNs: number | string, originNs: number | string | n
   if (monotonic == null || origin == null) return null
   const delta = monotonic - origin
   if (delta > BigInt(Number.MAX_SAFE_INTEGER) || delta < BigInt(Number.MIN_SAFE_INTEGER)) return null
-  return Math.round(Number(delta) / 1_000_000)
+  return Number(delta) / 1_000_000
 }
 
 function clockValue(value: unknown): number | string | null {

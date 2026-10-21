@@ -10,6 +10,6 @@ export type Selection =
   | { kind: "head"; layerIndex: number; headIndex: number; headKind: "query" | "kv" }
   | { kind: "token"; requestId: string; position: number; kvLayerIndex?: number; kvHead?: number; kvKind?: "K" | "V"; kvBlockKey?: string }
 
-export type PlaybackMode = "events" | "recorded" | "teaching" | "measured"
+export type PlaybackMode = "iterations" | "events" | "recorded" | "measured"
 export type WorkspaceView = "timeline" | "spatial"
 export type NarrowPane = "compose" | "observe"

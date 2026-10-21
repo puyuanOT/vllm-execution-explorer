@@ -16,8 +16,9 @@ def describe_architecture(model_config: Any, *, cache_groups: list[dict[str, Any
         "source": "loaded_model_config", "model_type": model_type, "architectures": architectures,
         "supported": False, "kv_groups": cache_groups or [],
     }
-    if model_type != "qwen3" or getattr(config, "num_experts", None) or getattr(config, "num_local_experts", None):
-        result["reason"] = "Model drills currently support dense Qwen3 decoder models only; execution remains available without a fabricated architecture."
+    hybrid = model_type == "qwen3_5_text"
+    if model_type not in {"qwen3", "qwen3_5_text"} or getattr(config, "num_experts", None) or getattr(config, "num_local_experts", None):
+        result["reason"] = "Model drills support dense Qwen3 and dense Qwen hybrid decoder models; this architecture has not been qualified."
         return result
     names = {
         "num_layers": "num_hidden_layers", "hidden_size": "hidden_size", "intermediate_size": "intermediate_size",
@@ -26,7 +27,7 @@ def describe_architecture(model_config: Any, *, cache_groups: list[dict[str, Any
     for target, source in names.items():
         value = getattr(config, source, None)
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
-            result["reason"] = f"Loaded Qwen3 configuration does not expose valid {source}; model drill geometry is unavailable."
+            result["reason"] = f"Loaded model configuration does not expose valid {source}; model drill geometry is unavailable."
             return result
         result[target] = value
     head_dim = getattr(config, "head_dim", None)
@@ -42,6 +43,25 @@ def describe_architecture(model_config: Any, *, cache_groups: list[dict[str, Any
         layer_names=[f"model.layers.{index}" for index in range(result["num_layers"])],
         evidence="Dimensions read from the initialized model configuration; operator layout is the supported Qwen3 architecture, not an observed GPU timeline.",
     )
+    if hybrid:
+        layer_types = getattr(config, "layer_types", None)
+        if not isinstance(layer_types, (list, tuple)) or len(layer_types) != result["num_layers"] or any(kind not in {"linear_attention", "full_attention"} for kind in layer_types):
+            result.update(supported=False, reason="Hybrid layer types must be read explicitly from the loaded configuration.")
+            return result
+        recurrent_names = {
+            "key_heads": "linear_num_key_heads", "value_heads": "linear_num_value_heads",
+            "key_head_dim": "linear_key_head_dim", "value_head_dim": "linear_value_head_dim",
+            "conv_kernel_size": "linear_conv_kernel_dim",
+        }
+        recurrent = {key: getattr(config, name, None) for key, name in recurrent_names.items()}
+        if any(not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in recurrent.values()):
+            result.update(supported=False, reason="Loaded Gated DeltaNet dimensions are incomplete.")
+            return result
+        result.update(layer_types=list(layer_types), recurrent=recurrent,
+                      attention_output_gate=bool(getattr(config, "attn_output_gate", True)),
+                      attention_layer_indices=[index for index, kind in enumerate(layer_types) if kind == "full_attention"],
+                      recurrent_layer_indices=[index for index, kind in enumerate(layer_types) if kind == "linear_attention"],
+                      evidence="Hybrid topology and dimensions read from the initialized model configuration. Gated DeltaNet recurrent state is separate from attention KV; this layout does not imply observed execution timing.")
     return result
 
 

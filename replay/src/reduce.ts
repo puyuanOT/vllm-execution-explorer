@@ -221,6 +221,9 @@ const EVENT_TYPES = new Set([
   "engine_prompt_observed",
   "engine_admitted",
   "capture_ready",
+  "gpu_memory_sample",
+  "gpu_memory_inventory",
+  "gpu_memory_phase",
   "step_scheduled",
   "step_submitted",
   "step_result_received",
@@ -285,11 +288,22 @@ function quoteWideIntegers(text: string): string {
 }
 
 export function replay(events: TraceEvent[], manifest?: RecordingManifest): ReplayState {
-  const state = events.reduce((current, event) => applyEvent(current, event, manifest), initialState())
+  const state = events.reduce((current, event) => applyEventMutable(current, event, manifest), initialState())
   return finish(state, manifest)
 }
 
 export function applyEvent(
+  state: ReplayState,
+  event: TraceEvent,
+  manifest?: RecordingManifest,
+): ReplayState {
+  if (state.trust === "unknown") return state
+  return applyEventMutable(structuredClone(state), event, manifest)
+}
+
+/** Only replay-owned working states may be mutated; public applyEvent remains
+ * immutable, and checkpoints and returned seek states are independent snapshots. */
+function applyEventMutable(
   state: ReplayState,
   event: TraceEvent,
   manifest?: RecordingManifest,
@@ -304,7 +318,7 @@ export function applyEvent(
   if (!EVENT_TYPES.has(event.event_type)) {
     throw new TraceError(`unknown event type ${event.event_type}`)
   }
-  const next = structuredClone(state)
+  const next = state
   next.lastSequence = event.sequence
   next.lastEventType = event.event_type
   next.lastEventNs = Number(event.monotonic_ns)
@@ -416,17 +430,28 @@ export interface Checkpoint {
   state: ReplayState
 }
 
+interface CheckpointEntry extends Checkpoint {
+  eventOffset: number
+}
+
+const MAX_CHECKPOINTS = 128
+
 export function buildCheckpoints(
   events: TraceEvent[],
   interval = 32,
   manifest?: RecordingManifest,
 ): Checkpoint[] {
-  const points: Checkpoint[] = [{ sequence: 0, state: initialState() }]
+  return checkpointEntries(events, interval, manifest).map(({ sequence, state }) => ({ sequence, state }))
+}
+
+function checkpointEntries(events: TraceEvent[], interval: number, manifest?: RecordingManifest): CheckpointEntry[] {
+  const points: CheckpointEntry[] = [{ sequence: 0, state: initialState(), eventOffset: 0 }]
+  const stride = Math.max(interval, Math.ceil(events.length / (MAX_CHECKPOINTS - 1)))
   let state = initialState()
   events.forEach((event, index) => {
-    state = applyEvent(state, event, manifest)
-    const boundary = (index + 1) % interval === 0 || index === events.length - 1
-    if (boundary) points.push({ sequence: state.lastSequence, state })
+    state = applyEventMutable(state, event, manifest)
+    const boundary = (index + 1) % stride === 0 || index === events.length - 1
+    if (boundary) points.push({ sequence: state.lastSequence, state: structuredClone(state), eventOffset: index + 1 })
   })
   return points
 }
@@ -439,23 +464,27 @@ export interface Player {
 }
 
 export function createPlayer(events: TraceEvent[], manifest?: RecordingManifest): Player {
-  const checkpoints = buildCheckpoints(events, 32, manifest)
+  const checkpoints = checkpointEntries(events, 32, manifest)
   const final = checkpoints[checkpoints.length - 1].state
   return {
     maxSequence: final.lastSequence,
     steps: structuredClone(final.steps),
     requestOrder: Object.keys(final.requests),
     at(sequence: number) {
-      let start = checkpoints[0]
-      for (const point of checkpoints) {
-        if (point.sequence <= sequence) start = point
-        else break
+      let lower = 0
+      let upper = checkpoints.length
+      while (lower < upper) {
+        const middle = Math.floor((lower + upper) / 2)
+        if (checkpoints[middle].sequence <= sequence) lower = middle + 1
+        else upper = middle
       }
+      const start = checkpoints[Math.max(0, lower - 1)]
       let state = structuredClone(start.state)
-      for (const event of events) {
+      for (let index = start.eventOffset; index < events.length; index += 1) {
+        const event = events[index]
         if (event.sequence <= start.sequence) continue
         if (event.sequence > sequence) break
-        state = applyEvent(state, event, manifest)
+        state = applyEventMutable(state, event, manifest)
       }
       return finish(state, manifest)
     },

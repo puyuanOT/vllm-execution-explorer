@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react"
 export type AppRoute = "configure" | "explore"
 
 function routeFromLocation(): AppRoute {
-  return window.location.pathname === "/explore" ? "explore" : "configure"
+  return ["/capture", "/configure"].includes(window.location.pathname) ? "configure" : "explore"
 }
 
 export function useAppRoute() {
@@ -20,7 +20,7 @@ export function useAppRoute() {
   }, [route])
 
   const navigate = useCallback((next: AppRoute, options?: { replace?: boolean }) => {
-    const path = next === "explore" ? "/explore" : "/"
+    const path = next === "explore" ? "/" : "/capture"
     if (options?.replace) window.history.replaceState(null, "", path)
     else if (window.location.pathname !== path) window.history.pushState(null, "", path)
     setRoute(next)

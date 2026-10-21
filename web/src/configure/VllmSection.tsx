@@ -47,6 +47,7 @@ export function VllmSection({
         "setting-scheduling-policy",
         "setting-long-prefill",
         "setting-kv-memory",
+        "setting-kv-dtype",
         "setting-profiling-mode",
         "setting-profiling-steps",
       ].includes(issue.fieldId))}
@@ -105,6 +106,19 @@ export function VllmSection({
         </div>
 
         <div className="grid items-start gap-4 md:grid-cols-2">
+          <label className="block text-xs font-medium text-slate-400" htmlFor="setting-kv-dtype">
+            KV-cache storage dtype
+            <select id="setting-kv-dtype" className={inputClass} value={settings.kvCacheDtype} aria-invalid={Boolean(issueFor("setting-kv-dtype"))} aria-describedby="setting-kv-dtype-hint setting-kv-dtype-error" onChange={(event) => onSettings({ ...settings, kvCacheDtype: event.target.value as EngineSettings["kvCacheDtype"] })}>
+              <option value="auto">Auto · model default</option>
+              <option value="bfloat16">BF16</option>
+              <option value="float16">FP16</option>
+              <option value="fp8">FP8 · backend default</option>
+              <option value="fp8_e4m3">FP8 E4M3</option>
+              <option value="fp8_e5m2">FP8 E5M2</option>
+            </select>
+            <FieldHint id="setting-kv-dtype-hint">Independent of weight storage. Preparation checks the selected model, attention backend and GPU. A successful capture reports the actual cache dtype; numerical slices may need additional backend qualification.</FieldHint>
+            <FieldError id="setting-kv-dtype-error" message={issueFor("setting-kv-dtype")} />
+          </label>
           <label className="block text-xs font-medium text-slate-400" htmlFor="setting-scheduling-policy">
             Scheduling policy
             <select id="setting-scheduling-policy" className={inputClass} value={settings.schedulingPolicy} aria-invalid={Boolean(issueFor("setting-scheduling-policy"))} aria-describedby="setting-scheduling-policy-hint setting-scheduling-policy-error" onChange={(event) => onSettings({ ...settings, schedulingPolicy: event.target.value as EngineSettings["schedulingPolicy"] })}>

@@ -32,6 +32,6 @@ test("profile import rejects unsafe paths and oversized attachments before readi
     const result = await loadFiles(files(text, { ...manifest, profiling: { ...manifest.profiling, normalized_artifact: { ...artifact, path } } }))
     assert.match(result.profileError ?? "", /safe relative/)
   }
-  const large = await loadFiles(files(undefined, { ...manifest, profiling: { ...manifest.profiling, normalized_artifact: { ...artifact, size_bytes: 64 * 1024 * 1024 + 1 } } }))
-  assert.match(large.profileError ?? "", /64 MiB/)
+  const large = await loadFiles(files(undefined, { ...manifest, profiling: { ...manifest.profiling, normalized_artifact: { ...artifact, size_bytes: 512 * 1024 * 1024 + 1 } } }))
+  assert.match(large.profileError ?? "", /512 MiB/)
 })

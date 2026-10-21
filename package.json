@@ -1,0 +1,11 @@
+{
+  "name": "vllm-execution-explorer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm ci --prefix web",
+    "recordings:download": "node --experimental-strip-types scripts/cache-recording-parts.mjs",
+    "test": "npm run recordings:download && npm test --prefix replay && npm test --prefix web",
+    "build": "node scripts/build-static-site.mjs"
+  }
+}
