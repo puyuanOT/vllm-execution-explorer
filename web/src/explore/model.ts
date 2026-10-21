@@ -1,5 +1,10 @@
 import type { ReplayState } from "../../../replay/src/reduce.ts"
 
+/** Match Intake at the host playhead, without exposing future roster entries. */
+export function observedRequestIds(state: ReplayState, requestOrder: readonly string[]): string[] {
+  return [...new Set([...requestOrder, ...Object.keys(state.requests)])].filter((id) => state.requests[id] != null)
+}
+
 export type WorkflowComponentId =
   | "request-intake"
   | "scheduler"
@@ -77,7 +82,7 @@ const UNGROUPED_PREFIX = "ungrouped:"
 export function arrivalGroup(sample: { batchId: string; batchLabel: string }): { key: string; label: string; recorded: boolean } {
   return sample.batchId.startsWith(UNGROUPED_PREFIX)
     ? { key: UNGROUPED_PREFIX, label: "Arrival group not recorded", recorded: false }
-    : { key: sample.batchId, label: `Batch ${sample.batchLabel}`, recorded: true }
+    : { key: sample.batchId, label: /^(arrival\s+)?batch\b/i.test(sample.batchLabel.trim()) ? sample.batchLabel.trim() : `Arrival batch ${sample.batchLabel}`, recorded: true }
 }
 
 export function componentSnapshot(

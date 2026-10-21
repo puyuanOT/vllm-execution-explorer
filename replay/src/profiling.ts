@@ -22,7 +22,7 @@ export type ProfileIdentity = number | string | null
 export interface ProfileScope {
   stepId: string | null
   layerIndex: number | null
-  component: "attention" | "ffn" | null
+  component: "attention" | "recurrent" | "ffn" | null
   correlation: ProfileCorrelation
   correlationSource: string | null
   operation?: "kv_cache_write" | null
@@ -78,6 +78,13 @@ export interface ProfileTensorSnapshot {
   values: number[]
   byteCount: number
   observationBoundary: string
+  quantization?: {
+    format: "fp8_e4m3" | "fp8_e5m2"
+    rawBits: number[]
+    scale: { value: number; dtype: "float32"; shape: number[]; mode: "per_tensor" | "per_head"; headIndex: number | null; observationBoundary: string }
+    reconstructedValues: number[]
+    reconstruction: "decoded_fp8_times_recorded_scale"
+  }
 }
 
 export interface ProfileTensorCapture {
@@ -155,7 +162,7 @@ export interface ProfileAttachment extends ProfileKvObservations {
 export interface ProfileSelection {
   stepId?: string | null
   layerIndex?: number | null
-  component?: "attention" | "ffn" | null
+  component?: "attention" | "recurrent" | "ffn" | null
   /** Native trace-local microseconds; never a host monotonic timestamp. */
   timeUs?: number | null
 }
@@ -182,7 +189,7 @@ export interface ProfileDeviceSummary {
 export interface ProfileLayerSummary {
   stepId: string | null
   layerIndex: number
-  component: "attention" | "ffn" | null
+  component: "attention" | "recurrent" | "ffn" | null
   cpuScopeCount: number
   cpuScopeSpanUs: number | null
   devices: ProfileDeviceSummary[]
@@ -227,7 +234,9 @@ export function readProfileArtifact(manifest?: RecordingManifest | null): Profil
 export function parseProfileAttachment(text: string, manifest: RecordingManifest): ProfileAttachment {
   let parsed: unknown
   try { parsed = JSON.parse(text) } catch { throw new ProfileError("Profile attachment is not valid JSON.") }
-  const value = requiredRecord(parsed, "profile attachment")
+  let value = requiredRecord(parsed, "profile attachment")
+  const compact = record(record(value.normalization).attachment_encoding).kind === "native_profile_compact_v1"
+  if (compact) value = expandCompactProfile(value)
   const metadata = requiredRecord(manifest.profiling, "manifest.profiling")
   if (metadata.contract_version !== 1 || value.contract_version !== 1) throw new ProfileError("Unsupported measured profile contract version.")
   const runId = requiredString(value.run_id, "run_id")
@@ -237,7 +246,16 @@ export function parseProfileAttachment(text: string, manifest: RecordingManifest
   }
   const clock = parseClock(value.clock)
   parseClock(metadata.clock)
-  const activities = array(value.activities, "activities").map(parseActivity)
+  const activityNames = compact || value.activity_names == null ? null : array(value.activity_names, "activity_names").map((name) => requiredString(name, "activity name"))
+  if (activityNames) {
+    unique(activityNames, "activity names")
+    const encoding = requiredRecord(record(value.normalization).attachment_encoding, "normalization.attachment_encoding")
+    if (encoding.kind !== "activity_name_dictionary_v1" || encoding.unique_name_count !== activityNames.length
+      || encoding.encoded_activity_count !== array(value.activities, "activities").length) throw new ProfileError("Invalid activity-name dictionary encoding metadata.")
+  } else if (!compact && record(record(value.normalization).attachment_encoding).kind != null) {
+    throw new ProfileError("Activity-name dictionary encoding requires its name table.")
+  }
+  const activities = array(value.activities, "activities").map((activity) => parseActivity(activity, activityNames))
   unique(activities.map((activity) => activity.id), "activity IDs")
   const steps = array(value.steps, "steps").map(parseStep)
   unique(steps.map((step) => step.stepId), "step IDs")
@@ -251,8 +269,68 @@ export function parseProfileAttachment(text: string, manifest: RecordingManifest
     cacheWrites, tensorSnapshots, tensorCapture, normalization: structuredClone(record(value.normalization)) }
 }
 
+/** Expand transport dictionaries before the existing observation/link validation. */
+function expandCompactProfile(value: Record<string, unknown>): Record<string, unknown> {
+  const encoding = requiredRecord(record(value.normalization).attachment_encoding, "compact encoding")
+  const names = array(value.activity_names, "activity_names").map(name => requiredString(name, "activity name"))
+  unique(names, "activity names")
+  const scopes = array(value.activity_scopes, "activity_scopes").map(scope => requiredRecord(scope, "activity scope"))
+  const participants = array(value.cache_participants, "cache_participants").map(row => requiredRecord(row, "cache participant"))
+  const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical)
+    : value != null && typeof value === "object" ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, field]) => [key, canonical(field)])) : value
+  unique(scopes.map(scope => JSON.stringify(canonical(scope))), "activity scopes")
+  unique(participants.map(row => JSON.stringify(canonical(row))), "cache participants")
+  const wire = array(value.activities, "activities")
+  const writes = array(value.cache_writes ?? [], "cache_writes")
+  for (const [key, count] of [["unique_name_count", names.length], ["unique_scope_count", scopes.length],
+    ["unique_participant_count", participants.length], ["encoded_activity_count", wire.length], ["encoded_cache_write_count", writes.length]] as const) {
+    if (encoding[key] !== count) throw new ProfileError(`Invalid compact encoding ${key}.`)
+  }
+  const lookup = <T,>(table: T[], reference: unknown, label: string): T => {
+    const index = integer(reference, label)
+    if (index >= table.length) throw new ProfileError(`${label} is outside its dictionary.`)
+    return table[index]
+  }
+  const ids = wire.map(row => requiredString(Array.isArray(row) ? row[0] : requiredRecord(row, "activity").activity_id, "activity_id"))
+  unique(ids, "activity IDs")
+  const activityRef = (ref: unknown): string => typeof ref === "string" ? requiredString(ref, "activity reference") : lookup(ids, ref, "activity reference")
+  const activities = wire.map(row => {
+    if (!Array.isArray(row)) {
+      const plain = requiredRecord(row, "activity")
+      if (plain.name_id !== undefined) throw new ProfileError("Compact fallback activity must contain its exact name.")
+      return plain
+    }
+    if (row.length !== 11) throw new ProfileError("Compact activity must contain exactly eleven fields.")
+    return { activity_id: row[0], kind: row[1], name: lookup(names, row[2], "activity name reference"),
+      device: row[3], stream: row[4], process_id: row[5], thread_id: row[6], start: row[7], duration: row[8],
+      scope: lookup(scopes, row[9], "activity scope reference"),
+      related_activity_ids: array(row[10], "related activity references").map(activityRef) }
+  })
+  const cacheWrites = writes.map(row => {
+    const write = requiredRecord(row, "cache write")
+    if (write.participant_ids === undefined && write.gpu_activity_refs === undefined) return write
+    if (write.participant_ids !== undefined && write.participants !== undefined
+      || write.gpu_activity_refs !== undefined && write.gpu_activity_ids !== undefined) throw new ProfileError("Ambiguous compact cache-write fields.")
+    const { participant_ids, gpu_activity_refs, ...fields } = write
+    return { ...fields,
+      ...(participant_ids === undefined ? {} : { participants: array(participant_ids, "participant_ids").map(id => lookup(participants, id, "participant reference")) }),
+      ...(gpu_activity_refs === undefined ? {} : { gpu_activity_ids: array(gpu_activity_refs, "gpu_activity_refs").map(activityRef) }) }
+  })
+  return { ...value, activities, cache_writes: cacheWrites }
+}
+
 /** Profile selection uses native trace-local time, without consulting or shifting the host playhead. */
 export function projectMeasuredProfile(manifest?: RecordingManifest | null, attachment?: ProfileAttachment | null, selection: ProfileSelection = {}): MeasuredProfileProjection {
+  return projectProfile(manifest, attachment, selection, true)
+}
+
+/** Immutable published recordings may share their observations with read-only UI
+ * consumers. Unlike the default projector, this view must never be mutated. */
+export function projectMeasuredProfileView(manifest?: RecordingManifest | null, attachment?: ProfileAttachment | null, selection: ProfileSelection = {}): MeasuredProfileProjection {
+  return projectProfile(manifest, attachment, selection, false)
+}
+
+function projectProfile(manifest: RecordingManifest | null | undefined, attachment: ProfileAttachment | null | undefined, selection: ProfileSelection, isolate: boolean): MeasuredProfileProjection {
   const metadata = record(manifest?.profiling)
   const unavailable = unavailableReason(metadata, attachment)
   const common = {
@@ -268,29 +346,32 @@ export function projectMeasuredProfile(manifest?: RecordingManifest | null, atta
     mappingStatus: "unavailable", mappingReason: unavailable, unmappedActivityCount: 0,
   }
   if (manifest?.run_id !== attachment.runId) throw new ProfileError("Profile attachment belongs to a different recording.")
-  const activities = attachment.activities.filter((activity) =>
+  const selectedActivities = selection.stepId == null && selection.layerIndex == null && selection.component == null
+    ? attachment.activities : attachment.activities.filter((activity) =>
     (selection.stepId == null || activity.scope.stepId === selection.stepId)
     && (selection.layerIndex == null || activity.scope.layerIndex === selection.layerIndex)
     && (selection.component == null || activity.scope.component === selection.component))
-    .map((activity) => structuredClone(activity))
+  const activities = isolate ? selectedActivities.map(activity => structuredClone(activity)) : selectedActivities
   const activeActivities = selection.timeUs == null ? [] : profileActivitiesAt(activities, selection.timeUs)
-  const steps = attachment.steps.map((step) => structuredClone(step))
+  const steps = isolate ? attachment.steps.map(step => structuredClone(step)) : attachment.steps
   const selectedStep = selection.stepId == null ? null : steps.find((step) => step.stepId === selection.stepId) ?? null
   const mappingReason = selectedStep?.mappingReason ?? (selection.stepId == null ? "Select a captured batch to inspect packed token rows."
     : selectedStep ? selectedStep.mappingStatus === "observed" ? null : "Packed-row mapping was not captured."
       : "This profile has no packed-row observation for the selected step.")
+  const writes = attachment.cacheWrites.filter(operation =>
+    (selection.stepId == null || operation.stepId === selection.stepId)
+    && (selection.layerIndex == null || operation.layerIndex === selection.layerIndex))
+  const snapshots = attachment.tensorSnapshots.filter(snapshot =>
+    (selection.stepId == null || snapshot.stepId === selection.stepId)
+    && (selection.layerIndex == null || snapshot.layerIndex === selection.layerIndex))
   return {
     ...common, status: "observed", reason: common.evidenceKind === "fixture" ? "Synthetic profiler fixture; these intervals are not GPU measurements."
       : metadata.status === "partial" || metadata.status === "failed"
-      ? "Only the retained profiler intervals are shown; this capture did not complete." : null,
+      ? string(metadata.reason) ?? "Only the retained profiler intervals are shown; this capture did not complete." : null,
     clock: { ...attachment.clock }, extent: extent(attachment.activities), activities, activeActivities,
-    cacheWrites: structuredClone(attachment.cacheWrites.filter((operation) =>
-      (selection.stepId == null || operation.stepId === selection.stepId)
-      && (selection.layerIndex == null || operation.layerIndex === selection.layerIndex))),
-    tensorSnapshots: structuredClone(attachment.tensorSnapshots.filter((snapshot) =>
-      (selection.stepId == null || snapshot.stepId === selection.stepId)
-      && (selection.layerIndex == null || snapshot.layerIndex === selection.layerIndex))),
-    tensorCapture: attachment.tensorCapture ? structuredClone(attachment.tensorCapture) : null,
+    cacheWrites: isolate ? structuredClone(writes) : writes,
+    tensorSnapshots: isolate ? structuredClone(snapshots) : snapshots,
+    tensorCapture: attachment.tensorCapture ? isolate ? structuredClone(attachment.tensorCapture) : attachment.tensorCapture : null,
     layers: summarizeLayers(activities), steps, selectedStep,
     mappingStatus: selectedStep?.mappingStatus ?? "unavailable", mappingReason,
     unmappedActivityCount: attachment.activities.filter((activity) => activity.scope.correlation === "unmapped").length,
@@ -367,8 +448,18 @@ function parseClock(value: unknown): ProfileClock {
   return { domain: "torch.profiler.chrome_trace", unit: "microseconds", origin: "trace_local" }
 }
 
-function parseActivity(input: unknown): ProfileActivity {
+function parseActivity(input: unknown, activityNames: string[] | null): ProfileActivity {
   const value = requiredRecord(input, "activity")
+  let name: string
+  if (activityNames) {
+    if (value.name !== undefined) throw new ProfileError("Dictionary-encoded activity cannot also declare a name.")
+    const nameId = integer(value.name_id, "activity.name_id")
+    if (nameId >= activityNames.length) throw new ProfileError("Activity name ID is outside its dictionary.")
+    name = activityNames[nameId]
+  } else {
+    if (value.name_id !== undefined) throw new ProfileError("Activity name ID requires its dictionary.")
+    name = requiredString(value.name, "activity.name")
+  }
   const kind = value.kind
   if (!["cpu_scope", "cuda_kernel", "cuda_memcpy", "cuda_memset", "other"].includes(String(kind))) throw new ProfileError("Unsupported profile activity kind.")
   const scope = requiredRecord(value.scope, "activity.scope")
@@ -377,7 +468,7 @@ function parseActivity(input: unknown): ProfileActivity {
   const stepId = nullableString(scope.step_id, "scope.step_id")
   const layerIndex = nullableInteger(scope.layer_index, "scope.layer_index")
   const component = scope.component
-  if (component !== null && component !== "attention" && component !== "ffn") throw new ProfileError("Unsupported measured component scope.")
+  if (component !== null && component !== "attention" && component !== "recurrent" && component !== "ffn") throw new ProfileError("Unsupported measured component scope.")
   if (correlation === "unmapped" && (stepId != null || layerIndex != null || component != null)) throw new ProfileError("Unmapped activity cannot claim a batch or layer scope.")
   if (correlation !== "unmapped" && stepId == null && layerIndex == null && component == null) throw new ProfileError("Mapped activity requires an observed scope.")
   if (String(kind).startsWith("cuda_") && correlation === "explicit_scope") throw new ProfileError("CUDA scope requires observed runtime flow correlation.")
@@ -394,7 +485,7 @@ function parseActivity(input: unknown): ProfileActivity {
   if (kind === "cpu_scope" && (device != null || stream != null)) throw new ProfileError("CPU scope cannot claim a CUDA device or stream.")
   return {
     id: requiredString(value.activity_id, "activity_id"), kind: kind as ProfileActivityKind,
-    name: requiredString(value.name, "activity.name"), device, stream,
+    name, device, stream,
     processId: identity(value.process_id ?? null, "activity.process_id"), threadId: identity(value.thread_id ?? null, "activity.thread_id"),
     startUs, durationUs, endUs: startUs + durationUs,
     scope: { stepId, layerIndex, component, correlation: correlation as ProfileCorrelation,
@@ -485,7 +576,7 @@ function parseTensorSnapshot(input: unknown): ProfileTensorSnapshot {
   if (shape.length !== 1 || shape[0] !== values.length || !values.length) throw new ProfileError("Tensor snapshot shape must describe its nonempty retained dimension slice.")
   const byteCount = integer(value.byte_count, "snapshot.byte_count")
   if (!byteCount) throw new ProfileError("Tensor snapshot must account for its retained bytes.")
-  return {
+  const result: ProfileTensorSnapshot = {
     snapshotId: requiredString(value.snapshot_id, "snapshot.snapshot_id"), operationId: requiredString(value.operation_id, "snapshot.operation_id"),
     stepId: requiredString(value.step_id, "snapshot.step_id"), requestId: requiredString(value.request_id, "snapshot.request_id"),
     tokenPosition: integer(value.token_position, "snapshot.token_position"), layerIndex: integer(value.layer_index, "snapshot.layer_index"),
@@ -494,6 +585,49 @@ function parseTensorSnapshot(input: unknown): ProfileTensorSnapshot {
     slot: nullableInteger(value.slot ?? null, "snapshot.slot"), device: requiredString(value.device, "snapshot.device"), kvHead: integer(value.kv_head, "snapshot.kv_head"),
     kind: value.kind, dtype: requiredString(value.dtype, "snapshot.dtype"), shape, dimensionStart: integer(value.dimension_start, "snapshot.dimension_start"), values, byteCount,
     observationBoundary: requiredString(value.observation_boundary, "snapshot.observation_boundary"),
+  }
+  if (value.quantization != null) result.quantization = parseSnapshotQuantization(value.quantization, result)
+  return result
+}
+
+/** Decodes the observed CUDA encoding; byte storage is never interpreted as integer-valued KV. */
+export function decodeFp8Byte(byte: number, format: "fp8_e4m3" | "fp8_e5m2"): number {
+  const sign = byte & 128 ? -1 : 1
+  const mantissaBits = format === "fp8_e4m3" ? 3 : 2
+  const exponent = byte >> mantissaBits & (format === "fp8_e4m3" ? 15 : 31)
+  const fraction = byte & (2 ** mantissaBits - 1)
+  const bias = format === "fp8_e4m3" ? 7 : 15
+  if (format === "fp8_e4m3" && exponent === 15 && fraction === 7) return NaN
+  if (format === "fp8_e5m2" && exponent === 31) return fraction === 0 ? sign * Infinity : NaN
+  return sign * (exponent === 0 ? fraction / 2 ** mantissaBits * 2 ** (1 - bias) : (1 + fraction / 2 ** mantissaBits) * 2 ** (exponent - bias))
+}
+
+function parseSnapshotQuantization(input: unknown, snapshot: ProfileTensorSnapshot): NonNullable<ProfileTensorSnapshot["quantization"]> {
+  const value = requiredRecord(input, "snapshot.quantization")
+  if (snapshot.dtype !== "uint8" || value.format !== "fp8_e4m3" && value.format !== "fp8_e5m2" || value.reconstruction !== "decoded_fp8_times_recorded_scale") throw new ProfileError("Quantized numerical slices require qualified FP8 byte storage and reconstruction metadata.")
+  const rawBits = array(value.raw_bits, "snapshot.raw_bits").map((item) => {
+    const byte = integer(item, "snapshot.raw_bit")
+    if (byte > 255) throw new ProfileError("Raw FP8 bytes must be in [0, 255].")
+    return byte
+  })
+  if (rawBits.length !== snapshot.values.length || rawBits.some((byte, index) => decodeFp8Byte(byte, value.format as "fp8_e4m3" | "fp8_e5m2") !== snapshot.values[index])) throw new ProfileError("Decoded FP8 values must match the recorded raw byte encoding.")
+  const scale = requiredRecord(value.scale, "snapshot.quantization.scale")
+  const shape = array(scale.shape, "snapshot.scale.shape").map((dimension) => integer(dimension, "snapshot.scale.dimension"))
+  const elements = shape.reduce((count, dimension) => count * dimension, 1)
+  if (!Number.isSafeInteger(elements) || elements < 1) throw new ProfileError("FP8 scale shape must describe a finite nonempty tensor.")
+  if (typeof scale.value !== "number" || !Number.isFinite(scale.value) || scale.value <= 0 || Math.fround(scale.value) !== scale.value || scale.dtype !== "float32") throw new ProfileError("FP8 reconstruction requires a positive finite observed float32 scale.")
+  if (scale.mode !== "per_tensor" && scale.mode !== "per_head") throw new ProfileError("Unsupported FP8 scale mode.")
+  const headIndex = nullableInteger(scale.head_index ?? null, "snapshot.scale.head_index")
+  if (scale.mode === "per_tensor" && (elements !== 1 || headIndex != null) || scale.mode === "per_head" && (elements <= 1 || elements <= snapshot.kvHead || headIndex !== snapshot.kvHead)) throw new ProfileError("FP8 scale shape and head identity do not match the recorded slice.")
+  const reconstructedValues = array(value.reconstructed_values, "snapshot.reconstructed_values").map((item, index) => {
+    if (typeof item !== "number" || !Number.isFinite(item) || item !== snapshot.values[index] * (scale.value as number)) throw new ProfileError("Reconstructed FP8 values must equal decoded storage values times the recorded scale.")
+    return item
+  })
+  if (reconstructedValues.length !== snapshot.values.length || snapshot.byteCount !== rawBits.length + 4) throw new ProfileError("Quantized snapshots must account for every retained raw byte and float32 scale.")
+  if (scale.observation_boundary !== snapshot.observationBoundary) throw new ProfileError("FP8 bytes and scale must share the captured update boundary.")
+  return {
+    format: value.format, rawBits, reconstructedValues, reconstruction: value.reconstruction,
+    scale: { value: scale.value, dtype: "float32", shape, mode: scale.mode, headIndex, observationBoundary: requiredString(scale.observation_boundary, "snapshot.scale.observation_boundary") },
   }
 }
 

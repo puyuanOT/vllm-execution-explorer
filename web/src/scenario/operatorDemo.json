@@ -1,0 +1,93 @@
+{
+  "version": 2,
+  "name": "Meridian operator workload",
+  "description": "Six document-grounded engineering requests in three arrival batches. Requests 1, 2, and 4 share an identical incident document; the other requests review distinct deployment, capacity, and handover records. The same corpus and output limits support comparisons across recorded model, weight, KV-cache, and LoRA configurations. All documents describe a fictional service.",
+  "documents": {
+    "incident": "Review this fictional incident record using only the evidence provided.\n\nMeridian document-search API: Tuesday incident\n\nMeridian powers an internal support portal. Each search verifies the user's account, reads search settings, retrieves candidate documents, checks access permissions, and returns ranked excerpts. A response contains between one and twenty documents. Authorization decisions must remain specific to the user and account. The service normally handles 240 requests per second across four application workers. Weekday p95 latency is about 180 milliseconds, and the error rate is below 0.1 percent. The permission database allows 160 connections for this service; each worker can open at most twenty.\n\nAt 09:40, release 2.14 reached one canary worker receiving ten percent of traffic. The release changed permission checks from one lookup per search to one lookup per returned document. This was intended to simplify handling documents with different access rules. The canary's error rate remained normal, but its p95 latency rose to 310 milliseconds. The rollout gate checked errors and health checks, but had no latency threshold. At 09:50, the release reached all four workers.\n\nBy 09:54, p95 latency was 1.8 seconds and permission-database connection utilization exceeded 95 percent of the available application connections. Application CPU utilization stayed between 35 and 45 percent. Average permission-query duration increased from 8 to 90 milliseconds. Searches returning fewer than five documents were much less affected than searches returning twenty. Search-index query duration remained near its baseline, and the authentication service reported no unusual latency. The permission database had no reported restart, failover, or storage error.\n\nAt 09:57, operators increased the worker count from four to eight. Throughput improved briefly, then latency rose again. The database's service connection limit did not change. Application logs contained connection checkout timeouts and increasing in-worker queue depth. The largest queues were on workers handling accounts with many documents. There was no admission queue limit, so a request could wait until its client's timeout even when useful work had not begun.\n\nSeveral clients retried timed-out searches immediately. One portal client was configured for three retries without backoff. Its dashboard counted successful responses but did not distinguish an original request from a retry. Operators cannot reconstruct the exact retry volume because client request identifiers were absent from database logs. Incoming traffic at 10:00 was 390 requests per second, but it is unknown how much of the increase represented new user activity rather than repeated work.\n\nThe team considered disabling permission checks, but rejected that action because it could expose unauthorized documents. A separate flag could hide document excerpts, yet the API would still need to authorize document identifiers. Raising the connection limit required database-owner approval and would affect other services sharing the instance. No evidence showed that the database had spare capacity for a higher limit. Operators decided to restore the previous permission-query behavior through application rollback.\n\nAt 10:04, the team rolled all workers back to release 2.13. The rollback changed application code only and required no schema migration. At 10:08, connection utilization fell below 70 percent. At 10:12, p95 latency returned to 210 milliseconds. Some retries continued until 10:15. Operators left eight workers running while the queues drained. By 10:25, the service again handled approximately 240 requests per second. No data loss or unauthorized response has been detected; the security review is still checking a sample of affected searches.\n\nMonitoring samples were taken once per minute. They establish broad changes in latency, queue depth, and query rate, but cannot prove the exact ordering of individual requests. A sampled trace from release 2.14 shows eighteen permission queries for one search returning eighteen documents. That trace is consistent with the code change, but one trace cannot establish the distribution across all requests. The team has not yet compared database query plans or measured permission-query lock waits.\n\nThe leading hypothesis is that additional permission work saturated database access, with retries and unconstrained queues extending the incident. Alternatives include an inefficient query plan for large accounts or uneven request distribution across workers. The rollback's timing supports a connection to release 2.14, but does not isolate every contributing factor. A sustained-load reproduction has not been completed.\n\nThe next release may batch permission checks while preserving user-specific authorization. Proposed safeguards include a bounded concurrency limit, a maximum queue wait, retries with jitter and a retry limit, and a latency-based canary gate. These options are proposals, not deployed fixes. The engineering lead wants clear separation between observed evidence, plausible mechanisms, and experiments needed before approving another rollout.",
+    "deployment": "Review this fictional deployment proposal using only the evidence provided.\n\nMeridian release 2.15: permission batching proposal\n\nMeridian's document-search team proposes release 2.15 after a regression caused excessive permission queries. The new implementation groups the document identifiers returned by one search into a single permission lookup. It preserves the existing authorization rules and does not cache permission decisions across users or accounts. Tests cover mixed permissions, deleted documents, empty results, and a user whose access changes between two searches. No database schema change is required.\n\nThe proposed deployment starts with one canary worker receiving five percent of traffic. The stages are five percent for fifteen minutes, twenty-five percent for fifteen minutes, and full rollout. A developer suggested skipping the middle stage if the error rate remains below 0.1 percent. Operations is concerned that the previous incident showed elevated latency before errors increased. The proposal does not give a p95 or p99 threshold for stopping a rollout.\n\nThe staging load test ran at 300 requests per second for ten minutes. Every search returned twenty documents. Measured p95 latency was 190 milliseconds, and the error rate stayed below 0.1 percent. The report contains no p99 latency, connection checkout wait, or queue-depth measurement. It also gives no comparison between the busiest and least busy workers. Client retries and cancellations were excluded, and the largest customer document collections were not represented.\n\nThe production database allows 160 service connections. Each of eight application workers can create up to twenty connections. Release 2.15 adds a per-worker concurrency limit of forty permission checks, with excess checks waiting inside the worker. The team has not defined a maximum wait, queue bound, cancellation policy, or overload response. No database connection-limit change is planned.\n\nOperators can roll back the application within four minutes. A feature flag also disables batching without redeploying, but its fallback performs individual permission queries and could recreate the previous load pattern. The fallback has not been load-tested. The current runbook calls for rollback only when errors exceed one percent, even if latency or waiting queues rise sharply.\n\nA support campaign is expected to increase traffic to 450 requests per second later in the week. It includes accounts with unusually large document collections. Engineering can run another load test before the campaign. The deployment window lasts one hour, and the database owner will be available during that window. Support needs enough notice to pause the campaign if the rollout cannot meet its latency target. The release owner must choose measurable approval criteria and a tested recovery path before proceeding.",
+    "capacity": "Assess this fictional capacity snapshot using only the evidence provided.\n\nMeridian campaign capacity review\n\nMeridian operates eight application workers behind a load balancer. The permission database permits 160 service connections. Each worker permits twenty connections and up to forty concurrent permission checks. A search returns between one and twenty documents. Release 2.15 combines document permissions into one query per search. The older release could issue a query for each returned document. Authorization cannot be skipped as an overload measure.\n\nAt 240 requests per second, release 2.15 has p50 latency of 80 milliseconds and p95 latency of 190 milliseconds. Average permission-query duration is 12 milliseconds. Database connection utilization varies between 45 and 65 percent. Worker CPU utilization averages 40 percent, with short bursts above 70 percent. These are ten-second monitoring samples, so they cannot describe every request or resolve short spikes.\n\nA test at 450 requests per second reached p95 latency of 420 milliseconds. Average permission-query duration increased to 35 milliseconds. The busiest worker had twice the queue depth of the least busy worker. No requests failed, but the test ran for only five minutes. It had no client retries, and its accounts did not include the largest customer collections. The report omitted maximum queue wait and cancellation counts.\n\nOperations proposed doubling the worker count while keeping the database connection limit unchanged. Engineering proposed raising each worker's permission concurrency limit from forty to sixty. Another proposal is a bounded admission queue, followed by a clear overload response with a retry-after hint. Support prefers avoiding rejected requests, but the current portal client has no global retry budget and can retry a timeout three times without backoff.\n\nThe campaign target is p95 latency below 300 milliseconds at 450 requests per second. The team has a staging environment with the same service connection limit and can replay a representative mix of account sizes. The database owner can help inspect query plans and lock waits. The team has time for two sustained-load experiments before the campaign.\n\nOne possible experiment keeps worker count fixed and varies permission concurrency while measuring queue wait, query latency, completed throughput, and errors. A second introduces large accounts, retries, and uneven traffic distribution. Neither has been run yet. The release owner wants a recommendation that states what the existing evidence can support, what remains uncertain, and how excess load should be handled without creating another retry-driven incident.",
+    "handover": "Prepare a handover from these fictional on-call notes using only the evidence provided.\n\nMeridian document-search API: evening handover\n\nA support campaign begins tomorrow at 09:00. The target is p95 latency below 300 milliseconds and an error rate below 0.1 percent. Normal load is 240 requests per second; campaign load may reach 450. The most recent load test omitted large customer document collections and client retries, so campaign readiness is not yet established.\n\nRelease 2.15 batches permission checks. It is deployed to one canary worker at five percent traffic. The remaining workers run release 2.13. Do not deploy release 2.14: it introduced one permission query for each returned document. Release 2.15 passed authorization tests, but sustained-load and retry tests are pending. There is no database schema change.\n\nDashboards show request rate, application latency, worker queue depth, permission-query duration, and database connection utilization. Connection checkout wait was added this afternoon and has only three hours of history. Client retry counts are still unavailable. A trace request identifier now appears in new application logs, but older logs lack it. Monitoring samples cannot reconstruct the exact ordering of individual requests.\n\nIf latency rises, compare the canary with stable workers and inspect connection checkout wait before changing worker counts. Eight workers already share a 160-connection database limit. Adding workers does not increase that limit. Avoid raising concurrency during an incident without checking downstream saturation. Preserve user-specific authorization; bypassing permission checks is not an acceptable recovery action.\n\nApplication rollback takes about four minutes, and no schema rollback is needed. A feature flag disables batched permission lookup, but its fallback can issue multiple queries per search. That fallback has not been load-tested and should not be assumed safe. Verify the active release and observe latency and queue drainage after rollback rather than declaring recovery as soon as deployment finishes.\n\nThe daytime engineering lead can authorize stopping the rollout. The incident commander can authorize rollback. The database owner is available during tomorrow's deployment window. Support needs an update every fifteen minutes during customer impact, stating observed impact, action taken, and the next update time. No data loss was detected in the previous incident, but avoid claiming that a new incident has the same outcome without evidence.\n\nPending work includes sustained testing with large accounts, latency and queue-depth rollout gates, bounded retry behavior, and a documented way to pause campaign traffic. At shift change, confirm who owns each item and whether the campaign can proceed if tests remain incomplete."
+  },
+  "requests": [
+    {
+      "id": "request-1",
+      "label": "Request 1",
+      "document": "incident",
+      "task": "Explain the observed customer impact and the rollback outcome in one short paragraph. Include the before, incident, and recovery p95 latency measurements and the recovery timeline. Do not infer an outage or a completed security clearance. Start with the facts; use no title, greeting, or introduction.",
+      "max_output_tokens": 64
+    },
+    {
+      "id": "request-2",
+      "label": "Request 2",
+      "document": "incident",
+      "task": "Explain the leading cause of the incident in one compact paragraph. Connect the permission-query change, downstream saturation, and retries. State one alternative explanation and a measurement that would distinguish it. Separate observations from the hypothesis. Start directly with the explanation; use no heading or introduction.",
+      "max_output_tokens": 96
+    },
+    {
+      "id": "request-3",
+      "label": "Request 3",
+      "document": "deployment",
+      "task": "Identify the most important missing rollout guardrail in release 2.15 and explain how to test it before the campaign. Cite the canary or load-test evidence, give a measurable stop condition, and preserve authorization safety. Answer directly in one paragraph, without a title, introductory summary, or subheadings.",
+      "max_output_tokens": 128
+    },
+    {
+      "id": "request-4",
+      "label": "Request 4",
+      "document": "incident",
+      "task": "Explain why doubling workers did not provide sustained recovery and propose a focused investigation. Use two compact paragraphs: first explain the observed connection limit and the plausible mechanism; then describe an experiment that could support or weaken it. Preserve user-specific authorization. Use no title or introductory summary.",
+      "max_output_tokens": 160
+    },
+    {
+      "id": "request-5",
+      "label": "Request 5",
+      "document": "capacity",
+      "task": "Recommend the first capacity experiment and an overload policy for the campaign. Compare adding workers with changing permission concurrency, specify the measurements and the p95 success target, and explain how bounded waiting and retries prevent amplified load. State what the current measurements cannot establish. Use two compact paragraphs with no title or introduction.",
+      "max_output_tokens": 192
+    },
+    {
+      "id": "request-6",
+      "label": "Request 6",
+      "document": "handover",
+      "task": "Write a concise on-call handover as five numbered items: current release state, monitoring, first response, escalation, and unresolved work. Use one or two short sentences per item. Preserve the campaign target, shared database limit, unsafe fallback risk, and pending tests. Give an actionable response sequence and identify the responsible roles. Start with item 1; use no title, date placeholder, greeting, or introduction.",
+      "max_output_tokens": 256
+    }
+  ],
+  "batches": [
+    {
+      "id": "arrival-1",
+      "label": "Arrival batch 1",
+      "arrival_offset_ms": 0,
+      "request_ids": [
+        "request-1"
+      ]
+    },
+    {
+      "id": "arrival-2",
+      "label": "Arrival batch 2",
+      "arrival_offset_ms": 20000,
+      "request_ids": [
+        "request-2",
+        "request-3"
+      ]
+    },
+    {
+      "id": "arrival-3",
+      "label": "Arrival batch 3",
+      "arrival_offset_ms": 20025,
+      "request_ids": [
+        "request-4",
+        "request-5",
+        "request-6"
+      ]
+    }
+  ],
+  "qualification": {
+    "minimum_output_tokens": 64,
+    "maximum_output_tokens": 256,
+    "shared_request_ids": [
+      "request-1",
+      "request-2",
+      "request-4"
+    ]
+  }
+}

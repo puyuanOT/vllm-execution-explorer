@@ -6,14 +6,21 @@ import gzip
 import hashlib
 import importlib.metadata
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
 from runner.profile_trace import PROFILE_CLOCK, normalize_trace
+from runner.profile_codec import encode_compact_profile
 from vllm_030.profiling import DiagnosticHooks
 
 
-MAX_TRACE_BYTES = 64 * 1024 * 1024
+# The qualified hybrid trace is 135 MiB uncompressed due to first-shape compilation.
+# Diagnostic capture limits are finite; larger windows must still fit both input and wire bounds.
+MAX_TRACE_BYTES = 4 * 1024 * 1024 * 1024
+MAX_NORMALIZED_BYTES = 512 * 1024 * 1024
+# Prefer compact playback payloads before reaching the hard attachment ceiling.
+COMPACT_THRESHOLD_BYTES = 64 * 1024 * 1024
 
 
 def profile_record(configuration: dict[str, Any] | None) -> dict[str, Any]:
@@ -60,7 +67,7 @@ class DiagnosticProfile:
         self._arrived_requests: set[str] = set()
         if not self.record["enabled"]:
             return
-        if not architecture.get("supported") or architecture.get("model_type") != "qwen3":
+        if not architecture.get("supported") or architecture.get("model_type") not in {"qwen3", "qwen3_5_text"}:
             raise RuntimeError("Eager diagnostic profiling currently requires a supported dense Qwen3 model.")
         config = engine.vllm_config
         if not getattr(config.model_config, "enforce_eager", False):
@@ -73,7 +80,7 @@ class DiagnosticProfile:
         runner = getattr(self._worker, "model_runner", None)
         if runner is None or getattr(self._worker, "use_v2_model_runner", False):
             raise RuntimeError("The in-process vLLM 0.30 GPUModelRunner is required for diagnostic row/layer correlation.")
-        if getattr(runner, "use_async_scheduling", False) or getattr(runner, "uses_mrope", False) or getattr(runner, "speculative_config", None) is not None:
+        if getattr(runner, "use_async_scheduling", False) or getattr(runner, "speculative_config", None) is not None:
             raise RuntimeError("Diagnostic packed rows do not support asynchronous/speculative or multimodal positions.")
         import torch
 
@@ -138,6 +145,7 @@ class DiagnosticProfile:
                 self.record["reason"] = "The selected capture step/request arrival was not reached; a targeted rerun is required."
             return
         self._finished = True
+        self.record.update(status="finalizing", captured_steps=len(self.hooks.steps))
         try:
             self.engine.stop_profile()
             self._save_attachment(bounded=bounded, cancelled=cancelled, failed=failed)
@@ -161,35 +169,116 @@ class DiagnosticProfile:
         with opener(path, "rb") as stream:
             payload = stream.read(MAX_TRACE_BYTES + 1)
         if len(payload) > MAX_TRACE_BYTES:
-            self.record.update(status="partial", completeness="bounded", reason="Native trace exceeds the 64 MiB normalization bound; raw evidence is retained.")
+            self.record.update(status="partial", completeness="bounded", reason=f"Native trace exceeds the {MAX_TRACE_BYTES // (1024 * 1024):,} MiB normalization bound; raw evidence is retained.")
             return
         normalized = normalize_trace(json.loads(payload), run_id=self.recording.run_id, steps=self.hooks.steps)
         cache_capture = getattr(self.hooks, "cache_capture", None)
         if cache_capture is not None:
             cache_capture.finalize()
-            for write in cache_capture.writes:
-                gpu = [activity for activity in normalized["activities"] if activity["kind"].startswith("cuda_")
-                       and activity["scope"].get("operation_id") == write["operation_id"] and activity["scope"]["correlation"] == "runtime_flow"]
-                write["gpu_activity_ids"] = [activity["activity_id"] for activity in gpu]
-                launches = {activity["activity_id"] for activity in normalized["activities"]
-                            if activity["scope"].get("operation_id") == write["operation_id"]
-                            and not activity["kind"].startswith("cuda_") and activity["name"].startswith(("cudaLaunch", "cuLaunch"))}
-                correlated = {identity for activity in gpu for identity in activity["related_activity_ids"]}
-                if normalized["normalization"]["status"] != "completed" or not launches.issubset(correlated):
-                    write.update(status="unavailable", reason="The retained profiler trace does not cover every observed GPU launch for this cache update; completion timing is unknown.")
+            _link_cache_writes(normalized, cache_capture.writes)
             normalized.update(cache_writes=cache_capture.writes, tensor_snapshots=cache_capture.snapshots, tensor_capture=cache_capture.capture_record())
             self.record["tensor_capture"] = normalized["tensor_capture"]
         destination = self.recording.directory / "profiling" / "activities.json"
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_text(json.dumps(normalized, separators=(",", ":")) + "\n", encoding="utf-8")
-        partial = failed or cancelled or not normalized["normalization"]["gpu_activity_count"] or normalized["normalization"]["status"] != "completed" or any(step["mapping_status"] != "observed" or step["padded_tokens"] is None for step in self.hooks.steps)
-        self.record.update(status="partial" if partial else "completed", completeness="bounded" if bounded else ("unknown" if partial else "complete"),
+        payload, cpu_detail_bounded = _bounded_normalized_payload(normalized)
+        if payload is None:
+            self.record.update(status="partial", completeness="bounded", attachment_status="unavailable", normalized_artifact=None,
+                               captured_steps=len(self.hooks.steps), normalization=normalized["normalization"],
+                               reason=f"The normalized GPU activities, diagnostic scopes and captured metadata exceed the {MAX_NORMALIZED_BYTES // (1024 * 1024):,} MiB attachment bound; native raw evidence is retained and no browser attachment is claimed.")
+            return
+        destination.write_bytes(payload)
+        partial = bounded or failed or cancelled or not normalized["normalization"]["gpu_activity_count"] or normalized["normalization"]["status"] != "completed" or any(step["mapping_status"] != "observed" or step["padded_tokens"] is None for step in self.hooks.steps)
+        self.record.update(status="partial" if partial else "completed", completeness="bounded" if bounded or cpu_detail_bounded else ("unknown" if partial else "complete"),
                            normalized_artifact=_artifact(destination, self.recording.directory), attachment_status="available",
                            captured_steps=len(self.hooks.steps), normalization=normalized["normalization"])
         if cancelled or failed:
             self.record["reason"] = "The diagnostic run was cancelled or failed; only returned profiler observations are retained."
+        elif bounded:
+            self.record["reason"] = "The configured iteration capture limit was reached; retained native observations cover this bounded window, not the entire run."
         elif not normalized["normalization"]["gpu_activity_count"]:
             self.record["reason"] = "No CUDA activities were returned by the native profiler; GPU durations are unavailable."
+        if cpu_detail_bounded:
+            detail = f"Unrelated CPU detail was omitted to fit the bounded browser attachment ({normalized['normalization']['activity_limit']:,} activities and {MAX_NORMALIZED_BYTES // (1024 * 1024):,} MiB). All normalized CUDA activities, their CPU correlations, launch records and diagnostic scopes remain; the full native trace is retained."
+            self.record["reason"] = f"{self.record.get('reason', '')} {detail}".strip()
+        if normalized["normalization"].get("attachment_encoding"):
+            detail = "Repeated native activity metadata was losslessly encoded using shared tables; this encoding removes no activities or packed participants."
+            self.record["reason"] = f"{self.record.get('reason', '')} {detail}".strip()
+
+
+def _link_cache_writes(normalized: dict[str, Any], writes: list[dict[str, Any]]) -> None:
+    """Index once, preserving source activity order and every observed launch-completeness check."""
+    gpu_by_operation: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    launches_by_operation: dict[str, set[str]] = defaultdict(set)
+    for activity in normalized["activities"]:
+        operation = activity["scope"].get("operation_id")
+        if operation is None:
+            continue
+        if activity["kind"].startswith("cuda_"):
+            if activity["scope"]["correlation"] == "runtime_flow":
+                gpu_by_operation[operation].append(activity)
+        elif activity["name"].startswith(("cudaLaunch", "cuLaunch")):
+            launches_by_operation[operation].add(activity["activity_id"])
+    retention = normalized["normalization"].get("attachment_retention", {})
+    gpu_complete = normalized["normalization"]["status"] == "completed" or (
+        retention.get("status") == "cpu_detail_bounded" and retention.get("gpu_activities_complete") is True)
+    for write in writes:
+        gpu = gpu_by_operation.get(write["operation_id"], [])
+        write["gpu_activity_ids"] = [activity["activity_id"] for activity in gpu]
+        correlated = {identity for activity in gpu for identity in activity["related_activity_ids"]}
+        if not gpu_complete or not launches_by_operation.get(write["operation_id"], set()).issubset(correlated):
+            write.update(status="unavailable", reason="The retained profiler trace does not cover every observed GPU launch for this cache update; completion timing is unknown.")
+
+
+def _bounded_normalized_payload(normalized: dict[str, Any]) -> tuple[bytes | None, bool]:
+    plain_limit = min(MAX_NORMALIZED_BYTES, COMPACT_THRESHOLD_BYTES)
+    existing_retention = normalized["normalization"].get("attachment_retention", {})
+    already_bounded = existing_retention.get("status") == "cpu_detail_bounded"
+    if already_bounded:
+        existing_retention.setdefault("byte_limit", MAX_NORMALIZED_BYTES)
+    payload = (json.dumps(normalized, separators=(",", ":")) + "\n").encode("utf-8")
+    if len(payload) <= plain_limit:
+        return payload, already_bounded
+    activities = normalized["activities"]
+    correlated_ids = {identity for activity in activities if activity["kind"].startswith("cuda_") for identity in activity["related_activity_ids"]}
+    retained = [activity for activity in activities if activity["kind"].startswith("cuda_")
+                or activity["activity_id"] in correlated_ids or activity["name"].startswith(("explorer.", "cudaLaunch", "cuLaunch"))]
+    # CPU detail reduction must never turn an already truncated native trace into complete GPU evidence.
+    gpu_complete = normalized["normalization"]["status"] == "completed" or (
+        existing_retention.get("status") == "cpu_detail_bounded" and existing_retention.get("gpu_activities_complete") is True)
+    normalized["activities"] = retained
+    normalized["normalization"].update(status="partial", attachment_retention={
+        **existing_retention, "status": "cpu_detail_bounded", "byte_limit": MAX_NORMALIZED_BYTES,
+        "original_activity_count": existing_retention.get("original_activity_count", len(activities)), "retained_activity_count": len(retained),
+        "omitted_cpu_activity_count": existing_retention.get("omitted_cpu_activity_count", 0) + len(activities) - len(retained), "omitted_gpu_activity_count": 0,
+        "gpu_activities_complete": gpu_complete,
+        "preserved": "All normalized CUDA activities, their CPU correlations, launch records and explicit diagnostic scopes; source activity IDs and ordering are unchanged.",
+    })
+    payload = (json.dumps(normalized, separators=(",", ":")) + "\n").encode("utf-8")
+    if len(payload) <= plain_limit:
+        return payload, True
+    # Native CUDA kernel template names are often hundreds of characters long and
+    # recur thousands of times. Share exact strings on the wire before rejecting
+    # mandatory evidence; keep the expanded in-memory records for correlation.
+    names: list[str] = []
+    name_ids: dict[str, int] = {}
+    encoded_activities = []
+    for activity in retained:
+        name = activity["name"]
+        if name not in name_ids:
+            name_ids[name] = len(names)
+            names.append(name)
+        encoded_activities.append({**{key: value for key, value in activity.items() if key != "name"}, "name_id": name_ids[name]})
+    encoding = {"kind": "activity_name_dictionary_v1", "unique_name_count": len(names), "encoded_activity_count": len(retained),
+                "preserved": "Exact activity names are losslessly shared; activity IDs, order, timing, scopes, correlations, steps and packed participants are unchanged."}
+    normalized["normalization"]["attachment_encoding"] = encoding
+    encoded = {**normalized, "activity_names": names, "activities": encoded_activities}
+    payload = (json.dumps(encoded, separators=(",", ":")) + "\n").encode("utf-8")
+    if len(payload) <= plain_limit:
+        return payload, True
+    encoded = encode_compact_profile(normalized)
+    normalized["normalization"]["attachment_encoding"] = encoded["normalization"]["attachment_encoding"]
+    payload = (json.dumps(encoded, separators=(",", ":")) + "\n").encode("utf-8")
+    return (payload if len(payload) <= MAX_NORMALIZED_BYTES else None), True
 
 
 def _artifact(path: Path, directory: Path) -> dict[str, Any]:

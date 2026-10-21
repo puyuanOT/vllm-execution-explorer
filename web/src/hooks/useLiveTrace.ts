@@ -56,6 +56,16 @@ export function useLiveTrace(
     let timer = 0
     let controller: AbortController | null = null
     let delay = 350
+    const finalize = () => {
+      controller = new AbortController()
+      return loadRunnerRecording(runnerUrl, runId, controller.signal).then(loaded => {
+        if (stopped) return
+        handed.current = runId
+        onFinalRef.current(loaded)
+      }).catch(() => {
+        if (!stopped) timer = window.setTimeout(poll, delay)
+      })
+    }
     const poll = () => {
       if (stopped || handed.current === runId) return
       controller = new AbortController()
@@ -80,14 +90,7 @@ export function useLiveTrace(
           }
           const drained = page.finalized && !page.events_truncated && !page.content_truncated
           if (drained && handed.current !== requested) {
-            return loadRunnerRecording(runnerUrl, requested).then((loaded) => {
-              if (stopped) return
-              handed.current = requested
-              onFinalRef.current(loaded)
-            }).catch(() => {
-              if (stopped) return
-              timer = window.setTimeout(poll, delay)
-            })
+            return finalize()
           }
           const wait = page.events_truncated || page.content_truncated ? 40 : delay
           timer = window.setTimeout(poll, wait)
@@ -95,6 +98,9 @@ export function useLiveTrace(
         })
         .catch((error: unknown) => {
           if (stopped || (error instanceof DOMException && error.name === "AbortError")) return
+          // The same hook owns finalized-file recovery when trace pagination is
+          // unavailable. An independent App loader must not parse it concurrently.
+          if (status === "completed" && live?.finalized === true) return finalize()
           delay = Math.min(delay * 2, 4000)
           setTrace((current) => ({ ...current, connected: false }))
           timer = window.setTimeout(poll, delay)
@@ -107,7 +113,7 @@ export function useLiveTrace(
       controller?.abort()
       window.clearTimeout(timer)
     }
-  }, [runId, runnerUrl, status])
+  }, [runId, runnerUrl, status, live?.finalized])
 
   return trace
 }

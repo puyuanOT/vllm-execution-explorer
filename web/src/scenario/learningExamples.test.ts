@@ -81,7 +81,10 @@ test("invalid runtime combinations fail before submitting a capture", () => {
   assert.ok(validateSettings({ ...defaultSettings(), tokenBudget: "2" }).some((issue) => issue.fieldId === "setting-token-budget"))
   assert.ok(validateSettings({ ...defaultSettings(), chunkedPrefill: false }).some((issue) => issue.fieldId === "setting-token-budget"))
   assert.ok(validateSettings({ ...defaultSettings(), profilingMode: "eager_diagnostic", engine: "fixture" }).some((issue) => issue.fieldId === "setting-profiling-mode"))
-  for (const value of ["0", "17", "2.5"]) {
+  const extended = { ...defaultSettings(), profilingMode: "eager_diagnostic" as const, profilingMaxSteps: "1024" }
+  assert.deepEqual(validateSettings(extended), [])
+  assert.equal(toRunBody(staggeredExample(), extended).profiling_configuration.max_steps, 1024)
+  for (const value of ["0", "1025", "2.5"]) {
     assert.ok(validateSettings({ ...defaultSettings(), profilingMode: "eager_diagnostic", profilingMaxSteps: value }).some((issue) => issue.fieldId === "setting-profiling-steps"))
   }
   assert.ok(validateSettings({ ...defaultSettings(), kvCacheMemoryBytes: "9007199254740992" }).some((issue) => issue.fieldId === "setting-kv-memory"))
@@ -91,5 +94,5 @@ test("recorded clock supports much slower speeds without changing other clocks",
   assert.equal(playbackSpeeds("recorded")[0], 0.001)
   assert.ok(playbackSpeeds("recorded").includes(0.0025))
   assert.equal(playbackSpeeds("events")[0], 0.25)
-  assert.equal(playbackSpeeds("teaching")[0], 0.25)
+  assert.equal(playbackSpeeds("iterations")[0], 0.25)
 })

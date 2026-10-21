@@ -16,6 +16,47 @@ from typing import Any
 MAX_WRITE_PARTICIPANTS = 262_144
 
 
+def decode_fp8_byte(value: int, encoding: str) -> float:
+    """Interpret one retained byte; CUDA E4M3 is finite E4M3FN, not E4M3FNUZ."""
+    sign = -1.0 if value & 128 else 1.0
+    if encoding == "fp8_e4m3":
+        exponent, fraction, bias, mantissa_bits = (value >> 3) & 15, value & 7, 7, 3
+        if exponent == 15 and fraction == 7:
+            return math.nan
+    elif encoding == "fp8_e5m2":
+        exponent, fraction, bias, mantissa_bits = (value >> 2) & 31, value & 3, 15, 2
+        if exponent == 31:
+            return sign * math.inf if fraction == 0 else math.nan
+    else:
+        raise ValueError("Unqualified FP8 encoding")
+    magnitude = math.ldexp(fraction / (1 << mantissa_bits), 1 - bias) if exponent == 0 else math.ldexp(1 + fraction / (1 << mantissa_bits), exponent - bias)
+    return sign * magnitude
+
+
+def fp8_encoding(module: Any, impl: Any, tensor: Any) -> str | None:
+    """Only the native CUDA byte cache with kernel-compatible scales qualifies."""
+    cache_dtype = getattr(impl, "kv_cache_dtype", None)
+    if str(tensor.dtype) != "torch.uint8" or not str(tensor.device).startswith("cuda") or cache_dtype not in {"fp8", "fp8_e4m3", "fp8_e5m2"}:
+        return None
+    if not cuda_fp8_platform():
+        return None
+    heads = int(tensor.shape[1])
+    for name in ("_k_scale", "_v_scale"):
+        scale = getattr(module, name, None)
+        if scale is None or str(scale.dtype) != "torch.float32" or str(scale.device) != str(tensor.device):
+            return None
+        if not callable(getattr(scale, "numel", None)) or scale.numel() not in {1, heads} or not scale.is_contiguous():
+            return None
+    return "fp8_e5m2" if cache_dtype == "fp8_e5m2" else "fp8_e4m3"
+
+
+def cuda_fp8_platform() -> bool:
+    # ROCm also exposes tensors as cuda:*; its E4M3FNUZ bytes cannot be decoded
+    # with the NVIDIA E4M3FN interpretation qualified here.
+    import torch
+    return torch.version.cuda is not None and torch.version.hip is None
+
+
 def loaded_cache_tensors(runner: Any, inventory: dict[str, Any] | None = None) -> tuple[dict[str, Any], dict[str, Any]]:
     groups = (inventory or {}).get("groups", [])
     if not groups:
@@ -52,11 +93,15 @@ def loaded_cache_tensors(runner: Any, inventory: dict[str, Any] | None = None) -
         kernel_sizes = getattr(runner, "_kernel_block_sizes", [])
         kernel_size = kernel_sizes[index] if isinstance(index, int) and index < len(kernel_sizes) else None
         qualified = False
-        reason = "Numerical cache addressing is qualified only for native BF16/FP16 vLLM 0.30 FlashAttention."
-        if backend == "FlashAttentionImpl" and dtype in {"bfloat16", "float16"} and len(shape) == 4:
+        reason = "Numerical cache addressing requires native BF16/FP16 or CUDA FP8 E4M3/E5M2 with observed compatible scales in vLLM 0.30 FlashAttention."
+        encoding = fp8_encoding(module, impl, tensor) if backend == "FlashAttentionImpl" and len(shape) == 4 else None
+        if backend == "FlashAttentionImpl" and (dtype in {"bfloat16", "float16"} or encoding is not None) and len(shape) == 4:
             try:
                 source = inspect.getsource(impl.do_kv_cache_update)
-                qualified = all(snippet in source for snippet in ("kv_cache.transpose(1, 2).split(self.head_size, dim=-1)", "reshape_and_cache_flash(", "slot_mapping,"))
+                snippets = ("kv_cache.transpose(1, 2).split(self.head_size, dim=-1)", "reshape_and_cache_flash(", "slot_mapping,")
+                qualified = all(snippet in source for snippet in snippets)
+                if encoding is not None:
+                    qualified = qualified and all(snippet in source for snippet in ("self.kv_cache_dtype,", "layer._k_scale,", "layer._v_scale,"))
             except (OSError, TypeError):
                 reason = "The installed cache-update implementation could not be inspected."
             if qualified and (not isinstance(kernel_size, int) or kernel_size <= 0 or shape[2] != kernel_size or shape[3] != 2 * int(impl.head_size)
@@ -75,6 +120,8 @@ def loaded_cache_tensors(runner: Any, inventory: dict[str, Any] | None = None) -
             "head_dim": shape[3] // 2 if qualified else None,
             "quantization": cache_quantization(module, impl, spec),
         }
+        if encoding is not None and qualified:
+            record["numerical_encoding"] = encoding
         if not qualified:
             record["layout_reason"] = reason
         layers.append(record)
@@ -110,7 +157,7 @@ class CacheWriteCapture:
         self.writes: list[dict[str, Any]] = []
         self.snapshots: list[dict[str, Any]] = []
         self._slot_copies: dict[tuple[str, int | None], Any] = {}
-        self._pending_values: list[tuple[dict[str, Any], Any, int]] = []
+        self._pending_values: list[tuple[dict[str, Any], Any, int, Any]] = []
         self._generations: dict[str, dict[int, int]] = {}
         self._retained_bytes = 0
         self._participant_count = 0
@@ -178,14 +225,14 @@ class CacheWriteCapture:
                         generations[block] = self.generation_lookup(record["pool"], block)
                     self._generations[operation_id] = generations
                 if self.configuration.get("enabled"):
-                    self._capture_values(write, record, cache, slot_mapping, rows)
+                    self._capture_values(write, record, cache, slot_mapping, rows, layer)
             except Exception as exc:
                 write.update(status="unavailable", reason=f"Cache slot/snapshot capture failed ({type(exc).__name__}); no layout claim is made.")
                 self._errors.append(write["reason"])
             return result
         self.hooks._patch(impl, "do_kv_cache_update", update)
 
-    def _capture_values(self, write: dict[str, Any], record: dict[str, Any], cache: Any, slot_mapping: Any, rows: list[dict[str, Any]]) -> None:
+    def _capture_values(self, write: dict[str, Any], record: dict[str, Any], cache: Any, slot_mapping: Any, rows: list[dict[str, Any]], layer: Any = None) -> None:
         if record["layer_index"] not in self.selection["layer_indices"]:
             return
         if record["layout_status"] != "qualified":
@@ -212,7 +259,12 @@ class CacheWriteCapture:
             kernel_slot = (address % record["kernel_block_size"]).reshape(1)
             for head in heads:
                 for kind, offset in (("K", 0), ("V", record["head_dim"])):
-                    size = count * cache.element_size()
+                    encoding = record.get("numerical_encoding")
+                    scale = getattr(layer, "_k_scale" if kind == "K" else "_v_scale", None) if encoding else None
+                    if encoding and (scale is None or scale.numel() not in {1, record["num_kv_heads"]} or not scale.is_contiguous() or str(scale.dtype) != "torch.float32" or str(scale.device) != record["device"]):
+                        self._errors.append("FP8 cache-update scale was not available in the qualified native shape, dtype and device.")
+                        continue
+                    size = count * cache.element_size() + (scale.element_size() if scale is not None else 0)
                     if self._retained_bytes + size > self.configuration.get("max_bytes", 1048576):
                         self._errors.append("The numerical tensor capture byte limit was reached.")
                         return
@@ -222,7 +274,16 @@ class CacheWriteCapture:
                                 "cache_group": record["cache_group"], "pool": record["pool"], "block_id": None, "allocation_generation": None, "slot": None,
                                 "device": record["device"], "kv_head": head, "kind": kind, "dtype": record["dtype"], "shape": [count],
                                 "dimension_start": start, "byte_count": size, "observation_boundary": "same_cuda_stream_after_native_cache_update_before_reuse"}
-                    self._pending_values.append((metadata, values, row["row"]))
+                    scale_copy = None
+                    if scale is not None:
+                        scale_index = 0 if scale.numel() == 1 else head
+                        scale_copy = scale.reshape(-1)[scale_index:scale_index + 1].detach().clone()
+                        metadata["quantization"] = {"format": encoding, "scale": {
+                            "dtype": "float32", "shape": list(scale.shape), "mode": "per_tensor" if scale.numel() == 1 else "per_head",
+                            "head_index": None if scale.numel() == 1 else head,
+                            "observation_boundary": "same_cuda_stream_after_native_cache_update_before_reuse",
+                        }, "reconstruction": "decoded_fp8_times_recorded_scale"}
+                    self._pending_values.append((metadata, values, row["row"], scale_copy))
                     self._retained_bytes += size
 
     def finalize(self) -> None:
@@ -247,7 +308,7 @@ class CacheWriteCapture:
                 row.update(block_id=block, slot=slot, kernel_block_id=kernel_block, kernel_slot=kernel_slot)
                 row["allocation_generation"] = self._generations.get(write["operation_id"], {}).get(block)
             write["participants"] = retained
-        for metadata, values, row_index in self._pending_values:
+        for metadata, values, row_index, scale_copy in self._pending_values:
             write = writes[metadata["operation_id"]]
             participant = next((row for row in write["participants"] if row["row"] == row_index), None)
             if participant is None:
@@ -255,7 +316,20 @@ class CacheWriteCapture:
                 self._errors.append("A selected row was skipped by the native cache slot mapping; no numerical slice was retained.")
                 continue
             metadata.update({key: participant[key] for key in ("block_id", "allocation_generation", "slot")})
-            metadata["values"] = values.float().cpu().tolist()
+            if scale_copy is not None:
+                quantization = metadata["quantization"]
+                raw_bits = values.cpu().tolist()
+                scale_value = scale_copy.float().cpu().tolist()[0]
+                metadata["values"] = [decode_fp8_byte(value, quantization["format"]) for value in raw_bits]
+                quantization["raw_bits"] = raw_bits
+                quantization["scale"]["value"] = scale_value
+                quantization["reconstructed_values"] = [value * scale_value for value in metadata["values"]]
+                if not math.isfinite(scale_value) or scale_value <= 0 or any(not math.isfinite(value) for value in quantization["reconstructed_values"]):
+                    self._retained_bytes -= metadata["byte_count"]
+                    self._errors.append("An FP8 slice had an invalid scale or non-finite reconstruction; no numerical slice was retained.")
+                    continue
+            else:
+                metadata["values"] = values.float().cpu().tolist()
             if any(not math.isfinite(value) for value in metadata["values"]):
                 self._retained_bytes -= metadata["byte_count"]
                 self._errors.append("A selected numerical slice contains non-finite values and was not retained as JSON numbers.")

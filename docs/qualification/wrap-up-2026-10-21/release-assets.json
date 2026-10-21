@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "assets": [
+    {
+      "filename": "qualification-evidence-2026-10-21.tar.gz",
+      "bytes": 865500324,
+      "sha256": "ada8ed19d0afd2c3cc65918134a615aa4d9b43c5d541dc62b9022b1986d3c5b6",
+      "source_tree": "docs/qualification",
+      "files": 842,
+      "verified_member_bytes": 2372811570
+    },
+    {
+      "filename": "original-recordings-2026-10-21.tar.gz",
+      "bytes": 611322598,
+      "sha256": "98f71b12e2ffe3776ff2fe249460821faa940f55a8621f6a85aade9f6cb3d74e",
+      "source_tree": "web/public/recordings",
+      "files": 102,
+      "verified_member_bytes": 1636582629
+    },
+    {
+      "filename": "wrap-up-verification-2026-10-21.tar.gz",
+      "bytes": 384872,
+      "sha256": "4434bac22014f35b2cbd79250b63e2c037af31655e5484552edfec8454db59f9",
+      "source_tree": "output/wrap-up selected verification evidence",
+      "files": 60
+    }
+  ],
+  "github_asset_limit_bytes_exclusive": 2147483648,
+  "limit_source": "https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases",
+  "audit_result": "No credential candidates found",
+  "source_file_manifest": "source-file-manifest.json"
+}

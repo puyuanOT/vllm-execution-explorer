@@ -92,6 +92,8 @@ test("malformed persisted settings cannot reach string or adapter controls", () 
       { seed: 0 },
       { automaticSetup: "false" },
       { hostKind: "unsupported" },
+      { demoLoraMode: {} },
+      { demoLoraMode: "unknown" },
       { stopStrings: [null] },
       { loraAdapters: [null] },
       { loraAdapters: [{ id: "a", name: "A", source: "host", location: "/adapter", revision: null }] },

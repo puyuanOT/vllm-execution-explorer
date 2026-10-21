@@ -48,6 +48,7 @@ export interface EngineSettings {
   schedulingPolicy: "fcfs" | "priority"
   longPrefillTokenThreshold: string
   kvCacheMemoryBytes: string
+  kvCacheDtype: "auto" | "float16" | "bfloat16" | "fp8" | "fp8_e4m3" | "fp8_e5m2"
   profilingMode: "off" | "eager_diagnostic"
   profilingMaxSteps: string
   profilingStartStep: string
@@ -68,6 +69,8 @@ export interface EngineSettings {
   dtype: "auto" | "float16" | "bfloat16" | "float32"
   quantization: "none" | "awq" | "gptq" | "bitsandbytes" | "fp8"
   loraAdapters: LoraAdapterDraft[]
+  /** A demo capture intent; null leaves request routing under manual control. */
+  demoLoraMode: "none" | "all" | "mixed" | null
   temperature: string
   topP: string
   seed: string
@@ -139,6 +142,7 @@ export interface RunRequestBody {
   model_destination: string | null
   dtype: EngineSettings["dtype"]
   quantization: EngineSettings["quantization"] | null
+  kv_cache_dtype: EngineSettings["kvCacheDtype"]
   lora_adapters: Array<{
     id: string
     name: string
@@ -170,6 +174,7 @@ export interface RunRequestBody {
     scheduling_policy: "fcfs" | "priority"
     long_prefill_token_threshold: number
     kv_cache_memory_bytes: number | null
+    kv_cache_dtype: EngineSettings["kvCacheDtype"]
     fresh_prefix_cache: true
   }
   profiling_configuration: {

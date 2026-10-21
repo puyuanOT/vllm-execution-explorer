@@ -440,3 +440,19 @@ def test_mixed_groups_keep_physical_inventory_but_emit_only_qualified_token_rang
     report = evaluate(replace(data, events=data.events + (unsupported_claim,)))
     finding = next(item for item in report.findings if item.code == "kv_observations")
     assert not finding.ok and "mapping is unavailable" in finding.detail
+
+
+def test_hybrid_architecture_keeps_recurrent_state_separate_from_attention_kv():
+    config = SimpleNamespace(model_type="qwen3_5_text", architectures=["Qwen3_5ForConditionalGeneration"],
+        num_hidden_layers=4, hidden_size=5120, intermediate_size=17408, num_attention_heads=24,
+        num_key_value_heads=4, head_dim=256, vocab_size=248320,
+        layer_types=["linear_attention"] * 3 + ["full_attention"],
+        linear_num_key_heads=16, linear_num_value_heads=48, linear_key_head_dim=128,
+        linear_value_head_dim=128, linear_conv_kernel_dim=4)
+    result = describe_architecture(SimpleNamespace(hf_text_config=config))
+    assert result["supported"] is True
+    assert result["attention_layer_indices"] == [3]
+    assert result["recurrent_layer_indices"] == [0, 1, 2]
+    assert result["recurrent"]["value_heads"] == 48
+    config.layer_types = ["full_attention"]
+    assert describe_architecture(SimpleNamespace(hf_text_config=config))["supported"] is False

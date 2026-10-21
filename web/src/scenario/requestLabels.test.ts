@@ -18,5 +18,7 @@ test("requests without a recorded arrival group share one honestly named group",
   assert.equal(first.key, second.key)
   assert.equal(first.label, "Arrival group not recorded")
   assert.equal(first.recorded, false)
-  assert.deepEqual(arrivalGroup({ batchId: "batch-b", batchLabel: "B" }), { key: "batch-b", label: "Batch B", recorded: true })
+  assert.deepEqual(arrivalGroup({ batchId: "batch-b", batchLabel: "B" }), { key: "batch-b", label: "Arrival batch B", recorded: true })
+  assert.equal(arrivalGroup({ batchId: "batch-1", batchLabel: "Batch 1" }).label, "Batch 1")
+  assert.equal(arrivalGroup({ batchId: "batch-1", batchLabel: "Arrival batch 1" }).label, "Arrival batch 1")
 })

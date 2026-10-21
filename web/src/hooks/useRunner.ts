@@ -10,7 +10,7 @@ import {
   type RunSnapshot,
 } from "../api.ts"
 
-export function useRunner(runnerUrl: string) {
+export function useRunner(runnerUrl: string, enabled = true) {
   const [health, setHealth] = useState("")
   const [preflight, setPreflight] = useState<Preflight | null>(null)
   const [limits, setLimits] = useState<Limits | null>(null)
@@ -30,6 +30,7 @@ export function useRunner(runnerUrl: string) {
     const isCurrent = () => version === refreshVersion.current && endpoint.current === startedAtEndpoint
     try {
       const healthResponse = await fetch(runnerPath(base, "/api/health"))
+      if (!isCurrent()) return { health: "", preflight: null, limits: null, live: null, capabilities: null }
       if (!healthResponse.ok) throw new Error("Runner did not answer.")
       const [preflightBody, limitsBody, currentBody, capabilitiesBody] = await Promise.all([
         readJson<Preflight>(runnerPath(base, "/api/preflight")),
@@ -67,20 +68,23 @@ export function useRunner(runnerUrl: string) {
   }, [runnerUrl])
 
   useEffect(() => {
-    setHealth("")
-    setPreflight(null)
-    setLimits(null)
-    setLive(null)
-    setCapabilities(null)
-    void refresh()
+    if (enabled) {
+      setHealth("")
+      setPreflight(null)
+      setLimits(null)
+      setLive(null)
+      setCapabilities(null)
+      void refresh()
+    }
     return () => {
       ++refreshVersion.current
       ++pollVersion.current
       refreshing.current = false
     }
-  }, [refresh])
+  }, [enabled, refresh])
 
   useEffect(() => {
+    if (!enabled) return
     let stopped = false
     let inFlight = false
     const delay = runIsActive(live?.status) ? 1000 : 2500
@@ -99,7 +103,7 @@ export function useRunner(runnerUrl: string) {
       stopped = true
       window.clearInterval(id)
     }
-  }, [runnerUrl, live?.status])
+  }, [enabled, runnerUrl, live?.status])
 
   return { health, preflight, limits, live, capabilities, refresh, setHealth }
 }

@@ -30,12 +30,18 @@ from runner.load import load_recording
 from runner.observability import source_identity
 from runner.profile_trace import PROFILE_CLOCK
 from runner.report import evaluate
+from runner.profile_codec import expand_profile_wire
 from runner.workload import parse_run_workload
 
 MODEL = "Qwen/Qwen3-4B-Instruct-2507"
 REVISION = "cdbee75f17c01a7cc42f958dc650907174af0554"
 MAX_TRACE_BYTES = 64 * 1024 * 1024
 SLICE_BOUNDARY = "same_cuda_stream_after_native_cache_update_before_reuse"
+
+
+def expanded_activities(normalized: dict[str, Any]) -> list[dict[str, Any]]:
+    """Expand lossless transport records before comparison with native evidence."""
+    return expand_profile_wire(normalized).get("activities", [])
 
 
 def artifact_ok(directory: Path, artifact: Any) -> bool:
@@ -258,7 +264,7 @@ def _assess_profile(directory: Path, manifest: dict, events: tuple, scheduled: l
     check("raw and normalized profile hashes and sizes", artifacts_ok, {"raw": raw, "normalized": profile.get("normalized_artifact")})
     if not artifacts_ok:
         return
-    normalized = json.loads((directory / profile["normalized_artifact"]["path"]).read_text())
+    normalized = expand_profile_wire(json.loads((directory / profile["normalized_artifact"]["path"]).read_text()))
     trace = native_trace(directory, raw[0])
     native = trace.get("traceEvents", [])
     activities = {activity["activity_id"]: activity for activity in normalized.get("activities", [])}
@@ -460,7 +466,7 @@ def assess_native_reference(directory: Path) -> dict:
     data = load_recording(directory)
     manifest = data.manifest
     reference = json.loads((directory / "native-reference-assessment.json").read_text())
-    normalized = json.loads((directory / "profiling/activities.json").read_text())
+    normalized = expand_profile_wire(json.loads((directory / "profiling/activities.json").read_text()))
     checks: list[dict] = []
 
     def check(label: str, ok: bool, detail: Any) -> None:
@@ -514,7 +520,7 @@ def assess_native_reference(directory: Path) -> dict:
     check("all 24 saved native-input slices equal actual production snapshots bitwise with exact native addresses", len(identities) == 24
           and set(identities) == expected_identities and not comparison_errors,
           {"comparisons": len(identities), "invalid_snapshots": comparison_errors})
-    activities = {activity["activity_id"]: activity for activity in normalized["activities"]}
+    activities = {activity["activity_id"]: activity for activity in normalized.get("activities", [])}
     scopes = [activity for activity in activities.values() if activity["kind"] == "cpu_scope" and activity["name"].startswith("qualification.reference_inputs/")]
     write_scopes = [activity for activity in activities.values() if activity["kind"] == "cpu_scope" and activity["name"].startswith("explorer.cache_write/")]
     separated = len(scopes) == 3 and all(scope["scope"].get("operation_id") is None and all(

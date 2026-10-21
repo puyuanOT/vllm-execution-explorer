@@ -32,18 +32,18 @@ def cases() -> dict[str, dict]:
         "kv_cache_memory_bytes": 256 * 1024 * 1024, "scheduling_policy": "fcfs",
         "long_prefill_token_threshold": 64,
         "requests": [
-            legacy.request("prefix-prime", shared + "Name the first thing recorded.", output=4),
-            legacy.request("prefix-reader", shared + "Explain why a shared prefix can save prefill work.", 6000, 4),
+            legacy.request("prefix-prime", shared + "Name the first thing recorded.", output=6),
+            legacy.request("prefix-reader", shared + "Explain why a shared prefix can save prefill work.", 6000, 6),
             legacy.request("mixed-prefill", "Explain this independent reference. "
                            + "A scheduler admits requests, limits the tokens in a batch, and updates cache ownership after model execution. " * 8
-                           + "Name the scheduler's first action.", 6000, 4),
+                           + "Name the scheduler's first action.", 6000, 6),
         ],
     }
     base["workload_plan"] = {"version": 1, "batches": [
         {"id": "prime", "label": "Prime the shared prefix", "arrival_offset_ms": 0,
-         "samples": [{"id": "prefix-prime", "label": "prefix-prime", "max_output_tokens": 4}]},
+         "samples": [{"id": "prefix-prime", "label": "prefix-prime", "max_output_tokens": 6}]},
         {"id": "reuse-and-prefill", "label": "Reuse prefix and prefill independent request", "arrival_offset_ms": 6000,
-         "samples": [{"id": request_id, "label": request_id, "max_output_tokens": 4}
+         "samples": [{"id": request_id, "label": request_id, "max_output_tokens": 6}
                      for request_id in ("prefix-reader", "mixed-prefill")]},
     ]}
     tensor = {"enabled": True, "preset": "custom", "request_id": "prefix-prime",

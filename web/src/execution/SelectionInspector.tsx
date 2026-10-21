@@ -1,7 +1,8 @@
+import { useRef } from "react"
 import type { MeasuredProfileProjection, ProfileActivity, ProfileKvObservations } from "../../../replay/src/profiling.ts"
 import { MeasuredProfileDetails } from "./MeasuredProfileDetails.tsx"
 import { explainBlock, explainRequest, explainStep } from "../../../replay/src/explain.ts"
-import type { RecordingManifest, ReplayState } from "../../../replay/src/reduce.ts"
+import type { RecordingManifest, ReplayState, TraceEvent } from "../../../replay/src/reduce.ts"
 import {
   describeBlocks,
   nextStepForSample,
@@ -15,6 +16,8 @@ import { LearningDetails } from "./LearningDetails.tsx"
 import { EvidenceTag, Readouts } from "../ui/controls.tsx"
 import { KvConfigurationDetails } from "./KvConfigurationDetails.tsx"
 import type { TensorCaptureTarget } from "./KvTensorDetails.tsx"
+import { LearnRunBookmarks } from "./LearnRunBookmarks.tsx"
+import { ArchitectureBlueprints } from "./ArchitectureBlueprints.tsx"
 
 export function SelectionInspector({
   selection,
@@ -23,10 +26,10 @@ export function SelectionInspector({
   index,
   manifest,
   sequence,
+  events = [],
   onSeek,
   onSelect,
-  onClose,
-  showClose,
+  onBackToRun,
   measuredProfile,
   profileObservations,
   onCaptureTensor,
@@ -43,9 +46,10 @@ export function SelectionInspector({
   index: TimelineIndex | null
   manifest: RecordingManifest | null
   sequence: number
+  events?: TraceEvent[]
   onSeek: (sequence: number, selection?: Selection) => void
   onSelect: (selection: Selection) => void
-  onClose: () => void
+  onBackToRun: () => void
   measuredProfile?: MeasuredProfileProjection
   profileObservations?: ProfileKvObservations | null
   onCaptureTensor?: (target: TensorCaptureTarget) => void
@@ -53,8 +57,8 @@ export function SelectionInspector({
   profileError?: string
   measuredMode?: boolean
   onProfileTime?: (value: number) => void
-  showClose: boolean
 }) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
   const sample = selection?.kind === "request" ? samples.find((item) => item.sample.id === selection.id) ?? null : null
   const missingSample = selection?.kind === "request" && !sample
   const step = selection?.kind === "step" && state ? state.steps.find((item) => item.id === selection.id) ?? null : null
@@ -67,7 +71,7 @@ export function SelectionInspector({
       <header className="grid gap-1 border-b border-line pb-3">
         <p className="cp-label m-0">{inspectorKind(selection, Boolean(sample), Boolean(step), Boolean(block), component)}</p>
         <div className="flex items-start justify-between gap-2">
-        <h2 className="text-balance text-[19px] font-semibold tracking-[-0.01em] text-ink">
+        <h2 ref={titleRef} tabIndex={-1} className="text-balance text-[19px] font-semibold tracking-[-0.01em] text-ink">
           {sample
             ? <>{sample.sample.label || sample.sample.id}{sample.sample.label && sample.sample.label !== sample.sample.id ? <span className="ml-2 font-mono text-xs font-normal tracking-normal text-faint">{sample.sample.id}</span> : null}</>
             : step
@@ -83,10 +87,9 @@ export function SelectionInspector({
                   : selection?.kind === "block" ? "KV block"
                   : "Inspector"}
         </h2>
-        {showClose ? <button type="button" onClick={onClose}>Close inspector</button> : null}
+        {selection ? <button type="button" className="min-h-8 shrink-0 text-xs" onClick={() => { onBackToRun(); titleRef.current?.focus() }}>Back to run</button> : null}
         </div>
       </header>
-      {measuredProfile && onProfileTime ? <MeasuredProfileDetails profile={measuredProfile} activities={activeProfileActivities} error={profileError} active={measuredMode} onTime={onProfileTime} onSelect={onSelect} /> : null}
       {!selection || !state ? (
         <p className="m-0 text-pretty text-sm text-muted">Select a workflow component, request, execution step, or KV block to inspect recorded evidence. Click an object in the scene or a lane, or use Find request.</p>
       ) : null}
@@ -124,6 +127,8 @@ export function SelectionInspector({
         </section>
       ) : null}
       <LearningDetails selection={selection} state={state} manifest={manifest} labels={labels} measuredProfile={profileObservations ?? measuredProfile} onSelect={onSelect} onCaptureTensor={onCaptureTensor} />
+      <LearnRunBookmarks events={events} onSeek={onSeek} />
+      {measuredProfile && onProfileTime ? <MeasuredProfileDetails state={state} profile={measuredProfile} activities={activeProfileActivities} error={profileError} active={measuredMode} onTime={onProfileTime} onSelect={onSelect} /> : null}
       {block && state ? (
         <details open={!state.cacheInventory || undefined}>
           <summary className="cursor-pointer font-mono text-[10.5px] uppercase tracking-[0.1em] text-muted">Block lifecycle evidence</summary>
@@ -139,6 +144,7 @@ export function SelectionInspector({
           <p className="meta m-0">{manifest.lesson.summary}</p>
         </div>
       ) : null}
+      <ArchitectureBlueprints />
     </aside>
   )
 }
@@ -157,7 +163,7 @@ function ComponentDetails({ component, state, manifest }: { component: WorkflowC
       <EvidenceSection kind="observed" synthetic={manifest?.execution_kind === "fixture" || manifest?.demo_fixture === true} lines={snapshot.evidence.observed} />
       <EvidenceSection kind="derived" lines={snapshot.evidence.derived} />
       <EvidenceSection kind="unknown" lines={snapshot.evidence.unknown} />
-      <details><summary className="cursor-pointer text-xs text-muted">Explanation</summary><div className="mt-2"><EvidenceSection kind="explanatory" lines={[...snapshot.evidence.explanatory, definition.explanation]} /></div></details>
+      <details><summary className="cursor-pointer text-xs text-muted">Explains this component</summary><div className="mt-2"><EvidenceSection kind="explanatory" lines={[...snapshot.evidence.explanatory, definition.explanation]} /></div></details>
     </div>
   )
 }
@@ -224,25 +230,16 @@ function SampleDetails({
     <div className="inspector-body">
       <p className="phase">{sample.phaseLabel}</p>
       <dl className="facts">
-        <div><dt>Request id</dt><dd className="mono">{sample.sample.id}</dd></div>
         <div><dt>Arrival batch</dt><dd>{arrivalGroup(sample.sample).recorded ? sample.sample.batchLabel : "Not recorded"}</dd></div>
+        <div><dt>Prompt token count</dt><dd className="tabular-nums">{request?.promptTokenCount ?? "Not observed in this prefix"}</dd></div>
+        <div><dt>Recorded prefix match</dt><dd className="tabular-nums">{request?.matchedPrefixTokens == null ? "Not observed in this prefix" : `${request.matchedPrefixTokens} positions`}</dd></div>
         <div>
           <dt>Model route</dt>
           <dd>{modelRouteLabel(request)}</dd>
         </div>
-        {request?.adapterId ? <div><dt>Adapter id</dt><dd className="mono">{request.adapterId}</dd></div> : null}
-        {request?.loraIntId != null ? <div><dt>LoRA route id</dt><dd className="mono">{request.loraIntId}</dd></div> : null}
         <div>
           <dt>Requested arrival</dt>
           <dd className="mono">{sample.sample.arrivalOffsetMs == null ? "Not a controller offset" : `${sample.sample.arrivalOffsetMs} ms`}</dd>
-        </div>
-        <div>
-          <dt>Observed request receipt</dt>
-          <dd className="mono tabular-nums">{sample.observedReceiptNs == null ? (fixture ? "Not applicable to fixture transport" : "Not observed in this prefix") : formatNs(sample.observedReceiptNs)}</dd>
-        </div>
-        <div>
-          <dt>Dispatch returned to controller</dt>
-          <dd className="mono tabular-nums">{sample.controllerAddReturnedNs == null ? "Not observed in this prefix" : formatNs(sample.controllerAddReturnedNs)}</dd>
         </div>
         <div>
           <dt>Accepted output</dt>
@@ -292,7 +289,7 @@ function SampleDetails({
       )}
       {explanation ? (
         <details>
-          <summary>How to read this sample</summary>
+          <summary>Explains request scheduling and output</summary>
           <div className="mt-2 grid gap-3">
             <EvidenceSection kind="observed" synthetic={fixture} lines={explanation.observed} />
             <EvidenceSection kind="explanatory" lines={explanation.explanatory} />
@@ -300,7 +297,14 @@ function SampleDetails({
         </details>
       ) : null}
       <details>
-        <summary>KV blocks and technical details</summary>
+        <summary>KV blocks and raw request metadata</summary>
+        <dl className="facts mt-2">
+          <div><dt>Request ID</dt><dd className="break-words font-mono">{sample.sample.id}</dd></div>
+          <div><dt>Observed request receipt</dt><dd className="tabular-nums">{sample.observedReceiptNs == null ? (fixture ? "Not applicable to fixture transport" : "Not observed in this prefix") : formatNs(sample.observedReceiptNs)}</dd></div>
+          <div><dt>Dispatch returned to controller</dt><dd className="tabular-nums">{sample.controllerAddReturnedNs == null ? "Not observed in this prefix" : formatNs(sample.controllerAddReturnedNs)}</dd></div>
+          {request?.adapterId ? <div><dt>Adapter ID</dt><dd className="break-words font-mono">{request.adapterId}</dd></div> : null}
+          {request?.loraIntId != null ? <div><dt>LoRA route ID</dt><dd className="tabular-nums">{request.loraIntId}</dd></div> : null}
+        </dl>
         {blocks.length === 0 ? <p className="meta">No KV block for this sample is in the applied prefix.</p> : (
           <ul className="fact-list">
             {blocks.map((item) => (
@@ -316,9 +320,7 @@ function SampleDetails({
         {request ? (
           <dl className="facts">
             <div><dt>Status field</dt><dd>{request.status}</dd></div>
-            <div><dt>Prompt tokens</dt><dd className="mono">{request.promptTokenCount ?? "—"}</dd></div>
             <div><dt>Preemptions</dt><dd className="mono">{request.preemptionCount}</dd></div>
-            <div><dt>Prefix match</dt><dd className="mono">{request.matchedPrefixTokens ?? "—"}</dd></div>
           </dl>
         ) : <p className="meta">This sample has no request event in the applied prefix.</p>}
       </details>

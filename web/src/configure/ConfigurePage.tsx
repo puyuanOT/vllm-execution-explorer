@@ -34,6 +34,7 @@ export interface ConfigurePageProps {
   vllmReadiness?: ReadinessState
   setupStages?: SetupStage[]
   effectiveSettings?: Record<string, string | number | boolean | null>
+  hosted?: boolean
   checkingHost?: boolean
   running: boolean
   runBlockedReason?: string
@@ -44,7 +45,7 @@ export interface ConfigurePageProps {
   onOpenDemo: () => void
   onUnit: (unit: TimeUnit) => void
   onAction: (action: ScenarioAction) => void
-  onSettings: (settings: EngineSettings) => void
+  onSettings: (settings: EngineSettings, applyDemoAssignment?: boolean) => void
   onInvalid: (issue: FieldIssue) => void
   onCheckHost?: (runtime: ConfigureRuntimeInputs) => void
   onSshIdentityChange?: () => void
@@ -72,6 +73,7 @@ export function ConfigurePage({
   vllmReadiness,
   setupStages,
   effectiveSettings,
+  hosted = false,
   checkingHost = false,
   running,
   runBlockedReason,
@@ -115,7 +117,7 @@ export function ConfigurePage({
   const launchTone = running || openingDemo ? "accent" : runError ? "error" : runBlockedReason ? "warning" : "ready"
   const launchTitle = openingDemo ? "Opening the recorded GPU demo"
     : running ? runStatus || "Preparing capture"
-    : runBlockedReason ? "Live vLLM capture is blocked on this host"
+    : runBlockedReason ? "Capture needs attention"
       : "Ready to prepare and capture"
   const launchDetail = runBlockedReason
     ? `${runBlockedReason} You can open the recorded GPU demo below.`
@@ -155,6 +157,9 @@ export function ConfigurePage({
 
   return (
     <main className="min-h-[calc(100dvh-52px)] bg-[#05080e] text-slate-100">
+      {hosted ? <div className="border-b border-line bg-raised px-6 py-3 text-sm text-muted" role="note">
+        Browse the configuration here. To capture on your GPU cluster, <a className="text-accent underline underline-offset-4" href="https://github.com/puyuanOT/vllm-execution-explorer#local-setup" target="_blank" rel="noreferrer">run the app and controller locally</a>. Demo playback and recording imports work on this site.
+      </div> : null}
       <form
         className="mx-auto grid w-full max-w-[1520px] gap-x-6 gap-y-5 px-4 pt-6 sm:px-6 xl:grid-cols-[216px_minmax(0,1fr)_340px]"
         aria-busy={busy}
@@ -273,7 +278,7 @@ export function ConfigurePage({
           readiness={hostReadiness}
           stages={setupStages}
           checking={checkingHost}
-          disabled={running || openingDemo}
+          disabled={hosted || running || openingDemo}
           effectiveSettings={effectiveSettings}
           onCheck={() => onCheckHost?.(runtime)}
           onUseSsh={settings.hostKind === "local" && hostReadiness?.tone !== "ready" ? () => {

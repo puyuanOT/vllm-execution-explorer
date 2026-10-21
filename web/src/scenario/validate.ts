@@ -1,6 +1,7 @@
 import type { FeatureCapability, Limits } from "../api.ts"
 import { sampleCount } from "./reducer.ts"
 import { captureIndices } from "./diagnostics.ts"
+import { flattenRequests } from "./serialize.ts"
 import type { EngineSettings, ScenarioDraft } from "./types.ts"
 
 export interface FieldIssue {
@@ -80,6 +81,7 @@ export function validateScenario(
     }
   }
   issues.push(...validateSettings(settings))
+  issues.push(...validateDemoLora(scenario, settings))
   if (settings.profilingMode !== "off") {
     for (const [fieldId, selected] of [["setting-profiling-trigger", settings.profilingTriggerRequestId], ["setting-profiling-tensor-request", settings.tensorCapture ? settings.tensorRequestId : ""]]) {
       if (selected && !ids.has(selected)) issues.push({ fieldId, message: "Choose a request that still exists in this workload." })
@@ -88,6 +90,27 @@ export function validateScenario(
   const quantizationCapability = quantizationCapabilities?.[settings.quantization]
   if (settings.engine === "vllm" && quantizationCapability?.selectable === false) {
     issues.push({ fieldId: "model-quantization", message: quantizationCapability.message })
+  }
+  return issues
+}
+
+/** The same intent guard drives both Configure readiness and capture validation. */
+export function validateDemoLora(scenario: ScenarioDraft, settings: EngineSettings): FieldIssue[] {
+  const issues: FieldIssue[] = []
+  if (settings.demoLoraMode != null) {
+    const routes = flattenRequests(scenario).map((request) => request.adapter_id)
+    const adapter = settings.loraAdapters.find((item) => item.location.trim())
+    if (settings.demoLoraMode === "none") {
+      if (settings.loraAdapters.length > 0 || routes.some((route) => route !== null)) {
+        issues.push({ fieldId: "adapter-demo-mode", message: "The None demo uses base-model requests with no attached adapters. Choose None again to clear adapters and routes, or choose Manual routing." })
+      }
+    } else if (!adapter) {
+      issues.push({ fieldId: "adapter-demo-mode", message: "This demo requires Adapter A. Attach a compatible real adapter repository or path; base-model requests cannot satisfy All or Mixed LoRA mode." })
+    } else if (settings.demoLoraMode === "all" && (routes.length === 0 || routes.some((route) => route !== adapter.id))) {
+      issues.push({ fieldId: "adapter-demo-mode", message: "All requests must route to the first configured adapter (Adapter A). Restore those request routes or choose Manual routing." })
+    } else if (settings.demoLoraMode === "mixed" && (routes.length < 2 || !routes.includes(null) || !routes.includes(adapter.id) || routes.some((route) => route !== null && route !== adapter.id))) {
+      issues.push({ fieldId: "adapter-demo-mode", message: "Mixed mode needs at least one base request and one request routed to the first configured adapter (Adapter A). Restore those routes or choose Manual routing." })
+    }
   }
   return issues
 }
@@ -158,12 +181,15 @@ export function validateSettings(settings: EngineSettings): FieldIssue[] {
   if (settings.kvCacheMemoryBytes.trim() && !isPositiveInteger(settings.kvCacheMemoryBytes, Number.MAX_SAFE_INTEGER)) {
     issues.push({ fieldId: "setting-kv-memory", message: "KV memory budget must be a positive whole number of bytes, or left empty." })
   }
+  if (!["auto", "float16", "bfloat16", "fp8", "fp8_e4m3", "fp8_e5m2"].includes(settings.kvCacheDtype)) {
+    issues.push({ fieldId: "setting-kv-dtype", message: "Choose a supported KV-cache dtype request. Actual model and backend compatibility is checked during preparation." })
+  }
   if (!["off", "eager_diagnostic"].includes(settings.profilingMode)) {
     issues.push({ fieldId: "setting-profiling-mode", message: "Choose a supported profiling mode." })
   }
   if (settings.profilingMode !== "off") {
     if (settings.engine === "fixture") issues.push({ fieldId: "setting-profiling-mode", message: "Measured profiling requires live vLLM on a GPU host." })
-    if (!isPositiveInteger(settings.profilingMaxSteps, 16)) issues.push({ fieldId: "setting-profiling-steps", message: "Profile between 1 and 16 scheduler steps." })
+    if (!isPositiveInteger(settings.profilingMaxSteps, 1024)) issues.push({ fieldId: "setting-profiling-steps", message: "Profile between 1 and 1024 scheduler steps." })
     if (!isPositiveInteger(settings.profilingStartStep, 1_000_000)) issues.push({ fieldId: "setting-profiling-start", message: "Starting scheduler step must be between 1 and 1000000." })
     if (settings.tensorCapture) {
       if (!["small", "custom"].includes(settings.tensorPreset)) issues.push({ fieldId: "setting-profiling-tensor-preset", message: "Choose a tensor capture preset." })

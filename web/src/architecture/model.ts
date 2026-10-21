@@ -17,7 +17,7 @@ export interface MeasuredSceneProfile {
   activeLayers: number[]
   packedRows: ProfilePackedRow[]
   stepId: string | null
-  activeModules?: Array<{ layerIndex: number; module: "attention" | "ffn" }>
+  activeModules?: Array<{ layerIndex: number; module: "attention" | "ffn" | "recurrent" }>
   evidenceKind?: "gpu" | "fixture" | "unknown"
 }
 
@@ -49,6 +49,44 @@ export function kvHeadForQuery(queryHead: number, queryHeads: number, kvHeads: n
 
 export function activeTeachingStep(state: ReplayState, stepId?: string | null): StepState | null {
   return (stepId ? state.steps.find((step) => step.id === stepId) : state.steps.at(-1)) ?? null
+}
+
+export function iterationDisplayLabel(stepId: string): string {
+  const match = /^step-(\d+)$/.exec(stepId)
+  return match ? `Iteration ${Number(match[1])}` : `Iteration · ${stepId}`
+}
+
+/** Only the selected clock's batch determines participation; host replay never fills missing profiler rows. */
+export function modelIterationSummary(state: ReplayState, profile?: MeasuredSceneProfile, stepId?: string | null) {
+  if (profile) {
+    const tokens = observedProfileTokenPositions(profile.packedRows)
+    const rows = new Map<string, number[]>()
+    for (const token of tokens) {
+      const positions = rows.get(token.requestId) ?? []
+      positions.push(token.position)
+      rows.set(token.requestId, positions)
+    }
+    return { label: profile.stepId ? iterationDisplayLabel(profile.stepId) : "Profiler batch", positions: tokens.length,
+      participants: [...rows].map(([requestId, positions]) => ({ requestId, positions: positions.length, ranges: tokenPositionRanges(positions), prefill: null, decode: null })),
+      clock: "profiler" as const, known: tokens.length > 0 }
+  }
+  const step = activeTeachingStep(state, stepId)
+  return { label: step ? iterationDisplayLabel(step.id) : "No iteration yet", positions: step?.totalScheduledTokens ?? 0,
+    participants: state.trust === "known" ? (step?.requests ?? []).map((request) => ({ requestId: request.requestId,
+      positions: request.rangeLength, ranges: request.rangeLength ? [{ start: request.rangeStart, end: request.rangeStart + request.rangeLength - 1 }] : [],
+      prefill: request.promptTokens as number | null, decode: request.generationTokens as number | null })) : [],
+    clock: "host" as const, known: state.trust === "known" && Boolean(step) }
+}
+
+/** Inclusive ranges retain gaps rather than implying uncaptured token positions. */
+export function tokenPositionRanges(positions: number[]): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = []
+  for (const position of [...new Set(positions)].sort((a, b) => a - b)) {
+    const last = ranges.at(-1)
+    if (last && position === last.end + 1) last.end = position
+    else ranges.push({ start: position, end: position })
+  }
+  return ranges
 }
 
 export interface ScheduledTokenPosition {
@@ -97,7 +135,7 @@ export function physicalBlockState(block: Pick<KvBlockProjection, "isNull" | "tr
 }
 
 export const BLOCK_STATE_COLORS = {
-  available: "#1b293d", cached: "#80602c", referenced: "#345b88", null: "#586176", unknown: "#272334",
+  available: "#142034", cached: "#4a5569", referenced: "#647185", null: "#758095", unknown: "#252936",
 } as const
 
 export function physicalBlockStateLabel(state: ReturnType<typeof physicalBlockState>): string {
@@ -108,12 +146,6 @@ export function physicalBlockStateLabel(state: ReturnType<typeof physicalBlockSt
 export function sceneClick(event: { delta: number; nativeEvent: { button: number; ctrlKey: boolean; metaKey: boolean; shiftKey: boolean } }): boolean {
   return event.delta <= 4 && event.nativeEvent.button === 0
     && !event.nativeEvent.ctrlKey && !event.nativeEvent.metaKey && !event.nativeEvent.shiftKey
-}
-
-/** This is a logical display clock; it is deliberately unrelated to GPU duration. */
-export function teachingLayer(progress: number | undefined, layerCount: number): number | null {
-  if (progress == null || !Number.isFinite(progress) || !Number.isInteger(layerCount) || layerCount <= 0) return null
-  return Math.min(layerCount - 1, Math.floor(Math.max(0, Math.min(1, progress)) * layerCount))
 }
 
 export interface PoolGridLayout {

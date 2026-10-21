@@ -53,6 +53,9 @@ jobs:
       - name: Install web dependencies
         run: npm ci --prefix web
 
+      - name: Download and verify immutable demo fixtures
+        run: npm run recordings:download
+
       - name: Run Python tests
         run: python -m pytest -q
 

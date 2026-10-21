@@ -1,6 +1,7 @@
 import { profileBoundaryTimes } from "./profilePlayback.ts"
+import { demoAdapterScenario, type DemoSelection } from "./shell/demoCatalog.ts"
 import { tensorRerunSettings, type TensorRerunTarget } from "./scenario/tensorRerun.ts"
-import { createProfileIntervalIndex, projectMeasuredProfile } from "../../replay/src/profiling.ts"
+import { createProfileIntervalIndex, projectMeasuredProfileView } from "../../replay/src/profiling.ts"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { attachContent, createPlayer, type RecordingManifest } from "../../replay/src/reduce.ts"
@@ -35,7 +36,6 @@ import {
 import { focusValidationField } from "./configure/focusValidation.ts"
 import { ExecutionWorkspace } from "./execution/ExecutionWorkspace.tsx"
 import { recordingEvidence } from "./execution/evidence.ts"
-import { projectArchitecture } from "../../replay/src/learning.ts"
 import { PlaybackTransport } from "./execution/PlaybackTransport.tsx"
 import { scopeChannel, sequencePosition, type ScopeMarker, type ScopeTick } from "./execution/scope.ts"
 import { telemetryPoint, telemetrySeries, telemetryThrough } from "./execution/telemetry.ts"
@@ -46,11 +46,12 @@ import { useLiveTrace } from "./hooks/useLiveTrace.ts"
 import { useRunner } from "./hooks/useRunner.ts"
 import { useScenarioDraft } from "./hooks/useScenarioDraft.ts"
 import { eventAt, nextSequence, previousSequence, playbackSpeeds, replayableEvents } from "./playback.ts"
+import { iterationEndpoints, nextIteration, previousIteration } from "./iterationPlayback.ts"
 import { defaultSettings } from "./scenario/example.ts"
 import { localHostCheckPresentation } from "./scenario/localHostCheck.ts"
 import { monitorTargetConnection } from "./scenario/targetConnection.ts"
 import type { ScenarioAction } from "./scenario/reducer.ts"
-import { expectedRunFailure, shouldLoadExpectedRecording } from "./scenario/runCompletion.ts"
+import { expectedRunFailure, ownedLiveRun } from "./scenario/runCompletion.ts"
 import { cloneScenario, scenarioFromRecordedPlan, toRunBody, workloadPlan } from "./scenario/serialize.ts"
 import {
   createSshVerification,
@@ -60,13 +61,18 @@ import {
 } from "./scenario/sshVerification.ts"
 import { loadSettings, saveSettings } from "./scenario/storage.ts"
 import type { EngineSettings, ScenarioDraft, TimeUnit } from "./scenario/types.ts"
-import { validateScenario, type FieldIssue } from "./scenario/validate.ts"
+import { validateDemoLora, validateScenario, type FieldIssue } from "./scenario/validate.ts"
 import { AppHeader } from "./shell/AppHeader.tsx"
 import { cn } from "./lib/cn.ts"
 import { ConfirmDialog } from "./shell/ConfirmDialog.tsx"
 import { Modal } from "./shell/Modal.tsx"
 import { RecordingLibrary } from "./shell/RecordingLibrary.tsx"
+import { ExploreToolbar } from "./shell/ExploreToolbar.tsx"
+import { curatedDemos, demoSelection, initialDemo, INITIAL_DEMO_SELECTION, rememberDemo, resolveDemo } from "./shell/exploreDemos.ts"
+import { firstIterationSequence } from "./iterationPlayback.ts"
 import { requestColor } from "./theme.ts"
+import { createRecordingLoader, type RecordingLoadCallbacks } from "./scenario/recordingLoad.ts"
+import { HOSTED_DEMO, LOCAL_CAPTURE_MESSAGE } from "./hosting.ts"
 
 const EMPTY_STAGES: SetupStage[] = [
   { id: "connect", label: "Reach execution host", status: "pending" },
@@ -74,20 +80,23 @@ const EMPTY_STAGES: SetupStage[] = [
   { id: "ready", label: "Confirm loopback controller", status: "pending" },
 ]
 
-const GPU_DEMO_ID = "gpu-kv-layer-diagnostics"
 const GPU_DEMO_LOAD_ERROR = "The recorded GPU demo could not be opened. Check that the recording files are available and try again."
 
 export function App() {
   const { route, navigate } = useAppRoute()
   const draft = useScenarioDraft()
   const [settings, setSettings] = useState<EngineSettings>(() => ({ ...(loadSettings() ?? defaultSettings()), engine: "vllm" }))
-  const runner = useRunner(settings.runnerUrl)
   const [recording, setRecording] = useState<LoadedRecording | null>(null)
-  const [lastCaptured, setLastCaptured] = useState<LoadedRecording | null>(null)
+  const [lastCaptured, setLastCaptured] = useState<{ source: string; runnerUrl: string } | null>(null)
   const [catalog, setCatalog] = useState<CatalogEntry[]>([])
+  const [demoChoice, setDemoChoice] = useState<DemoSelection>(INITIAL_DEMO_SELECTION)
+  const lastDemoChoice = useRef<DemoSelection>(INITIAL_DEMO_SELECTION)
+  const [isDemo, setIsDemo] = useState(true)
+  const [catalogLoading, setCatalogLoading] = useState(true)
   const [catalogError, setCatalogError] = useState("")
   const [loadError, setLoadError] = useState("")
   const [openingDemo, setOpeningDemo] = useState(false)
+  const [loadingRecording, setLoadingRecording] = useState("")
   const [demoError, setDemoError] = useState("")
   const [runError, setRunError] = useState("")
   const [issues, setIssues] = useState<FieldIssue[]>([])
@@ -96,9 +105,8 @@ export function App() {
   const [sequence, setSequence] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const [teachingProgress, setTeachingProgress] = useState(0)
   const [profileTimeUs, setProfileTimeUs] = useState(0)
-  const [mode, setMode] = useState<PlaybackMode>("events")
+  const [mode, setMode] = useState<PlaybackMode>("iterations")
   const [followLive, setFollowLive] = useState(true)
   const [selection, setSelection] = useState<Selection | null>(null)
   const [trackedRequestId, setTrackedRequestId] = useState<string | null>(null)
@@ -106,8 +114,6 @@ export function App() {
   const [view, setView] = useState<WorkspaceView>("spatial")
   const [compact, setCompact] = useState(false)
   const [inspectorOpen, setInspectorOpen] = useState(false)
-  const [forceReduced, setForceReduced] = useState(false)
-  const [systemReduced, setSystemReduced] = useState(false)
   const [announce, setAnnounce] = useState("")
   const [validationMessage, setValidationMessage] = useState("")
   const [recordingsOpen, setRecordingsOpen] = useState(false)
@@ -119,13 +125,47 @@ export function App() {
   const [hostCheck, setHostCheck] = useState<ReadinessState | null>(null)
   const [sshVerification, setSshVerification] = useState<SshVerification | null>(null)
   const expectedRun = useRef("")
+  const runner = useRunner(settings.runnerUrl, !HOSTED_DEMO && (route === "configure" || preparingRun || Boolean(expectedRun.current)))
   const userOpened = useRef(false)
   const autoLessonAttempted = useRef(false)
-  const reduced = forceReduced || systemReduced
-
-  useEffect(() => {
-    document.title = `${route === "explore" ? "Explore" : "Configure"} · vLLM Execution Explorer`
-  }, [route])
+  const recordingLoadCallbacks = useRef<RecordingLoadCallbacks<LoadedRecording> | null>(null)
+  const recordingLoader = useMemo(() => createRecordingLoader(recordingLoadCallbacks), [])
+  recordingLoadCallbacks.current = {
+    prepare(label, kind) {
+      autoLessonAttempted.current = true
+      userOpened.current = true
+      expectedRun.current = ""
+      setPlaying(false)
+      setFollowLive(false)
+      setRecording(null)
+      setSelection(null)
+      setInspectorOpen(false)
+      setTrackedRequestId(null)
+      setTrackedTokenPosition(null)
+      setProfileTimeUs(0)
+      setSequence(0)
+      setMode("iterations")
+      setLoadingRecording(`Preparing ${label}…`)
+      setLoadError("")
+      if (kind === "demo") { setOpeningDemo(true); setDemoError("") }
+    },
+    reading(label) { setLoadingRecording(`Loading ${label}…`) },
+    accept(loaded, kind) {
+      openLoaded(loaded, kind)
+      if (kind === "demo") setAnnounce("Real GPU demo opened with its recorded workload. Your editable draft is preserved.")
+    },
+    reject(error, kind) {
+      const message = kind === "demo" ? GPU_DEMO_LOAD_ERROR : error instanceof Error ? error.message : "Could not open that recording."
+      setLoadError(message)
+      if (kind === "demo") setDemoError(message)
+      setAnnounce(message)
+    },
+    finish(kind) {
+      setLoadingRecording("")
+      if (kind === "demo") setOpeningDemo(false)
+    },
+  }
+  useEffect(() => () => recordingLoader.cancel(), [recordingLoader])
 
   const acceptLiveRecording = useCallback((loaded: LoadedRecording) => {
     if (!expectedRun.current || loaded.source !== expectedRun.current || userOpened.current) return
@@ -145,7 +185,10 @@ export function App() {
     }
     expectedRun.current = ""
     setRecording(loaded)
-    setLastCaptured(loaded)
+    setIsDemo(false)
+    setDemoChoice(lastDemoChoice.current)
+    setLastCaptured({ source: loaded.source, runnerUrl: settings.runnerUrl })
+    setMode("iterations")
     setLoadError("")
     setSequence(0)
     setPlaying(false)
@@ -153,33 +196,32 @@ export function App() {
     setSelection(null)
     setAnnounce("Capture finalized. The recording is ready to explore.")
     navigate("explore")
-  }, [navigate, runner.live?.message])
+  }, [navigate, runner.live?.message, settings.runnerUrl])
 
-  const trace = useLiveTrace(settings.runnerUrl, runner.live, acceptLiveRecording)
+  const trace = useLiveTrace(settings.runnerUrl, ownedLiveRun(expectedRun.current, runner.live, userOpened.current), acceptLiveRecording)
 
   useEffect(() => saveSettings(settings), [settings])
 
   useEffect(() => {
-    void loadCatalog().then(setCatalog).catch((error: unknown) => {
+    void loadCatalog().then((entries) => {
+      setCatalog(entries)
+      const preferred = initialDemo(entries)
+      if (preferred) {
+        lastDemoChoice.current = demoSelection(preferred)
+        setDemoChoice(lastDemoChoice.current)
+      } else setLoadError("No verified demos are available. Open More recordings or capture your own run.")
+    }).catch((error: unknown) => {
       setCatalogError(error instanceof Error ? error.message : "Could not load recordings.")
-    })
+    }).finally(() => setCatalogLoading(false))
   }, [])
 
   useEffect(() => {
     if (route !== "explore" || recording || expectedRun.current || autoLessonAttempted.current || catalog.length === 0) return
     autoLessonAttempted.current = true
-    void loadBundled(catalog.find((item) => item.id === GPU_DEMO_ID)?.id ?? catalog[0].id).then(openLoaded).catch(() => {
-      setLoadError(GPU_DEMO_LOAD_ERROR)
-    })
+    const preferred = initialDemo(catalog)
+    if (preferred) void recordingLoader.open(loadBundled.bind(null, preferred.id), preferred.title, "demo")
+    else setLoadError("No verified demos are available. Open More recordings or capture your own run.")
   }, [catalog, recording, route])
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const apply = () => setSystemReduced(media.matches)
-    apply()
-    media.addEventListener("change", apply)
-    return () => media.removeEventListener("change", apply)
-  }, [])
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1101px) and (min-height: 600px)")
@@ -208,31 +250,6 @@ export function App() {
     navigate("configure")
   }, [navigate, runner.live?.finalized, runner.live?.message, runner.live?.run_id, runner.live?.status])
 
-  useEffect(() => {
-    if (!shouldLoadExpectedRecording(expectedRun.current, runner.live, userOpened.current)) return
-    const runId = runner.live.run_id
-    let stopped = false
-    let timer = 0
-    let retryDelay = 150
-    const load = () => {
-      if (stopped || expectedRun.current !== runId || userOpened.current) return
-      void loadRunnerRecording(settings.runnerUrl, runId)
-        .then((loaded) => {
-          if (!stopped) acceptLiveRecording(loaded)
-        })
-        .catch(() => {
-          if (stopped || expectedRun.current !== runId || userOpened.current) return
-          timer = window.setTimeout(load, retryDelay)
-          retryDelay = Math.min(retryDelay * 2, 2000)
-        })
-    }
-    load()
-    return () => {
-      stopped = true
-      window.clearTimeout(timer)
-    }
-  }, [acceptLiveRecording, runner.live?.finalized, runner.live?.run_id, runner.live?.status, settings.runnerUrl])
-
   const showingLive = !recording
     && expectedRun.current !== ""
     && runner.live?.run_id === expectedRun.current
@@ -259,18 +276,10 @@ export function App() {
   }), [draft.scenario])
 
   const manifest = recording?.manifest ?? liveManifest ?? previewManifest
-  const architecture = useMemo(() => projectArchitecture(manifest), [manifest])
   useEffect(() => {
     if (!playbackSpeeds(mode).includes(speed)) setSpeed(mode === "measured" ? 0.001 : 1)
   }, [mode, speed])
-  useEffect(() => {
-    if (mode === "teaching" && !architecture.supported) {
-      setMode("events")
-      setPlaying(false)
-      setTeachingProgress(0)
-    }
-  }, [architecture.supported, mode])
-  const measuredProfile = useMemo(() => projectMeasuredProfile(manifest, recording?.profile), [manifest, recording?.profile])
+  const measuredProfile = useMemo(() => projectMeasuredProfileView(manifest, recording?.profile), [manifest, recording?.profile])
   const profileExtent = measuredProfile.extent
   const nativeProfileTime = profileExtent ? Math.min(profileExtent.endUs, Math.max(profileExtent.startUs, profileTimeUs)) : 0
   const profileIntervalIndex = useMemo(() => createProfileIntervalIndex(measuredProfile.activities), [measuredProfile.activities])
@@ -323,6 +332,11 @@ export function App() {
   const viewState = useMemo(() => built.player ? attachContent(built.player.at(sequence), content) : null, [built.player, content, sequence])
   const playbackEvents = useMemo(() => replayableEvents(events, built.player?.maxSequence ?? 0), [events, built.player])
   const index = useMemo(() => buildTimeline(playbackEvents, manifest), [playbackEvents, manifest])
+  const iterationEnds = useMemo(() => iterationEndpoints(playbackEvents, index.steps), [playbackEvents, index.steps])
+  const eventLabels = useMemo(() => new Map(playbackEvents.map(event => [event.sequence, event.event_type])), [playbackEvents])
+  useEffect(() => {
+    if (recording && mode === "iterations" && index.steps.length === 0) setMode("events")
+  }, [recording, mode, index.steps.length])
   const samples = useMemo(() => {
     if (!viewState) return []
     return projectSamples(index, viewState, sequence, {
@@ -332,16 +346,13 @@ export function App() {
       arrivals: Array.isArray(manifest.arrivals) ? manifest.arrivals as Array<Record<string, unknown>> : [],
     })
   }, [content, draft.scenario, index, manifest, sequence, showingDraft, showingLive, submitted, viewState])
-  const colors = useMemo(() => {
-    const order = samples.map((item) => item.sample.id)
-    return Object.fromEntries(order.map((id) => [id, requestColor(order, id)]))
-  }, [samples])
-  const highlighted = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
+  const requestOrder = useMemo(() => index.roster.samples.map((sample) => sample.id), [index])
+  const colors = useMemo(() => Object.fromEntries(requestOrder.map((id) => [id, requestColor(requestOrder, id)])), [requestOrder])
+  const highlightedIds = useMemo(() => highlight(selection, viewState, trackedRequestId), [selection, trackedRequestId, viewState])
   const maxSequence = built.player?.maxSequence ?? 0
   const telemetrySamples = useMemo(() => telemetrySeries(built.player), [built.player])
   const telemetry = useMemo(() => viewState ? telemetryThrough(telemetrySamples, telemetryPoint(viewState)) : [], [telemetrySamples, viewState])
   const atEnd = mode === "measured" ? Boolean(profileExtent && nativeProfileTime >= profileExtent.endUs)
-    : mode === "teaching" ? teachingProgress >= 1 && index.steps.length > 0 && nextStepSequence(index.steps, sequence) == null
     : sequence >= maxSequence && maxSequence > 0
   const currentEvent = eventAt(playbackEvents, sequence)
   const eventTicks = useMemo<ScopeTick[]>(() => playbackEvents.flatMap((event) => {
@@ -359,48 +370,22 @@ export function App() {
   }, [followLive, maxSequence, runner.live?.status, showingLive])
 
   useEffect(() => {
-    if (!playing || mode !== "events" || playbackEvents.length === 0 || followLive) return
+    if (!playing || (mode !== "events" && mode !== "iterations") || playbackEvents.length === 0 || followLive) return
     const timer = window.setInterval(() => {
       setSequence((current) => {
-        const next = nextSequence(playbackEvents, current)
+        const next = mode === "iterations" ? nextIteration(iterationEnds, current, maxSequence) : nextSequence(playbackEvents, current)
         if (next === current) setPlaying(false)
         return next
       })
     }, Math.max(80, 700 / speed))
     return () => window.clearInterval(timer)
-  }, [playbackEvents, followLive, mode, playing, speed])
+  }, [playbackEvents, iterationEnds, maxSequence, followLive, mode, playing, speed])
 
   const sequenceRef = useRef(sequence)
   sequenceRef.current = sequence
-  const teachingProgressRef = useRef(teachingProgress)
-  teachingProgressRef.current = teachingProgress
-  const teachingStepId = viewState?.steps.at(-1)?.id ?? null
-  useEffect(() => {
-    if (!playing || mode !== "teaching" || followLive || !architecture.supported || !architecture.layerCount) return
-    if (!teachingStepId) {
-      const first = index.steps[0]
-      if (first) setSequence(first.sequence)
-      else setPlaying(false)
-      return
-    }
-    let progress = teachingProgressRef.current
-    let last = performance.now()
-    const timer = window.setInterval(() => {
-      const now = performance.now()
-      progress = Math.min(1, progress + (now - last) * speed / (architecture.layerCount! * 700))
-      last = now
-      setTeachingProgress(progress)
-      if (progress < 1) return
-      window.clearInterval(timer)
-      const next = nextStepSequence(index.steps, sequenceRef.current)
-      if (next == null) setPlaying(false)
-      else { setTeachingProgress(0); setSequence(next) }
-    }, 100)
-    return () => window.clearInterval(timer)
-  }, [architecture.layerCount, architecture.supported, followLive, index.steps, mode, playing, speed, teachingStepId])
   useEffect(() => {
     if (!playing || mode !== "recorded") return
-    const clock = { value: elapsedMsAt(index, sequenceRef.current) ?? 0, last: performance.now() }
+    const clock = { value: elapsedMsAt(index, sequenceRef.current) ?? index.timePoints.find(point => point.elapsedMs != null)?.elapsedMs ?? 0, last: performance.now() }
     let frame = 0
     const tick = (now: number) => {
       clock.value += (now - clock.last) * speed
@@ -420,7 +405,7 @@ export function App() {
   useEffect(() => {
     if (route !== "explore") return
     function onKey(event: KeyboardEvent) {
-      if (isTypingTarget(event.target)) return
+      if (event.defaultPrevented || isTypingTarget(event.target)) return
       if (event.code === "Escape" && inspectorOpen) {
         event.preventDefault()
         setInspectorOpen(false)
@@ -456,10 +441,10 @@ export function App() {
         else setPlaying((current) => !current)
       } else if (event.code === "ArrowRight") {
         event.preventDefault()
-        seek(nextSequence(playbackEvents, sequence))
+        seek(mode === "iterations" ? nextIteration(iterationEnds, sequence, maxSequence) : nextSequence(playbackEvents, sequence))
       } else if (event.code === "ArrowLeft") {
         event.preventDefault()
-        seek(previousSequence(playbackEvents, sequence))
+        seek(mode === "iterations" ? previousIteration(iterationEnds, sequence) : previousSequence(playbackEvents, sequence))
       } else if (event.code === "BracketRight") {
         event.preventDefault()
         const next = nextStepSequence(index.steps, sequence)
@@ -478,11 +463,10 @@ export function App() {
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [playbackEvents, index.steps, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
+  }, [playbackEvents, index.steps, iterationEnds, inspectorOpen, maxSequence, route, sequence, mode, nativeProfileTime, profileExtent, measuredProfile.activities, measuredProfile.status, playing, atEnd])
 
   function restartPlayback() {
     setFollowLive(false)
-    setTeachingProgress(0)
     if (mode === "measured") setProfileTimeUs(profileExtent?.startUs ?? 0)
     else setSequence(0)
     setPlaying(true)
@@ -491,9 +475,12 @@ export function App() {
   function seek(next: number, nextSelection?: Selection) {
     setFollowLive(false)
     setPlaying(false)
-    setTeachingProgress(0)
     setSequence(Math.min(maxSequence, Math.max(0, next)))
     if (nextSelection) {
+      if (nextSelection.kind === "request" || nextSelection.kind === "token") {
+        setTrackedRequestId(nextSelection.kind === "request" ? nextSelection.id : nextSelection.requestId)
+        setTrackedTokenPosition(nextSelection.kind === "token" ? nextSelection.position : null)
+      }
       setSelection(nextSelection)
       if (compact && nextSelection.kind !== "component") setInspectorOpen(true)
     }
@@ -514,14 +501,32 @@ export function App() {
     }
   }
 
-  function openLoaded(loaded: LoadedRecording) {
+  function backToRun() {
+    setSelection(null)
+    setTrackedRequestId(null)
+    setTrackedTokenPosition(null)
+    setAnnounce("Selection cleared. Showing the run and all requests.")
+  }
+
+  function openLoaded(loaded: LoadedRecording, kind: "demo" | "recording") {
     setProfileTimeUs(0)
     setTrackedRequestId(null)
     setTrackedTokenPosition(null)
-    setTeachingProgress(0)
     userOpened.current = true
     setRecording(loaded)
-    setSequence(0)
+    setIsDemo(kind === "demo")
+    if (kind === "demo") {
+      const entry = curatedDemos(catalog).find(item => item.id === loaded.source)
+      if (entry) {
+        lastDemoChoice.current = demoSelection(entry)
+        setDemoChoice(lastDemoChoice.current)
+        rememberDemo(entry.id)
+      }
+    } else {
+      setDemoChoice(lastDemoChoice.current)
+    }
+    setMode("iterations")
+    setSequence(kind === "demo" ? firstIterationSequence(loaded.events) : 0)
     setPlaying(false)
     setFollowLive(false)
     setSelection(null)
@@ -533,23 +538,16 @@ export function App() {
     navigate("explore")
   }
 
-  async function openGpuDemo() {
-    if (openingDemo || checkingHost || preparingRun || runIsActive(runner.live?.status)) return
-    setOpeningDemo(true)
-    setDemoError("")
-    setAnnounce("Opening the recorded real GPU demo.")
-    try {
-      openLoaded(await loadBundled(GPU_DEMO_ID))
-      setAnnounce("Real GPU demo opened with its recorded workload. Your editable draft is preserved.")
-    } catch {
-      setDemoError(GPU_DEMO_LOAD_ERROR)
-      setAnnounce(GPU_DEMO_LOAD_ERROR)
-    } finally {
-      setOpeningDemo(false)
-    }
+  function openGpuDemo() {
+    if (recordingLoader.busy || checkingHost || preparingRun || (expectedRun.current && runIsActive(runner.live?.status))) return
+    const entry = resolveDemo(catalog, demoChoice) ?? initialDemo(catalog)
+    if (!entry) { setLoadError("No verified demo matches this configuration."); return }
+    navigate("explore")
+    void recordingLoader.open(loadBundled.bind(null, entry.id), entry.title, "demo")
   }
 
   async function checkHost(runtime: ConfigureRuntimeInputs) {
+    if (HOSTED_DEMO) { setAnnounce(LOCAL_CAPTURE_MESSAGE); return }
     if (checkingHost || preparingRun || runIsActive(runner.live?.status)) return
     setCheckingHost(true)
     setRunError("")
@@ -622,6 +620,7 @@ export function App() {
   }
 
   async function runSequence(next: ScenarioDraft, runtime: ConfigureRuntimeInputs) {
+    if (HOSTED_DEMO) { setAnnounce(LOCAL_CAPTURE_MESSAGE); return }
     if (checkingHost || preparingRun || runIsActive(runner.live?.status)) return
     draft.replace(next)
     const quantizationCapabilities = settings.hostKind === "ssh" && !settings.runnerUrl
@@ -753,7 +752,17 @@ export function App() {
     focusValidationField("setting-profiling-tensor-request")
   }
 
-  function updateSettings(next: EngineSettings) {
+  function updateSettings(next: EngineSettings, applyDemoAssignment = false) {
+    let assignmentError = ""
+    if (next.demoLoraMode !== null && (applyDemoAssignment || next.demoLoraMode !== settings.demoLoraMode
+      || JSON.stringify(next.loraAdapters) !== JSON.stringify(settings.loraAdapters))) {
+      if (next.demoLoraMode === "none") next = { ...next, loraAdapters: [] }
+      try {
+        draft.replace(demoAdapterScenario(draft.scenario, next, next.demoLoraMode!))
+      } catch (error) {
+        assignmentError = error instanceof Error ? error.message : "Attach the compatible adapter before assigning routes."
+      }
+    }
     const sshConnectionChanged = settings.hostKind !== next.hostKind
       || settings.sshUser !== next.sshUser
       || settings.sshHost !== next.sshHost
@@ -767,7 +776,7 @@ export function App() {
     setSettings(next)
     setHostCheck(null)
     setIssues([])
-    setRunError("")
+    setRunError(assignmentError)
     setValidationMessage("")
     if (sshConnectionChanged) {
       setSshVerification(null)
@@ -824,16 +833,19 @@ export function App() {
     ? `${statusLabel(runner.live?.status ?? "running")}${runner.live?.message ? ` · ${runner.live.message}` : ""}`
     : preparingRun ? preparationStatus || "Preparing capture"
     : recording ? `Recording · ${recording.name ?? recording.source}` : runner.health || "Runner unchecked"
-  const hostReadiness = hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
+  const hostReadiness = HOSTED_DEMO ? { label: "Local app required", message: LOCAL_CAPTURE_MESSAGE, tone: "neutral" as const } : hostCheck ?? (settings.hostKind === "ssh" && !sshVerification
     ? { label: "Unchecked", message: "Choose the SSH key and check the selected remote host before capture.", tone: "neutral" as const }
     : deriveHostReadiness(settings, runner.health, runner.preflight?.ok, runner.preflight?.message))
-  const runBlockedReason = settings.engine === "vllm" && settings.hostKind === "local" && runner.preflight?.ok !== true
+  const demoLoraIssues = validateDemoLora(draft.scenario, settings)
+  const runBlockedReason = HOSTED_DEMO ? LOCAL_CAPTURE_MESSAGE : demoLoraIssues[0]?.message ?? (settings.engine === "vllm" && settings.hostKind === "local" && runner.preflight?.ok !== true
     ? hostReadiness.message
-    : undefined
+    : undefined)
   const quantizationCapabilities = settings.hostKind === "ssh" && !settings.runnerUrl
     ? undefined
     : runner.capabilities?.model_options.quantization
-  const modelReadiness = deriveModelReadiness(settings, runner.capabilities, quantizationCapabilities)
+  const modelReadiness: ReadinessState = demoLoraIssues.length > 0
+    ? { label: "Needs LoRA assignment", message: demoLoraIssues[0].message, tone: "warning" }
+    : deriveModelReadiness(settings, runner.capabilities, quantizationCapabilities)
   const vllmReadiness = deriveVllmReadiness(settings, runner.capabilities)
   const effectiveSettings = {
     "Execution source": settings.engine === "fixture" ? "Demo fixture" : "Instrumented vLLM",
@@ -848,6 +860,8 @@ export function App() {
     "Prefix cache": settings.prefixCaching,
     "Fresh cache contract": "Required; verified during preparation",
   }
+  const initialDemoLoading = !recording && !expectedRun.current && !userOpened.current && !loadError && !catalogError
+  const exploreLoading = loadingRecording || (catalogLoading || initialDemoLoading ? "Loading demo catalog…" : "")
   const editableScenario = scenarioFromRecordedPlan(manifest.workload_plan, promptsFromContent(content))
 
   return (
@@ -856,23 +870,36 @@ export function App() {
       <p className="sr-only" aria-live="assertive">{validationMessage}</p>
       <AppHeader
         route={route}
+        busy={Boolean(loadingRecording)}
         status={runnerActive ? status : preparingRun ? preparationStatus || "Preparing capture" : runner.health || "Checking controller"}
         recording={route === "explore" ? recording ? recording.name ?? recording.source : showingLive ? `Live · ${runner.live?.run_id ?? "capture"}` : "Draft preview" : null}
         evidence={route === "explore" && evidenceKind !== "recorded" ? evidenceKind : null}
-        controller={{
+        controller={!HOSTED_DEMO && (route === "configure" || running) ? {
           label: settings.runnerUrl ? controllerLabel(settings.runnerUrl) : "Local controller",
           tone: !runner.health ? "neutral" : runner.health === "Runner is reachable." ? "ready" : "error",
-        }}
-        onNavigate={navigate}
-        onRecordings={() => setRecordingsOpen(true)}
+        } : null}
+        onNavigate={(next) => { setPlaying(false); navigate(next) }}
       />
+
+      {route === "explore" && !showingLive ? <ExploreToolbar
+        catalog={catalog}
+        selection={demoChoice}
+        onSelection={setDemoChoice}
+        onLoad={openGpuDemo}
+        loaded={recording}
+        isDemo={isDemo}
+        loading={exploreLoading}
+        error={loadError || catalogError}
+        onBackToDemos={openGpuDemo}
+        onMoreRecordings={() => setRecordingsOpen(true)}
+      /> : null}
 
       {route === "configure" ? (
         <ConfigurePage
           scenario={draft.scenario}
           settings={settings}
           limits={runner.limits}
-          issues={issues}
+          issues={[...issues.filter((issue) => issue.fieldId !== "adapter-demo-mode"), ...demoLoraIssues]}
           unit={unit}
           storageNote={draft.storageNote}
           storageError={draft.storageError}
@@ -883,11 +910,12 @@ export function App() {
           setupStages={setupStages}
           effectiveSettings={effectiveSettings}
           checkingHost={checkingHost}
+          hosted={HOSTED_DEMO}
           running={running}
           runBlockedReason={runBlockedReason}
           runStatus={running ? status : undefined}
           runError={runError}
-          openingDemo={openingDemo}
+          openingDemo={openingDemo || Boolean(loadingRecording)}
           demoError={demoError}
           onOpenDemo={() => void openGpuDemo()}
           onUnit={setUnit}
@@ -897,7 +925,7 @@ export function App() {
             setIssues([issue])
             setValidationMessage(issue.message)
           }}
-          onCheckHost={(runtime) => void checkHost(runtime)}
+          onCheckHost={HOSTED_DEMO ? undefined : (runtime) => void checkHost(runtime)}
           onSshIdentityChange={() => {
             setSshVerification(null)
             setHostCheck(null)
@@ -910,6 +938,8 @@ export function App() {
           onStartEmpty={startEmptyScenario}
           onClearDraft={() => setConfirmResetOpen(true)}
         />
+      ) : exploreLoading ? (
+        <main className="flex min-h-0 flex-1 items-center justify-center border-t border-line bg-canvas p-6" role="status" aria-live="polite"><p className="m-0 text-sm text-muted">{exploreLoading}</p></main>
       ) : (
         <>
           <main className={cn("grid min-h-0 flex-1", compact ? "grid-cols-1" : "grid-cols-[minmax(0,1fr)_372px]")}>
@@ -917,22 +947,20 @@ export function App() {
               samples={samples}
               state={viewState}
               manifest={manifest}
+              memoryEvents={events}
+              memoryLive={showingLive && runnerActive}
               measuredProfile={measuredScene}
               profileObservations={recording?.profile ?? null}
               profileTimeUs={mode === "measured" ? nativeProfileTime : null}
-              teachingProgress={mode === "teaching" ? teachingProgress : undefined}
-              onTeachingProgress={(value) => { setPlaying(false); setTeachingProgress(value) }}
               trackedRequestId={trackedRequestId}
               trackedTokenPosition={trackedTokenPosition}
               onClearTracking={() => { setTrackedRequestId(null); setTrackedTokenPosition(null); setSelection({ kind: "component", id: "model-execution" }) }}
-              requestOrder={built.player?.requestOrder ?? []}
+              requestOrder={requestOrder}
               colors={colors}
               selection={selection}
-              highlightedIds={highlighted.ids}
-              highlightedStepIds={highlighted.steps}
+              highlightedIds={highlightedIds}
               view={view}
               onView={setView}
-              animate={playing && !reduced && view === "spatial"}
               timeBasisLabel={mode === "measured" ? `Native profiler clock · ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start · host replay at event ${sequence}` : showingDraft
                 ? "Draft plan. No execution evidence has been recorded."
                 : `${index.roster.timeBasisLabel}${index.roster.groupingKnown ? "" : " Arrival groups were not recorded."}`}
@@ -944,6 +972,8 @@ export function App() {
               telemetry={telemetry}
               allSteps={index.steps}
               sequence={sequence}
+              onPausePlayback={() => { setPlaying(false); setFollowLive(false) }}
+              profileError={recording?.profileError ?? ""}
               onEditAsNew={editableScenario ? editAsNew : undefined}
               onOpenInspector={compact && selection ? () => setInspectorOpen(true) : undefined}
               onSelect={choose}
@@ -951,6 +981,7 @@ export function App() {
             {!compact ? (
               <SelectionInspector
                 selection={selection}
+                events={playbackEvents}
                 samples={samples}
                 state={viewState}
                 index={index}
@@ -963,10 +994,9 @@ export function App() {
                 profileError={recording?.profileError ?? ""}
                 measuredMode={mode === "measured"}
                 onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
-                showClose={false}
+                onBackToRun={backToRun}
                 onSeek={seek}
                 onSelect={choose}
-                onClose={() => setInspectorOpen(false)}
               />
             ) : null}
           </main>
@@ -977,29 +1007,29 @@ export function App() {
             speed={speed}
             mode={mode}
             recordedAvailable={index.timePoints.some((point) => point.elapsedMs != null)}
-            teachingAvailable={architecture.supported}
             measuredAvailable={measuredProfile.status === "observed" && Boolean(profileExtent)}
+            iterationsAvailable={iterationEnds.length > 0}
+            timePoints={index.timePoints}
+            eventLabels={eventLabels}
             sequence={mode === "measured" && profileExtent ? nativeProfileTime - profileExtent.startUs : sequence}
             maxSequence={mode === "measured" && profileExtent ? profileExtent.endUs - profileExtent.startUs : maxSequence}
             valueText={mode === "measured" ? `Profiler clock: ${((nativeProfileTime - (profileExtent?.startUs ?? 0)) / 1000).toFixed(3)} ms since trace start. Host replay remains at event ${sequence}.` : valueText}
             followLive={followLive}
             followAvailable={showingLive && runIsActive(runner.live?.status)}
             connected={trace.connected}
-            reduced={forceReduced}
             ticks={mode === "measured" ? profileTicks : eventTicks}
             markers={mode === "measured" ? profileMarkers : stepMarkers}
             gapPosition={mode === "measured" ? null : gapPosition}
             currentPosition={mode === "measured" || !currentEvent ? null : sequencePosition(currentEvent.sequence, maxSequence)}
-            onReduced={setForceReduced}
             onTogglePlay={() => { setFollowLive(false); setPlaying((current) => !current) }}
             onReplay={restartPlayback}
-            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(previousSequence(playbackEvents, sequence))}
-            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(nextSequence(playbackEvents, sequence))}
+            onPreviousEvent={() => mode === "measured" ? jumpProfile("activity", -1) : seek(mode === "iterations" ? previousIteration(iterationEnds, sequence) : previousSequence(playbackEvents, sequence))}
+            onNextEvent={() => mode === "measured" ? jumpProfile("activity", 1) : seek(mode === "iterations" ? nextIteration(iterationEnds, sequence, maxSequence) : nextSequence(playbackEvents, sequence))}
             onPreviousStep={() => { if (mode === "measured") { jumpProfile("batch", -1); return }; const previous = previousStepSequence(index.steps, sequence); if (previous != null) seek(previous) }}
             onNextStep={() => { if (mode === "measured") { jumpProfile("batch", 1); return }; const next = nextStepSequence(index.steps, sequence); if (next != null) seek(next) }}
             onScrub={(value) => { if (mode === "measured") { setPlaying(false); setProfileTimeUs(value + (profileExtent?.startUs ?? 0)) } else seek(value) }}
             onSpeed={setSpeed}
-            onMode={(next) => { setFollowLive(false); setPlaying(false); setTeachingProgress(0); setMode(next); if (next === "measured") setSpeed(0.001); else if (!playbackSpeeds(next).includes(speed)) setSpeed(1) }}
+            onMode={(next) => { setFollowLive(false); setPlaying(false); setMode(next); if (next === "measured") setSpeed(0.00001); else if (!playbackSpeeds(next).includes(speed)) setSpeed(1) }}
             onFollow={() => { setFollowLive(true); setPlaying(false); setSequence(maxSequence) }}
           />
         </>
@@ -1008,24 +1038,26 @@ export function App() {
       <Modal
         open={recordingsOpen}
         onOpenChange={setRecordingsOpen}
-        title="Recordings"
-        description="Open a bundled lesson or import a captured recording."
+        title="More recordings"
+        description="Open an archived example, your latest capture, or import a recording."
       >
         <RecordingLibrary
-          catalog={catalog}
+          catalog={catalog.filter(item => !curatedDemos(catalog).some(demo => demo.id === item.id))}
           catalogError={catalogError}
           loadError={loadError}
+          loading={loadingRecording}
           activeId={recording?.source ?? ""}
           recent={lastCaptured ? { id: lastCaptured.source, label: `Latest capture · ${lastCaptured.source}` } : null}
           onOpenRecent={() => {
-            if (lastCaptured) openLoaded(lastCaptured)
+            if (lastCaptured) void recordingLoader.open(loadRunnerRecording.bind(null, lastCaptured.runnerUrl, lastCaptured.source), "latest capture")
           }}
           onOpen={(id) => {
-            void loadBundled(id).then(openLoaded).catch((error: unknown) => setLoadError(error instanceof Error ? error.message : "Could not open that recording."))
+            void recordingLoader.open(loadBundled.bind(null, id), catalog.find(item => item.id === id)?.title ?? "recording")
           }}
           onFiles={(files) => {
-            void loadFiles(files).then(openLoaded).catch((error: unknown) => setLoadError(error instanceof Error ? error.message : "Could not read those files."))
+            void recordingLoader.open(loadFiles.bind(null, files), "imported recording")
           }}
+
         />
       </Modal>
 
@@ -1038,6 +1070,7 @@ export function App() {
       >
         <SelectionInspector
           selection={selection}
+          events={playbackEvents}
           samples={samples}
           state={viewState}
           index={index}
@@ -1050,11 +1083,10 @@ export function App() {
           profileError={recording?.profileError ?? ""}
           measuredMode={mode === "measured"}
           onProfileTime={(value) => { setPlaying(false); setProfileTimeUs(value) }}
-          showClose={false}
+          onBackToRun={backToRun}
           framed={false}
           onSeek={seek}
           onSelect={choose}
-          onClose={() => setInspectorOpen(false)}
         />
       </Modal>
 
@@ -1070,22 +1102,19 @@ export function App() {
   )
 }
 
-function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null, trackedRequestId: string | null): { ids: Set<string>; steps: Set<string> } {
+function highlight(selection: Selection | null, state: ReturnType<typeof attachContent> | null, trackedRequestId: string | null): Set<string> {
   const ids = new Set<string>()
-  const steps = new Set<string>()
-  if (!state) return { ids, steps }
+  if (!state) return ids
   if (trackedRequestId) ids.add(trackedRequestId)
-  if (!selection) return { ids, steps }
+  if (!selection) return ids
   if (selection.kind === "request") {
     ids.add(selection.id)
-    for (const step of state.steps) if (step.requests.some((request) => request.requestId === selection.id)) steps.add(step.id)
   }
   if (selection.kind === "step") {
-    steps.add(selection.id)
     const step = state.steps.find((item) => item.id === selection.id)
     for (const request of step?.requests ?? []) ids.add(request.requestId)
   }
-  return { ids, steps }
+  return ids
 }
 
 function promptMap(scenario: ScenarioDraft): Record<string, string> {
@@ -1173,5 +1202,5 @@ function delay(milliseconds: number): Promise<void> {
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
-  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], [role='dialog']"))
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true'], [role='dialog'], [role='menu']"))
 }

@@ -1,0 +1,30 @@
+# Independent final correctness review
+
+Reviewed the integrated local application changes against `92fb11b00d889cb58136a987bcf09687c0381acd`: all modified and new `web/src` components/helpers/tests, plus the final fractional-time correction in `replay/src/timeline.ts`. Reviewed the qualification README and root/numerical Playwright evidence, including screenshots of the repaired native-panel layout, mobile inspector and layer-19 numerical heatmap. Unrelated capture-script edits, prior KV audit artifacts and six-token plans were excluded. This reviewer did not implement or modify application source.
+
+**No significant unresolved correctness findings remain in the reviewed change.**
+
+## Findings repaired during review
+
+| Finding | Final repair and verification |
+| --- | --- |
+| Global Profile participant selection lost the clicked write's layer and physical mapping because replay state was not passed to `MeasuredProfileDetails`. | `SelectionInspector.tsx` now passes `state`. The actual global Profile regression selects step-3/layer-19/position-128 and opens layer 19, block 9, slot 0. See `global-participant-result.txt`. |
+| Learning bookmarks updated the inspector selection but retained an earlier request/token in the model matrix. | `App.seek` now synchronizes tracking for request/token selections. The actual regression selects prime position 173, then reader position 0; the model matrix follows reader position 0 before and after selecting layer 19, with host event 178 retained. See `bookmark-tracking-result.txt`. |
+| The local native overlay promoted an unknown `execution_kind` to GPU evidence. | `ExecutionWorkspace.tsx` now preserves the explicit fixture/GPU/unknown distinction, matching the production profiler projection and the model scene's unverified-source label. Source reassessed; this report does not treat missing provenance as proof of GPU execution. |
+| Opening iteration inspection paused playback but left follow-live active; subsequent live trace pages also reset inspection through a fresh `requestOrder` array reference. | `App.tsx` now disables both playback and follow-live. Workspace reset effects depend on `manifest.run_id`, so fresh arrays within the same run do not close the paused panel or reset model focus. Source flow reassessed against `useLiveTrace` and `createPlayer`; fresh live-cluster execution remains unverified. |
+
+The final clock correction also retains fractional milliseconds derived from integer nanoseconds. Actual observations 170 and 171 now retain distinct timestamps (`6029.621817` and `6029.702897` ms), separate by 55 px at 4096× zoom, and advance correctly at 0.001×. Preparation and final timestamps remain within the axis. See `fractional-time-result.txt`.
+
+## Correctness checks
+
+- Iteration stepping uses actual recorded step IDs and includes result-associated KV/output observations without removing intermediate raw events. Incomplete steps stop at their last observed boundary; recordings without scheduler steps fall back to raw events. Timestamp marks represent host observations without implying execution duration.
+- Local iteration inspection links native activities by step/operation/layer identifiers and correlated runtime flow. Native cursor/window changes do not seek the host. Global Profile remains a separate clock and closes local inspection when selected. Half-open interval membership, current-generation/slot validation and historical-mapping fallback are covered by production-data tests.
+- Learning bookmarks derive boundaries from the recording and exclude the untrusted tail after a trace gap. Current holders, original writers, reserved slots, retained released prefixes, null placeholders and previously computed tokens remain distinct. Missing history is displayed as unknown rather than as never computed.
+- Numerical grids use production tensor projections, preserve allocation and operation identity, leave missing/conflicting coordinates unknown, and retain exact recorded values. K/V, layer and head changes preserve truthful coverage. Clipboard output includes snapshot/write/allocation provenance; partial or missing coverage prepares the existing targeted rerun for the original writer. The actual numerical journeys verify these cases without starting inference.
+- Layer/head/vector axes are named only for qualified matching shapes. Raw request, storage, layout, scale and timing metadata remain available in expandable sections. The broader two-token lesson fills editable Configure fields and explicitly requires a new capture.
+- Static hybrid blueprints do not alter recording identity, cache, playhead or execution observations. Their language-layer patterns and expert counts match the [official Qwen3.8-27B model card](https://huggingface.co/Qwen/Qwen3.8-27B) and [official Qwen3.8-Flash-Next-FP8 model card](https://huggingface.co/Qwen/Qwen3.8-Flash-Next-FP8).
+- Configure/Explore, workload editing, host/model/capture setup, library/import recovery, lanes, search, Edit as new and targeted rerun callbacks remain integrated in the original shell. Native controls have keyboard equivalents; numerical coordinates have labeled head/dimension controls and an exact table. Saved browser evidence confirms ordinary-click controls after the canvas overlap repair and a 390 px document without mobile overflow.
+
+Independently ran all four new production-data test files: **17/17 passed**, including the large fractional timestamp range case. Reviewed the final web/replay/build logs and existing Python verification evidence; no additional implementation-mirroring tests were requested. New numerical/native plots use DOM/SVG and the existing scene overlay rather than creating another WebGL renderer or independent animation loop.
+
+This review establishes the local UI changes using existing recordings and source state flow. It does not establish a fresh six-output capture, complete two-token/all-head numerical coverage, live hybrid/MoE instrumentation or a new live GPU run. No Sites deployment or new GPU capture was performed.

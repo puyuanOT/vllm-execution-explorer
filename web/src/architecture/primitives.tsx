@@ -2,6 +2,11 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import * as THREE from "three"
+import { Line2 } from "three/examples/jsm/lines/Line2.js"
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js"
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js"
+import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2.js"
+import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry.js"
 import { sceneClick } from "./model.ts"
 
 export { sceneClick }
@@ -17,11 +22,11 @@ export const SCENE_COLORS = {
   surface: "#152036",
   surfaceSelected: "#1d4b58",
   surfaceRelated: "#132f3b",
-  edge: "#3d5779",
-  edgeDim: "#26395a",
-  edgeMarker: "#56739a",
-  line: "#45618a",
-  lineDim: "#2c4262",
+  edge: "#6f8eaf",
+  edgeDim: "#304360",
+  edgeMarker: "#7b97b8",
+  line: "#92abc8",
+  lineDim: "#5b7596",
   explain: "#9d90ec",
   measured: "#dfad57",
   cached: "#dfad57",
@@ -51,11 +56,13 @@ export interface ClampInsets { top?: number; right?: number; bottom?: number; le
  * DOM text that follows a 3D anchor; it stays crisp at any zoom and never blocks scene picking unless interactive.
  * Clamped labels are nudged so the whole box stays inside the canvas, outside any given inset bands.
  */
-export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactive = false, clamp = false, children }: {
+export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactive = false, clamp = false, screenPosition, children }: {
   position?: Position3
   anchor?: LabelAnchor
   interactive?: boolean
   clamp?: boolean | ClampInsets
+  /** Keep a compact HUD in the free screen band on narrow viewports. Coordinates describe the inner box. */
+  screenPosition?: { left: number; top: number }
   children: ReactNode
 }) {
   const group = useRef<THREE.Group>(null)
@@ -65,20 +72,27 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
   const invalidate = useThree((state) => state.invalidate)
   const [element] = useState(() => document.createElement("div"))
   const root = useRef<Root | null>(null)
+  const cleanupTimer = useRef<number | null>(null)
   const vector = useMemo(() => new THREE.Vector3(), [])
 
   useLayoutEffect(() => {
     const parent = gl.domElement.parentElement
     if (!parent) return
+    // Fast Refresh and StrictMode may immediately set this effect up again with the same element.
+    // Keep its root until the deferred teardown actually runs, so a second root cannot race it.
+    if (cleanupTimer.current != null) { window.clearTimeout(cleanupTimer.current); cleanupTimer.current = null }
     element.className = "scene-label"
     element.style.pointerEvents = "none"
     parent.appendChild(element)
-    const next = createRoot(element)
+    const next = root.current ?? createRoot(element)
     root.current = next
     invalidate()
     return () => {
-      root.current = null
-      window.setTimeout(() => next.unmount(), 0)
+      cleanupTimer.current = window.setTimeout(() => {
+        next.unmount()
+        if (root.current === next) root.current = null
+        cleanupTimer.current = null
+      }, 0)
       element.remove()
     }
   }, [gl, element, invalidate])
@@ -93,7 +107,7 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     root.current?.render(<div className="scene-label-inner" style={interactive ? { pointerEvents: "auto" } : undefined}>{children}</div>)
   })
 
-  useEffect(() => { invalidate() }, [position[0], position[1], position[2], invalidate])
+  useEffect(() => { invalidate() }, [position[0], position[1], position[2], screenPosition?.left, screenPosition?.top, invalidate])
 
   const clamped = Boolean(clamp)
   useEffect(() => {
@@ -107,7 +121,7 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
     const object = group.current
     if (!object) return
     object.getWorldPosition(vector).project(camera)
-    const visible = vector.z > -1 && vector.z < 1
+    const visible = Boolean(screenPosition) || vector.z > -1 && vector.z < 1
     element.style.display = visible ? "" : "none"
     if (!visible) return
     let x = (vector.x * 0.5 + 0.5) * size.width
@@ -118,6 +132,7 @@ export function SceneLabel({ position = [0, 0, 0], anchor = "center", interactiv
       const free = `${Math.max(96, Math.floor(size.height - (insets.top ?? CLAMP_MARGIN) - (insets.bottom ?? CLAMP_MARGIN)))}px`
       if (element.style.getPropertyValue("--label-max-height") !== free) element.style.setProperty("--label-max-height", free)
       const [dx, dy] = anchorOffset(anchor, box.offsetWidth, box.offsetHeight)
+      if (screenPosition) { x = screenPosition.left - dx; y = screenPosition.top - dy }
       const maxX = size.width - (insets.right ?? CLAMP_MARGIN) - box.offsetWidth
       const maxY = size.height - (insets.bottom ?? CLAMP_MARGIN) - box.offsetHeight
       // A box larger than the free band keeps clear of the right and bottom bands and overflows toward the top-left.
@@ -169,35 +184,49 @@ export function useHoverCursor() {
   }
 }
 
-/** One-pixel outline of a box; raycasting is disabled so outlines never steal clicks from their meshes. */
-export function BoxEdges({ size, color = SCENE_COLORS.edge, opacity = 1, position }: {
-  size: Position3; color?: string; opacity?: number; position?: Position3
+/** Screen-space line width stays legible at the default zoom; outlines never steal picking. */
+export function BoxEdges({ size, color = SCENE_COLORS.edge, opacity = 1, position, width = 1.5 }: {
+  size: Position3; color?: string; opacity?: number; position?: Position3; width?: number
 }) {
-  const geometry = useMemo(() => new THREE.EdgesGeometry(new THREE.BoxGeometry(...size)), [size[0], size[1], size[2]])
-  useEffect(() => () => geometry.dispose(), [geometry])
-  return (
-    <lineSegments geometry={geometry} position={position} raycast={() => null}>
-      <lineBasicMaterial color={color} transparent={opacity < 1} opacity={opacity} />
-    </lineSegments>
-  )
+  const points = useMemo(() => {
+    const box = new THREE.BoxGeometry(...size)
+    const edges = new THREE.EdgesGeometry(box)
+    const positions = Array.from(edges.getAttribute("position").array)
+    edges.dispose(); box.dispose()
+    return positions
+  }, [size[0], size[1], size[2]])
+  return <ScreenLine positions={points} color={color} opacity={opacity} width={width} position={position} segments />
 }
 
-export function Polyline({ points, color = SCENE_COLORS.line, opacity = 1, dashed = false, dash = 0.16, gap = 0.12 }: {
-  points: Position3[]; color?: string; opacity?: number; dashed?: boolean; dash?: number; gap?: number
+export function Polyline({ points, color = SCENE_COLORS.line, opacity = 1, dashed = false, dash = 0.16, gap = 0.12, width = 1.75 }: {
+  points: Position3[]; color?: string; opacity?: number; dashed?: boolean; dash?: number; gap?: number; width?: number
 }) {
   const key = points.map((point) => point.join(",")).join(";")
+  const positions = useMemo(() => points.flat(), [key])
+  return <ScreenLine positions={positions} color={color} opacity={opacity} dashed={dashed} dash={dash} gap={gap} width={width} />
+}
+
+export function SegmentLines({ positions, color, width = 1.5 }: { positions: number[]; color: string; width?: number }) {
+  return <ScreenLine positions={positions} color={color} width={width} opacity={1} segments />
+}
+
+function ScreenLine({ positions, color, opacity, width, position, segments = false, dashed = false, dash = 0.16, gap = 0.12 }: {
+  positions: number[]; color: string; opacity: number; width: number; position?: Position3; segments?: boolean; dashed?: boolean; dash?: number; gap?: number
+}) {
+  const size = useThree((state) => state.size)
   const line = useMemo(() => {
-    const geometry = new THREE.BufferGeometry().setFromPoints(points.map((point) => new THREE.Vector3(...point)))
-    const material = dashed
-      ? new THREE.LineDashedMaterial({ color, dashSize: dash, gapSize: gap, transparent: opacity < 1, opacity })
-      : new THREE.LineBasicMaterial({ color, transparent: opacity < 1, opacity })
-    const object = new THREE.Line(geometry, material)
-    if (dashed) object.computeLineDistances()
+    const geometry = segments ? new LineSegmentsGeometry() : new LineGeometry()
+    geometry.setPositions(positions)
+    const material = new LineMaterial({ color, linewidth: width, transparent: opacity < 1, opacity,
+      dashed, dashSize: dash, gapSize: gap, toneMapped: false })
+    const object = segments ? new LineSegments2(geometry, material) : new Line2(geometry as LineGeometry, material)
+    object.computeLineDistances()
     object.raycast = () => undefined
     return object
-  }, [key, color, opacity, dashed, dash, gap])
+  }, [positions, color, opacity, width, segments, dashed, dash, gap])
+  useLayoutEffect(() => { line.material.resolution.set(size.width, size.height) }, [line, size.width, size.height])
   useEffect(() => () => { line.geometry.dispose(); (line.material as THREE.Material).dispose() }, [line])
-  return <primitive object={line} />
+  return <primitive object={line} position={position} />
 }
 
 export function Connector({ from, to, muted = false, arrow = true, dashed = false }: {
@@ -209,7 +238,7 @@ export function Connector({ from, to, muted = false, arrow = true, dashed = fals
   const arrowRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction)
   const color = muted ? SCENE_COLORS.lineDim : SCENE_COLORS.line
   return <group>
-    <Polyline points={[from, to]} color={color} dashed={dashed} />
+    <Polyline points={[from, to]} color={color} dashed={dashed} width={muted ? 1.5 : 2} />
     {arrow ? <mesh position={end.clone().addScaledVector(direction, -0.07)} quaternion={arrowRotation} raycast={() => null}>
       <coneGeometry args={[0.055, 0.15, 6]} /><meshBasicMaterial color={color} />
     </mesh> : null}
@@ -262,8 +291,8 @@ export function SceneEmpty({ label, detail = "Open a compatible recording to ins
 
 export function FloorGrid({ y, size = 160 }: { y: number; size?: number }) {
   const grids = useMemo(() => {
-    const minor = new THREE.GridHelper(size, size / 2, "#0d1624", "#0d1624")
-    const major = new THREE.GridHelper(size, size / 10, "#16243a", "#16243a")
+    const minor = new THREE.GridHelper(size, size / 2, "#0b1320", "#0b1320")
+    const major = new THREE.GridHelper(size, size / 10, "#101d2e", "#101d2e")
     minor.raycast = () => undefined
     major.raycast = () => undefined
     return { minor, major }

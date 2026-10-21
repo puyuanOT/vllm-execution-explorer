@@ -1,4 +1,4 @@
-import { Activity, Gauge, GitMerge, Scissors, Undo2 } from "lucide-react"
+import { Activity, ClipboardList, Gauge, GitMerge, Scissors, Undo2 } from "lucide-react"
 import { useEffect, useState, type ComponentType } from "react"
 
 import { cn } from "../lib/cn.ts"
@@ -17,6 +17,7 @@ export interface ConsoleModule {
 const LED_TONE: Record<ReadinessState["tone"], Tone> = { neutral: "neutral", ready: "ready", warning: "warning", error: "error" }
 const TONE_LABEL: Record<ReadinessState["tone"], string> = { neutral: "unchecked", ready: "ready", warning: "needs attention", error: "blocked" }
 const EXAMPLE_ICONS: Record<LearningExampleId, ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
+  "operator-demo": ClipboardList,
   staggered: Activity,
   prefix: GitMerge,
   chunked: Scissors,

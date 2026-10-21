@@ -1,6 +1,78 @@
 {
   "recordings": [
     {
+      "id": "gpu-h100-realistic-bf16",
+      "title": "H100 \u00b7 Qwen3-4B \u00b7 BF16 weights / BF16 KV \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests in three arrival groups, with 64\u2013256-token limits. Replay actual responses, prefix reuse, native layer/KV activity and measured GPU memory.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-realistic-fp8-weights",
+      "title": "H100 \u00b7 Qwen3-4B \u00b7 FP8 weights / BF16 KV \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests in three arrival groups, with 64\u2013256-token limits. Replay actual responses, prefix reuse, native layer/KV activity and measured GPU memory.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-realistic-fp8-kv",
+      "title": "H100 \u00b7 Qwen3-4B \u00b7 BF16 weights / FP8 KV \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests in three arrival groups, with 64\u2013256-token limits. Replay actual responses, prefix reuse, native layer/KV activity and measured GPU memory.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-realistic-lora-all",
+      "title": "H100 \u00b7 Qwen3-4B \u00b7 LoRA on all requests \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests with 64\u2013256-token limits route through the recorded rank-8 teaching adapter. Inspect same-adapter prefix reuse, native layer/KV activity and measured GPU memory; no adapter-quality claim.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-realistic-lora-mixed",
+      "title": "H100 \u00b7 Qwen3-4B \u00b7 Mixed base + LoRA requests \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests with 64\u2013256-token limits mix base and recorded Adapter A routes. Inspect same-base prefix reuse, cross-adapter cache isolation, native activity and measured memory.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-realistic-qwen38-27b",
+      "title": "H100 \u00b7 Qwen3.8-27B \u00b7 Gated DeltaNet + attention \u00b7 Incident review",
+      "summary": "Six meaningful engineering requests with 64\u2013256-token limits exercise real hybrid-layer execution, prefix reuse and measured GPU memory. Generation reaches the token limits during reasoning. Recurrent numerical state is not captured.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-bf16",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3-4B \u00b7 BF16 weights / BF16 KV",
+      "summary": "Previous capture with six-token output limits. Six real requests in three arrival groups. Follow shared-prefix reuse, chunked prefill and overlapping decoding, with native layer activity, selected K/V slices and measured GPU memory.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-fp8-weights",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3-4B \u00b7 FP8 weights / BF16 KV",
+      "summary": "Previous capture with six-token output limits. Six real requests with native online FP8 weight quantization, BF16 compute/KV, measured GPU memory and selected K/V slices. Same prompts and planned arrivals as the BF16 case.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-fp8-kv",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3-4B \u00b7 BF16 weights / FP8 KV",
+      "summary": "Previous capture with six-token output limits. Six real requests with FP8 E4M3 cache storage. Inspect actual cache bytes, recorded scales, decoded values and measured GPU memory. Same prompts and planned arrivals as the BF16 case.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-lora-all",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3-4B \u00b7 LoRA on all requests",
+      "summary": "Previous capture with six-token output limits. Six real requests route through a pinned, locally trained rank-8 teaching adapter. Inspect actual adapter identity, native GPU activity, same-adapter prefix reuse and measured memory; no adapter quality claim.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-lora-mixed",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3-4B \u00b7 Mixed base + LoRA requests",
+      "summary": "Previous capture with six-token output limits. Six real requests mix base and Adapter A routes. Observe same-base prefix reuse, cross-adapter cache isolation, shared iteration membership and measured memory. The adapter is a trained rank-8 teaching fixture.",
+      "evidence": "gpu"
+    },
+    {
+      "id": "gpu-h100-qwen38-27b",
+      "title": "Archived short demo \u00b7 H100 \u00b7 Qwen3.8-27B \u00b7 Gated DeltaNet + attention",
+      "summary": "Previous capture with six-token output limits. A real BF16 run with 48 Gated DeltaNet and 16 full-attention layers. Inspect all native iteration/layer activity, 784-token hybrid prefix reuse and deduplicated GPU memory. Numerical snapshots and recurrent per-token state are not captured.",
+      "evidence": "gpu"
+    },
+    {
       "id": "gpu-kv-layer-diagnostics",
       "title": "Real GPU: model and KV diagnostics",
       "summary": "A saved vLLM 0.30.0 GPU run with its original workload. Inspect request tokens, model layers, the device cache pool and captured K/V diagnostics.",

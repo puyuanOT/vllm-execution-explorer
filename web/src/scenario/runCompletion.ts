@@ -1,12 +1,9 @@
 import type { RunSnapshot } from "../api.ts"
 
-export function shouldLoadExpectedRecording(
-  expectedRunId: string,
-  live: RunSnapshot | null,
-  userOpenedRecording: boolean,
-): live is RunSnapshot & { run_id: string } {
-  if (!expectedRunId || userOpenedRecording || live?.run_id !== expectedRunId) return false
-  return live.status === "completed" && live.finalized === true
+/** Controller runs started elsewhere may update health, but must not cause this
+ * UI to download their traces or native profile attachments. */
+export function ownedLiveRun(expectedRunId: string, live: RunSnapshot | null, userOpenedRecording: boolean): RunSnapshot | null {
+  return expectedRunId && !userOpenedRecording && live?.run_id === expectedRunId ? live : null
 }
 
 export function expectedRunFailure(

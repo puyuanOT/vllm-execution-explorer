@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import inspect
 import gc
+import hashlib
 import json
 import os
 import sys
@@ -117,6 +118,8 @@ class VllmSession:
         self._engine_lease: _EngineSessionLease | None = None
         self.profiling_record: dict[str, Any] | None = None
         self.kv_cache_record: dict[str, Any] | None = None
+        self._memory: Any = None
+        self.gpu_memory_record: dict[str, Any] | None = None
 
     @classmethod
     def open(cls, recording: Any, body: Any) -> VllmSession:
@@ -129,16 +132,29 @@ class VllmSession:
         diagnostic = profiling.get("mode") == "eager_diagnostic"
         lease = _EngineSessionLease(diagnostic)
         engine, session = None, None
+        from runner.gpu_memory import GpuMemoryRecorder
+
+        memory = GpuMemoryRecorder(recording) if recording is not None else None
         try:
+            if memory is not None:
+                memory.start()
             lora_routes = _prepare_lora_routes(body)
             with _huggingface_auth(getattr(body, "huggingface_token", None)):
                 resolution = resolve_model_revisions(body)
-                engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
+                if memory is None:
+                    engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
+                else:
+                    with memory.worker_boundaries():
+                        engine = _build_engine(body, lora_routes, profiling_directory=recording.directory)
             session = cls(engine, None, recording, lora_routes=lora_routes)
             session._engine_lease = lease
+            session._memory = memory
+            session.gpu_memory_record = memory.record if memory is not None else None
             engine_ready = time.monotonic_ns()
             if diagnostic and getattr(engine.vllm_config, "use_v2_model_runner", None) is not False:
                 raise RuntimeError("Eager diagnostic profiling requires verified V1 model-runner selection for the entire session.")
+            if memory is not None:
+                memory.set_phase("warmup", "explorer_warmup.entry")
             _warmup(engine)
             warmup_completed = time.monotonic_ns()
             reset_started = time.monotonic_ns()
@@ -173,6 +189,9 @@ class VllmSession:
                 "capture_ready_monotonic_ns": time.monotonic_ns(),
             }
             session._describe(body, version)
+            if memory is not None:
+                memory.set_phase("inference", "capture_ready_after_cache_reset")
+                memory.sample()
             from runner.profiling import DiagnosticProfile
 
             session._profile = DiagnosticProfile(engine, core, recording, profiling, session.architecture_record, session.adapter)
@@ -196,6 +215,8 @@ class VllmSession:
             except BaseException as cleanup_error:
                 error.add_note(f"Preparation cleanup also failed ({type(cleanup_error).__name__}).")
             finally:
+                if session is None and memory is not None:
+                    memory.close()
                 lease.release()
             raise
 
@@ -337,6 +358,8 @@ class VllmSession:
         if self._closed:
             return
         self._closed = True
+        if self._memory is not None:
+            self._memory.set_phase("cleanup", "session.close.entry")
         try:
             if self._profile is not None:
                 try:
@@ -351,6 +374,8 @@ class VllmSession:
             finally:
                 self.adapter = None
                 try:
+                    if self._memory is not None:
+                        self._memory.worker = None
                     _shutdown_engine(self.engine)
                 finally:
                     self.engine = None
@@ -359,6 +384,10 @@ class VllmSession:
                     finally:
                         if self._engine_lease is not None:
                             self._engine_lease.release()
+                        if self._memory is not None:
+                            self._memory.close()
+                            self.gpu_memory_record = self._memory.record
+                            self._memory = None
 
     def _describe(self, body: Any, version: str) -> None:
         decision = decide_target(
@@ -396,7 +425,12 @@ class VllmSession:
         model_runner = getattr(worker, "model_runner", None)
         if model_runner is not None and hasattr(model_runner, "model"):
             self.kv_cache_record, _records = loaded_cache_tensors(model_runner, self.adapter.cache_inventory)
+            if self._memory is not None:
+                storage_inventory = self._memory.inventory(worker, "loaded_engine_after_warmup_and_cache_reset")
+            else:
+                storage_inventory = None
         else:
+            storage_inventory = None
             self.kv_cache_record = {"contract_version": 1, "status": "unavailable", "reason": "The loaded cache tensors are not exposed by this model executor.",
                                     "storages": [], "layers": [], "unique_storage_bytes": None, "observation_boundary": "loaded_attention_cache_tensors"}
         scheduled = getattr(config.scheduler_config, "max_num_scheduled_tokens", None)
@@ -434,11 +468,15 @@ class VllmSession:
                     "lora_int_id": route.lora_int_id,
                     "resolved_path": route.resolved_path,
                     "source": dict(route.source),
+                    **_lora_artifact_metadata(route.resolved_path),
                 }
                 for route in sorted(self._lora_routes.values(), key=lambda item: item.lora_int_id)
             ],
             "note": "Loaded by the in-process vLLM 0.30 engine on this CUDA host.",
         }
+        from runner.gpu_memory import observed_weight_storage
+
+        self.model_record["weight_storage"] = observed_weight_storage(config.model_config, storage_inventory)
         self.tokenizer_record = {
             "id": str(getattr(body, "tokenizer", None) or model),
             "revision": tokenizer_revision,
@@ -503,6 +541,7 @@ def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None, *
         "model": model,
         "tokenizer": tokenizer,
         "dtype": str(getattr(body, "dtype", "bfloat16")),
+        "kv_cache_dtype": str(getattr(body, "kv_cache_dtype", "auto")),
         "seed": 0,
         "enable_prefix_caching": bool(getattr(body, "prefix_caching", True)),
         "max_num_seqs": int(getattr(body, "max_num_seqs", 4)),
@@ -562,6 +601,8 @@ def _build_engine(body: Any, lora_routes: dict[str, _LoRARoute] | None = None, *
             required_learning_args.update({"enforce_eager", "profiler_config"})
         if getattr(body, "kv_cache_memory_bytes", None) is not None:
             required_learning_args.add("kv_cache_memory_bytes")
+        if getattr(body, "kv_cache_dtype", "auto") != "auto":
+            required_learning_args.add("kv_cache_dtype")
         missing = sorted(required_learning_args.difference(signature.parameters))
         if missing:
             raise RuntimeError("The installed vLLM EngineArgs cannot apply the learning configuration: " + ", ".join(missing))
@@ -760,6 +801,29 @@ def _max_adapter_rank(routes: dict[str, _LoRARoute]) -> int | None:
         if supported >= observed:
             return supported
     return observed
+
+
+def _lora_artifact_metadata(resolved_path: str) -> dict[str, Any]:
+    directory = Path(resolved_path)
+    try:
+        config = json.loads((directory / "adapter_config.json").read_text(encoding="utf-8"))
+        rank, modules = config.get("r"), config.get("target_modules")
+        if not isinstance(rank, int) or isinstance(rank, bool) or rank <= 0 or not isinstance(modules, (list, str)):
+            raise ValueError("unqualified adapter configuration")
+        if isinstance(modules, list) and any(not isinstance(module, str) for module in modules):
+            raise ValueError("unqualified target module list")
+        hashes = {}
+        for path in sorted(directory.iterdir()):
+            if path.is_file() and (path.name == "adapter_config.json" or path.name.startswith("adapter_model.")):
+                digest = hashlib.sha256()
+                with path.open("rb") as handle:
+                    for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                        digest.update(chunk)
+                hashes[path.name] = digest.hexdigest()
+        return {"configuration_status": "observed", "rank": rank, "rank_pattern": config.get("rank_pattern"),
+                "target_modules": modules, "artifact_sha256": hashes, "configuration_source": "resolved_adapter_config.json"}
+    except (OSError, ValueError, TypeError):
+        return {"configuration_status": "unavailable", "configuration_source": "resolved_adapter_config.json"}
 
 
 def _public_lora_source(source: dict[str, Any]) -> dict[str, Any]:

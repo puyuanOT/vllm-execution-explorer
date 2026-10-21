@@ -88,6 +88,7 @@ class RunRequest(BaseModel):
     scheduling_policy: str = "fcfs"
     long_prefill_token_threshold: int = 0
     kv_cache_memory_bytes: int | None = None
+    kv_cache_dtype: str = "auto"
     dtype: str = "bfloat16"
     quantization: str | None = None
     sampling: dict[str, Any] | None = None
@@ -828,6 +829,7 @@ def _execute(
             try:
                 session.close()
             except Exception as exc:  # noqa: BLE001 - cleanup must not block finalization
+                completion = "failed"
                 cleanup_error = _recording_message(
                     f"Session cleanup failed: {exc}",
                     body.huggingface_token,
@@ -922,6 +924,7 @@ def _manifest_for(
             ("observability_record", "observability"),
             ("profiling_record", "profiling"),
             ("kv_cache_record", "kv_cache"),
+            ("gpu_memory_record", "gpu_memory"),
         ):
             value = getattr(session, source_name, None)
             if value is not None:

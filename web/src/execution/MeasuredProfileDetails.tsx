@@ -1,12 +1,15 @@
 import { useState } from "react"
 import type { MeasuredProfileProjection, ProfileActivity } from "../../../replay/src/profiling.ts"
+import type { ReplayState } from "../../../replay/src/reduce.ts"
 import type { Selection } from "./types.ts"
+import { participantSelection } from "./iterationProfile.ts"
 
-export function MeasuredProfileDetails({ profile, activities, error, active, onTime, onSelect }: {
+export function MeasuredProfileDetails({ profile, activities, error, active, state, onTime, onSelect }: {
   profile: MeasuredProfileProjection
   activities: ProfileActivity[]
   error: string
   active: boolean
+  state?: ReplayState | null
   onTime: (value: number) => void
   onSelect: (selection: Selection) => void
 }) {
@@ -35,7 +38,7 @@ export function MeasuredProfileDetails({ profile, activities, error, active, onT
       <h3 className="text-sm font-medium text-ink">Layer measurements for {stepId ?? "no selected batch"}</h3>
       <ul className="max-h-56 list-none space-y-2 overflow-auto p-0">
         {layers.map((layer) => <li key={`${layer.layerIndex}:${layer.component}`}>
-          <button className="w-full text-left text-sm" type="button" onClick={() => onSelect(layer.component ? { kind: "module", layerIndex: layer.layerIndex, module: layer.component } : { kind: "layer", layerIndex: layer.layerIndex })}>
+          <button className="w-full text-left text-sm" type="button" onClick={() => onSelect(layer.component && layer.component !== "recurrent" ? { kind: "module", layerIndex: layer.layerIndex, module: layer.component } : { kind: "layer", layerIndex: layer.layerIndex })}>
             Layer {layer.layerIndex + 1}{layer.component ? ` · ${layer.component === "ffn" ? "feed-forward" : layer.component}` : ""}
           </button>
           <p className="m-0 text-xs tabular-nums text-muted">CPU scope span: {layer.cpuScopeSpanUs == null ? "unavailable" : `${layer.cpuScopeSpanUs.toFixed(3)} µs`}</p>
@@ -49,7 +52,7 @@ export function MeasuredProfileDetails({ profile, activities, error, active, onT
         <button type="button" className="min-h-6 border-0 bg-transparent p-0 text-left text-xs text-ink" onClick={() => onSelect({ kind: "layer", layerIndex: write.layerIndex })}>Layer {write.layerIndex + 1} · {write.device ?? "device not captured"}</button>
         <p className="m-0 text-xs text-muted">{write.participants.length} participating positions · {write.gpuActivityIds.length} correlated GPU activities · {write.observationBoundary}</p>
         {write.reason ? <p className="m-0 text-xs text-muted">{write.reason}</p> : null}
-        <div className="mt-1 flex flex-wrap gap-1">{write.participants.slice(0, 8).map((participant) => <button key={participant.row} type="button" className="min-h-6 px-1 py-0 text-[10px]" onClick={() => onSelect({ kind: "token", requestId: participant.requestId, position: participant.tokenPosition })}>{participant.requestId} · position {participant.tokenPosition}</button>)}</div>
+        <div className="mt-1 flex flex-wrap gap-1">{write.participants.slice(0, 8).map((participant) => <button key={participant.row} type="button" className="min-h-6 px-1 py-0 text-[10px]" onClick={() => onSelect(state ? participantSelection(state, write, participant).selection : { kind: "token", requestId: participant.requestId, position: participant.tokenPosition })}>{participant.requestId} · position {participant.tokenPosition}</button>)}</div>
         {write.participants.length > 8 ? <p className="m-0 text-[10px] text-muted">Use the layer matrix for the remaining {write.participants.length - 8} positions.</p> : null}
       </li>)}</ul> : <p className="text-xs text-muted">Layer-specific cache-write operations were not captured for this batch. General layer activity does not establish cache-write chronology.</p>}
       <h3 className="text-sm font-medium text-ink">Packed input token rows</h3>

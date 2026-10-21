@@ -1,0 +1,45 @@
+# October 10 UI refinement
+
+The changes apply to the existing local Configure/Explore application. No Sites deployment, backend changes, new GPU run, commit, or push was performed in this refinement. The worktree contains earlier demo-expansion changes; its entire diff is not attributable to this UI request.
+
+## Implemented behavior
+
+- Removed the large GPU-provenance footer from architecture and request-lane views. The short recording badge remains in the header.
+- GPU memory uses smaller stable-colored measured marks and a teal current sample/cursor. Recorded vertical bounds are zero to the selected device's run sampled peak plus 8%; GiB labels are visible, capacity remains in the header, and timestamps/gaps are preserved without interpolation. Live projection excludes future host samples.
+- The 3D camera control reads **Reset**.
+- **Back to run** clears object selection and persistent request/token tracking, focuses the default inspector heading, and preserves the playhead and camera.
+- **GPU time** replaces the Profile label. The Illustrate layer flow button is removed. Native mapped CUDA intervals highlight all active layers in amber directly in **Overview**, with module labels; manually inspected layers have a separate cyan rim. Unmapped instants say **No mapped layer activity**. Entering GPU time preserves the current scene focus. Host replay, serving/KV nodes, and memory retain their separate clock.
+
+## Actual integrated browser cases
+
+All cases below used the Codex in-app browser at a DOM-confirmed **1920 × 1080**, against localhost:5173 and the retained real H100 recordings. Browser actions used actual buttons, selectors, sliders, and keyboard input. Application state was not injected.
+
+| Case | Outcome and evidence |
+|---|---|
+| BF16 overview native activity | Pass. Switching to GPU time retained Overview; native stepping showed layer 1 and then layer 4 feed-forward. [Layer 1 screenshot](../../../output/playwright/oct10-ui/codex-overview-layer-1.jpg), [layer 4 screenshot](../../../output/playwright/oct10-ui/codex-overview-layer-4.jpg), [steps](../../../output/playwright/oct10-ui/codex-later-layer-steps.json). |
+| Activity versus inspection | Pass. At active layer 4, selecting layer 19 attention retained amber layer 4 and showed a cyan layer 19 rim and explicit inspection label. [Screenshot](../../../output/playwright/oct10-ui/codex-active-vs-inspected.jpg). Back to run cleared the inspection; Home on GPU time showed No mapped layer activity. |
+| Hybrid 27B overview | Pass. The real 64-layer hybrid recording showed layer 1 Gated DeltaNet activity in Overview. [Screenshot](../../../output/playwright/oct10-ui/codex-overview-gated-deltanet.jpg), [steps](../../../output/playwright/oct10-ui/codex-hybrid-layer-steps.json). |
+| UI-to-native correlation | Pass. The production profile parser, projection, and interval index independently matched the recorded UI offsets to native CUDA activity: BF16 layer 4 at +36,510.885986 µs; 27B layer 1 at +14,244.470947 µs. [Activity IDs, native bounds, and scopes](../../../output/playwright/oct10-ui/native-ui-match.json). |
+| Request and keyboard return | Pass. BF16 Request 3 via finder and hybrid Request 1 via top request chip opened details. Reset preserved selection/playhead. Keyboard Back to run restored Inspector, removed the button, focused the heading, and preserved both tested playheads. [BF16 receipt](../../../output/playwright/oct10-ui/codex-back-to-run.json), [hybrid receipt](../../../output/playwright/oct10-ui/codex-hybrid-back-to-run.json). The hybrid receipt's generic first h2 is the memory title; the focused heading is the default Inspector. |
+| Token and component return | Pass. Request 1 position 0 and KV-cache manager inspection each exposed Back to run and returned to default Inspector. Token return preserved host event 355. [Receipt](../../../output/playwright/oct10-ui/codex-inspector-regression.json). |
+| KV tensor return and Reset regression | Pass after review fix. The BF16 layer 1/head 0/K slice was inspected in focused KV view and panned. Back to run restored the default inspector and removed tensor controls while preserving the close camera despite canvas height growing from 417.72 to 546.61 px. Explicit Reset then fitted the whole pool. Host event 200 remained unchanged throughout. [Before](../../../output/playwright/oct10-ui/codex-tensor-before-back.jpg), [after return](../../../output/playwright/oct10-ui/codex-tensor-after-back.jpg), [after Reset](../../../output/playwright/oct10-ui/codex-tensor-after-reset.jpg), [receipt](../../../output/playwright/oct10-ui/codex-tensor-return.json). |
+| Memory scrubbing and breakdown | Pass. Hybrid host iteration 1/event 355 and cleanup/event 1068 used the same 59.71 GiB scale and 662 circles, with only muted and teal fills. At event zero no sample exists and no measured chart is shown. Expanded cleanup breakdown correctly invalidated the loaded storage attribution. [Geometry receipt](../../../output/playwright/oct10-ui/codex-memory-scrub.json). [BF16 overview chart](../../../output/playwright/oct10-ui/codex-memory-overview.jpg) uses its own 10.24 GiB upper bound. |
+| Request lanes and Configure | Pass. Request-lane view lacked the removed footer. Configure remained accessible and preserved the user's existing draft (2 batches/3 requests and selected host). Returned to 3D Overview with default Inspector. [Configure screenshot](../../../output/playwright/oct10-ui/codex-configure-preserved.jpg), [final DOM](../../../output/playwright/oct10-ui/codex-final-dom.txt). |
+
+Camera preservation was checked after panning the hybrid overview: [before return](../../../output/playwright/oct10-ui/codex-camera-before-back.jpg) and [after return](../../../output/playwright/oct10-ui/codex-camera-after-back.jpg) show the same scene framing at host event 355. The selected KV outline clears, so the screenshot bytes differ as expected ([receipt](../../../output/playwright/oct10-ui/codex-camera-return.json)). The Back to run callback only clears the three selection/tracking states and sets an announcement; it does not invoke camera reset or playback changes.
+
+Independent correctness review found that leaving a tensor drill indirectly triggered camera fitting through the scene focus key and subsequent canvas resize. The fix in `scene.tsx` retains the returned camera until explicit Reset, another tensor drill, or scene navigation. The tensor regression above verified both preservation and explicit fitting after this fix. Web tests and build were rerun after it.
+
+## Checks and limits
+
+- Current web suite: **109/109 passed** ([output](../../../output/playwright/oct10-ui/web-tests.txt)). Includes fixed memory geometry, future-sample exclusion, mapped layer/module filtering, and existing architecture/profile behavior.
+- Current replay suite: **70/70 passed** ([output](../../../output/playwright/oct10-ui/replay-tests.txt)).
+- TypeScript and production Vite build passed ([output](../../../output/playwright/oct10-ui/build.txt)); the existing bundle-size warning remains.
+- `git diff --check` passed. Captured Codex console warning/error entries were empty ([receipt](../../../output/playwright/oct10-ui/codex-browser-logs.json)). The user's persisted controller URL 127.0.0.1:8766 still displayed Failed to fetch; these offline recording cases do not establish live-controller availability.
+- Native stepping includes CPU activity starts and can require many clicks to reach mapped CUDA intervals. The retained step receipts show those gaps explicitly. No new navigation controls were added in this request.
+- The former Chrome attempt occurred before the user's Codex-only instruction and timed out taking a screenshot; [its output](../../../output/playwright/oct10-ui/desktop-back-to-run.txt) remains. It is not counted as a passed browser case. Subsequent testing used only Codex. An expired Codex tab after interruption and an unsupported locator option were recovered with a fresh tab/valid locator; neither was an application failure.
+- No fresh remote execution was needed: the changed behavior is local UI projection over existing real recordings. Live future-sample filtering was tested at the helper level, not by a new GPU capture. Native intervals provide layer activity, not individual token/head kernel durations.
+
+After the camera fix, GPU time was re-entered in Overview and the first mapped native layer highlighted correctly at +3,692.027954 µs, with host replay held at event 200. [Final 1920 × 1080 screenshot](../../../output/playwright/oct10-ui/codex-final-overview-highlight.jpg), [native stepping receipt](../../../output/playwright/oct10-ui/codex-final-overview-steps.json).
+
+All three final independent reviewers report no significant unresolved issues: [correctness](review-correctness.md), [integration and evidence](review-evidence.md), and [simplification](review-simplification.md). The camera finding and its successful regression are retained rather than omitted.

@@ -6,12 +6,17 @@ import {
   type RecordingManifest,
   type TraceEvent,
 } from "../../replay/src/reduce.ts"
+import { recordingConfiguration, type RecordingConfiguration } from "./shell/demoCatalog.ts"
+import { HOSTED_DEMO } from "./hosting.ts"
+import { fetchRecordingText } from "./recordingAssets.ts"
 
 export interface CatalogEntry {
   id: string
   title: string
   summary: string
   evidence: string
+  configuration?: RecordingConfiguration
+  configurationError?: string
 }
 
 export interface LoadedRecording {
@@ -152,19 +157,26 @@ export async function loadCatalog(): Promise<CatalogEntry[]> {
   const response = await fetch("/recordings/index.json")
   if (!response.ok) throw new Error("Bundled recordings are not available.")
   const body = (await response.json()) as { recordings: CatalogEntry[] }
-  return body.recordings
+  return Promise.all(body.recordings.map(async (entry) => {
+    try {
+      const manifest = await fetchJson<RecordingManifest>(`/recordings/${encodeURIComponent(entry.id)}/manifest.json`)
+      return { ...entry, configuration: recordingConfiguration(manifest) }
+    } catch (error) {
+      return { ...entry, configurationError: error instanceof Error ? error.message : "Recording configuration could not be read." }
+    }
+  }))
 }
 
 export async function loadBundled(id: string): Promise<LoadedRecording> {
   return loadFromBase(`/recordings/${id}`, id)
 }
 
-export async function loadRunnerRecording(base: string, runId: string): Promise<LoadedRecording> {
+export async function loadRunnerRecording(base: string, runId: string, signal?: AbortSignal): Promise<LoadedRecording> {
   const root = runnerPath(base, `/api/recordings/${runId}`)
-  const manifest = await fetchJson<RecordingManifest>(`${root}/manifest`)
-  const events = parseJsonl<TraceEvent>(await fetchText(`${root}/events`))
-  const content = parseJsonl<ContentRecord>(await fetchText(`${root}/content`))
-  const profile = await loadProfile(manifest, () => fetchText(`${root}/profile`))
+  const manifest = await fetchJson<RecordingManifest>(`${root}/manifest`, signal)
+  const events = parseJsonl<TraceEvent>(await fetchText(`${root}/events`, signal))
+  const content = parseJsonl<ContentRecord>(await fetchText(`${root}/content`, signal))
+  const profile = await loadProfile(manifest, () => fetchText(`${root}/profile`, signal), signal)
   return { source: runId, manifest, events, content, ...profile }
 }
 
@@ -206,38 +218,42 @@ export async function loadFiles(files: FileList): Promise<LoadedRecording> {
 }
 
 async function loadFromBase(base: string, source: string): Promise<LoadedRecording> {
-  const manifest = await fetchJson<RecordingManifest>(`${base}/manifest.json`)
-  const events = parseJsonl<TraceEvent>(await fetchText(`${base}/events.jsonl`))
-  const contentText = await fetchText(`${base}/content.jsonl`)
-  const profile = await loadProfile(manifest, () => fetchText(`${base}/${readProfileArtifact(manifest)!.path}`))
+  const options = { preferLocal: !HOSTED_DEMO }
+  const manifest = parseRecordingJson<RecordingManifest>(await fetchRecordingText(`${base}/manifest.json`, options))
+  const events = parseJsonl<TraceEvent>(await fetchRecordingText(`${base}/events.jsonl`, options))
+  const contentText = await fetchRecordingText(`${base}/content.jsonl`, options)
+  const profile = await loadProfile(manifest, () => fetchRecordingText(`${base}/${readProfileArtifact(manifest)!.path}`, options))
   return { source, manifest, events, content: parseJsonl<ContentRecord>(contentText), ...profile }
 }
 
-async function loadProfile(manifest: RecordingManifest, readText: () => Promise<string>): Promise<{ profile: ProfileAttachment | null; profileError: string }> {
+async function loadProfile(manifest: RecordingManifest, readText: () => Promise<string>, signal?: AbortSignal): Promise<{ profile: ProfileAttachment | null; profileError: string }> {
   try {
     const artifact = readProfileArtifact(manifest)
     if (!artifact) return { profile: null, profileError: "" }
-    if (artifact.sizeBytes > 64 * 1024 * 1024) throw new Error("Normalized profile exceeds the browser’s 64 MiB attachment limit. Inspect the retained raw trace with a profiler.")
+    if (artifact.sizeBytes > 512 * 1024 * 1024) throw new Error("Normalized profile exceeds the browser’s 512 MiB attachment limit. Inspect the retained raw trace with a profiler.")
     const text = await readText()
+    signal?.throwIfAborted()
     const bytes = new TextEncoder().encode(text)
     if (bytes.length !== artifact.sizeBytes) throw new Error("Measured profile attachment size does not match its manifest.")
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))
+    signal?.throwIfAborted()
     const hex = Array.from(digest, (value) => value.toString(16).padStart(2, "0")).join("")
     if (hex !== artifact.sha256) throw new Error("Measured profile attachment digest does not match its manifest.")
     return { profile: parseProfileAttachment(text, manifest), profileError: "" }
   } catch (error) {
+    if (signal?.aborted) throw error
     return { profile: null, profileError: error instanceof Error ? error.message : "Measured profile could not be loaded." }
   }
 }
 
-async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url)
+async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Could not read ${url}`)
   return response.text()
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url)
+async function fetchJson<T>(url: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(url, { signal })
   if (!response.ok) throw new Error(`Could not read ${url}`)
   return parseRecordingJson<T>(await response.text())
 }

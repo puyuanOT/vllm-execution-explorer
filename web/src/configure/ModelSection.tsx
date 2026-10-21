@@ -32,7 +32,7 @@ export function ModelSection({
   readiness?: ReadinessState
   quantizationCapabilities?: Record<string, FeatureCapability>
   huggingFaceToken: string
-  onSettings: (settings: EngineSettings) => void
+  onSettings: (settings: EngineSettings, applyDemoAssignment?: boolean) => void
   onHuggingFaceToken: (token: string) => void
   onRemoveAdapter: (adapterId: string) => void
 }) {
@@ -189,7 +189,7 @@ export function ModelSection({
 
         <div className="grid items-start gap-4 md:grid-cols-2">
           <label className="block text-xs font-medium text-slate-400" htmlFor="model-dtype">
-            Precision
+            Compute dtype
             <select
               id="model-dtype"
               className={inputClass}
@@ -201,9 +201,10 @@ export function ModelSection({
               <option value="float16">float16</option>
               <option value="float32">float32</option>
             </select>
+            <FieldHint>Floating-point compute request. Quantized weight storage is selected separately; effective storage and compute details come from the captured run.</FieldHint>
           </label>
           <label className="block text-xs font-medium text-slate-400" htmlFor="model-quantization">
-            Weight quantization
+            Weight storage / quantization
             <select
               id="model-quantization"
               className={inputClass}
@@ -281,10 +282,29 @@ export function ModelSection({
           </summary>
           <div className="space-y-4 border-t border-slate-800 p-4">
             <p className="text-pretty text-sm text-slate-400">Attached adapters can become a batch default or a per-request override in the sequence above.</p>
+            <label className="block text-xs font-medium text-slate-400" htmlFor="adapter-demo-mode">
+              Demo LoRA assignment
+              <select
+                id="adapter-demo-mode"
+                className={inputClass}
+                value={settings.demoLoraMode ?? "manual"}
+                aria-invalid={Boolean(issueFor("adapter-demo-mode"))}
+                aria-describedby={`adapter-demo-mode-hint${issueFor("adapter-demo-mode") ? " adapter-demo-mode-error" : ""}`}
+                onChange={(event) => onSettings({ ...settings, demoLoraMode: event.target.value === "manual" ? null : event.target.value as EngineSettings["demoLoraMode"], loraAdapters: event.target.value === "none" ? [] : settings.loraAdapters })}
+              >
+                <option value="manual">Manual routing</option>
+                <option value="none">None: base model only</option>
+                <option value="all">All requests: Adapter A</option>
+                <option value="mixed">Mixed: Base + Adapter A</option>
+              </select>
+              <FieldHint id="adapter-demo-mode-hint">Adapter A means the first attached adapter with a repository or path. All and Mixed assignments apply when that artifact is configured, and capture stays blocked until the request routes match. None clears attached adapters and routes.</FieldHint>
+              <FieldError id="adapter-demo-mode-error" message={issueFor("adapter-demo-mode")} />
+            </label>
+            {settings.demoLoraMode != null ? <button className={buttonClass} type="button" onClick={() => onSettings(settings, true)}>Apply selected assignment</button> : null}
             {settings.loraAdapters.length === 0 ? (
               <div className="rounded-md border border-dashed border-slate-700 p-4 text-center">
                 <p className="text-pretty text-sm text-slate-400">No adapters are attached.</p>
-                <button className={`${buttonClass} mt-3`} type="button" onClick={() => onSettings({ ...settings, loraAdapters: [...settings.loraAdapters, newAdapter()] })}>
+                <button className={`${buttonClass} mt-3`} type="button" onClick={() => onSettings({ ...settings, demoLoraMode: settings.demoLoraMode === "none" ? null : settings.demoLoraMode, loraAdapters: [...settings.loraAdapters, newAdapter()] })}>
                   Attach an adapter
                 </button>
               </div>
@@ -367,7 +387,7 @@ export function ModelSection({
                     </li>
                   ))}
                 </ul>
-                <button className={buttonClass} type="button" onClick={() => onSettings({ ...settings, loraAdapters: [...settings.loraAdapters, newAdapter()] })}>
+                <button className={buttonClass} type="button" onClick={() => onSettings({ ...settings, demoLoraMode: settings.demoLoraMode === "none" ? null : settings.demoLoraMode, loraAdapters: [...settings.loraAdapters, newAdapter()] })}>
                   Attach another adapter
                 </button>
               </>

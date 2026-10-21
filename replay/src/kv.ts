@@ -1,6 +1,7 @@
 /** Cache configuration and diagnostic evidence. Host and profiler clocks never mix. */
 import { projectArchitecture, projectKvCache, projectRequestTokens, type KvPoolProjection, type ObservationStatus } from "./learning.ts"
 import { ProfileError, type ProfileActivity, type ProfileKvObservations, type ProfileTensorCapture, type ProfileTensorSnapshot } from "./profiling.ts"
+import { profileObservationIndex } from "./profileIndex.ts"
 import type { ContentRecord, RecordingManifest, ReplayState } from "./reduce.ts"
 
 export type KvEvidenceKind = "gpu" | "fixture" | "unknown"
@@ -166,7 +167,8 @@ export function projectLayerTokenMatrix(state: ReplayState, manifest?: Recording
   if (selection.timeUs != null && !Number.isFinite(selection.timeUs)) throw new ProfileError("Profiler playhead must be finite trace-local microseconds.")
   const selectedStep = selection.stepId ?? state.steps.at(-1)?.id ?? null
   const step = state.steps.find((step) => step.id === selectedStep)
-  const profileStep = observations?.steps.find((step) => step.stepId === selectedStep)
+  const profileIndex = profileObservationIndex(observations)
+  const profileStep = selectedStep == null ? undefined : profileIndex?.stepsById.get(selectedStep)
   const configuration = parseKvConfiguration(manifest)
   const architecture = projectArchitecture(manifest)
   const allLayers = architecture.layerCount != null ? Array.from({ length: architecture.layerCount }, (_, index) => index)
@@ -209,12 +211,11 @@ export function projectLayerTokenMatrix(state: ReplayState, manifest?: Recording
     return { ...position, tokenId: token?.tokenId ?? null, tokenPiece: token?.tokenPiece ?? null,
       phase: position.position < (request?.promptTokenCount ?? Infinity) ? "prefill" as const : "decode" as const }
   })
-  const byActivity = new Map(observations?.activities.map((activity) => [activity.id, activity]) ?? [])
-  const writes = observations?.cacheWrites.filter((write) => write.stepId === selectedStep) ?? []
+  const writes = selectedStep == null ? [] : profileIndex?.writesByStep.get(selectedStep) ?? []
   const cells = tokens.flatMap((token) => layers.map((layerIndex) => {
     const operations = writes.filter((write) => write.layerIndex === layerIndex && write.participants.some((participant) => participant.requestId === token.requestId && participant.tokenPosition === token.position))
     const gpuActivityIds = [...new Set(operations.flatMap((write) => write.gpuActivityIds))]
-    const gpu = gpuActivityIds.map((id) => byActivity.get(id)).filter((activity): activity is ProfileActivity => activity != null && activity.kind.startsWith("cuda_") && activity.scope.correlation === "runtime_flow")
+    const gpu = gpuActivityIds.map((id) => profileIndex?.activitiesById.get(id)).filter((activity): activity is ProfileActivity => activity != null && activity.kind.startsWith("cuda_") && activity.scope.correlation === "runtime_flow")
     let cellState: LayerTokenState = "unknown"
     let reason: string | null = null
     if (state.trust === "unknown") reason = "A trace gap prevents a current linked token/cache claim."

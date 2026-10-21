@@ -1,0 +1,18 @@
+# Integration and evidence review — October 13
+
+**Result: no significant issues found.** This independent review covers the five-file [scoped diff](../../../output/playwright/oct13-block-tops/scoped.diff), the current rendering call sites, and the saved evaluation evidence. It does not review the worktree's preexisting changes or claim an additional browser run.
+
+The scoped diff exactly matches the five current source files against their saved `before` copies. Both Overview (`KvBank`) and the focused pool (`PoolDie`) call `BlockMarks`. Its request colors derive only from deduplicated current bindings on referenced blocks; allocation-state geometry/patterns and selection brackets remain separate. Top decorations disable raycasting, leaving the existing physical-block picking path intact. App passes the same timeline roster order to the scene and its color map, resolving the reported scene/legend mismatch.
+
+I independently imported the current `createPlayer`, `projectKvCache`, `buildTimeline`, and `requestColor` implementations and replayed the bundled `gpu-h100-bf16` recording. All 25 originally saved block records at events 167, 200, 363, and 1155 matched their statuses, generations, trust, reference counts, bindings, written-slot counts, and holder colors. I also checked event 191 and added its six real block records to [source-cases.json](../../../output/playwright/oct13-block-tops/source-cases.json): B1 has a Request 1 binding with zero written slots; B2–B4 have references but no captured binding yet.
+
+I inspected all six saved screenshots and the relevant DOM captures:
+
+- Event 191 shows the blue B1 top despite zero computed slots. The refreshed [reserved DOM](../../../output/playwright/oct13-block-tops/reserved-selected-dom.txt) identifies all reserved slots and the final slot-strip wording.
+- Event 363 shows neutral hatched B1–B11 and dark available blocks. The real projection confirms B12 retains historical contents without current bindings. The refreshed [cached DOM](../../../output/playwright/oct13-block-tops/cached-selected-dom.txt) explicitly says “No current request references.”
+- Event 1155 shows equal pink/orange shared bands, green Request 3 blocks, and separate neutral state marks. [Selected B1](../../../output/playwright/oct13-block-tops/shared-selected.jpg) retains its bands and corner brackets while the inspector distinguishes current holders Request 2/4 from original writer Request 1.
+- [Overview](../../../output/playwright/oct13-block-tops/overview.jpg), request chips, and the [DOM palette receipt](../../../output/playwright/oct13-block-tops/browser-receipt.json) agree on Request 2 pink, Request 3 green, and Request 4 orange.
+
+The saved [test log](../../../output/playwright/oct13-block-tops/web-tests.txt) reports 107 tests passed with no failures or skips. It includes allocation-state and physical-picking coverage. The [build log](../../../output/playwright/oct13-block-tops/build.txt) shows successful TypeScript checking and Vite build, with a bundle-size advisory. My scoped `git diff --check` also passed. The captured browser console receipt is empty.
+
+The qualification appropriately remains limited to offline replay of one real 227-block pool. No unknown-state UI case exists in this complete recording; exclusion is supported by the unchanged state classifier and its existing tests. Shared visual cases have two holders, so larger holder counts and arbitrary pool-size performance are not established by this evaluation. The DOM viewport is 1920 × 1080; exported JPEGs are 1920 × 1064. Earlier stale text captures were refreshed during this review; no unresolved actionable finding remains.

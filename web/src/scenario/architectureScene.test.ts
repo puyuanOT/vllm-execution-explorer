@@ -1,8 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
+import { readFileSync } from "node:fs"
 import * as THREE from "three"
 
-import { BLOCK_STATE_COLORS, kvHeadForQuery, mappedBlockSlot, observedProfileTokenPositions, physicalBlockState, poolCellPosition, poolGridLayout, scheduledTokenPositions, sceneClick, teachingLayer } from "../architecture/model.ts"
+import { BLOCK_STATE_COLORS, iterationDisplayLabel, kvHeadForQuery, mappedBlockSlot, modelIterationSummary, observedProfileTokenPositions, physicalBlockState, poolCellPosition, poolGridLayout, scheduledTokenPositions, sceneClick } from "../architecture/model.ts"
+import { createPlayer, initialState, parseJsonl } from "../../../replay/src/reduce.ts"
 import { createPoolRaycast } from "../architecture/poolPicking.ts"
 
 test("a real-sized pool has a unique, stable cell for every physical ID", () => {
@@ -87,15 +89,6 @@ test("scheduled token geometry distinguishes prefill/decode and excludes the nex
   assert.ok(!tokens.some((token) => token.requestId === "b" && token.position === 9))
 })
 
-test("logical teaching stages require an explicit teaching clock", () => {
-  assert.equal(teachingLayer(undefined, 36), null)
-  assert.equal(teachingLayer(NaN, 36), null)
-  assert.equal(teachingLayer(0, 36), 0)
-  assert.equal(teachingLayer(0.5, 36), 18)
-  assert.equal(teachingLayer(1, 36), 35)
-  assert.equal(teachingLayer(8, 36), 35)
-})
-
 test("measured row geometry follows observed native rows independently of host state and excludes padding", () => {
   const rows = observedProfileTokenPositions([
     { row: 2, requestId: null, tokenPosition: null, isPadding: true },
@@ -106,6 +99,37 @@ test("measured row geometry follows observed native rows independently of host s
     { requestId: "a", position: 12, row: 0, kind: "unclassified" },
     { requestId: "b", position: 9, row: 1, kind: "unclassified" },
   ])
+})
+
+test("model summary keeps the real mixed batch visible independently of the tracked request", () => {
+  const source = new URL("../../public/recordings/gpu-kv-layer-diagnostics/", import.meta.url)
+  const manifest = JSON.parse(readFileSync(new URL("manifest.json", source), "utf8"))
+  const player = createPlayer(parseJsonl(readFileSync(new URL("events.jsonl", source), "utf8")), manifest)
+  const state = player.at(player.maxSequence)
+  const mixed = state.steps.find((step) => step.requests.some((request) => request.promptTokens > 0) && step.requests.some((request) => request.generationTokens > 0))!
+  const summary = modelIterationSummary(state, undefined, mixed.id)
+  assert.equal(summary.known, true)
+  assert.equal(summary.positions, mixed.totalScheduledTokens)
+  assert.equal(summary.participants.length, mixed.requests.length)
+  assert.deepEqual(summary.participants.map((request) => [request.prefill, request.decode]), mixed.requests.map((request) => [request.promptTokens, request.generationTokens]))
+  assert.deepEqual(summary.participants.map((request) => request.ranges), mixed.requests.map((request) => [{ start: request.rangeStart, end: request.rangeStart + request.rangeLength - 1 }]))
+  const gap = modelIterationSummary({ ...state, trust: "unknown" }, undefined, mixed.id)
+  assert.equal(gap.known, false)
+  assert.deepEqual(gap.participants, [])
+})
+
+test("model profiler summary does not borrow host batch participants or padding", () => {
+  const state = initialState()
+  const summary = modelIterationSummary(state, { stepId: "step-8", activeLayers: [4], packedRows: [
+    { row: 0, requestId: "native-request", tokenPosition: 15, isPadding: false },
+    { row: 1, requestId: "native-request", tokenPosition: 17, isPadding: false },
+    { row: 2, requestId: null, tokenPosition: null, isPadding: true },
+  ] })
+  assert.equal(summary.label, "Iteration 8")
+  assert.equal(summary.positions, 2)
+  assert.deepEqual(summary.participants, [{ requestId: "native-request", positions: 2, ranges: [{ start: 15, end: 15 }, { start: 17, end: 17 }], prefill: null, decode: null }])
+  assert.equal(modelIterationSummary(state, { stepId: null, activeLayers: [], packedRows: [] }).known, false)
+  assert.equal(iterationDisplayLabel("custom-id"), "Iteration · custom-id")
 })
 
 test("reused prefix slots select the active request while retaining the original content source", () => {
