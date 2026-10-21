@@ -1,0 +1,4 @@
+{"schema_version":"1.0.0","run_id":"preemption","content_sequence":1,"monotonic_ns":523213191505583,"kind":"prompt_text","request_id":"crowded","text":"needs a block again"}
+{"schema_version":"1.0.0","run_id":"preemption","content_sequence":2,"monotonic_ns":523213191535791,"kind":"accepted_tokens","request_id":"crowded","step_id":"step-1","output_position_start":0,"token_ids":[51]}
+{"schema_version":"1.0.0","run_id":"preemption","content_sequence":3,"monotonic_ns":523213191567500,"kind":"accepted_tokens","request_id":"crowded","step_id":"step-2","output_position_start":1,"token_ids":[52]}
+{"schema_version":"1.0.0","run_id":"preemption","content_sequence":4,"monotonic_ns":523213191574916,"kind":"text","request_id":"crowded","emission_index":0,"text_delta":"Again","token_range":[1,2]}

@@ -1,0 +1,11 @@
+{
+  "name": "vllm-execution-explorer-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "npm ci --prefix web",
+    "build": "npm run build --prefix web && node scripts/stage-static.mjs",
+    "test": "npm test --prefix web && npm test --prefix replay"
+  }
+}

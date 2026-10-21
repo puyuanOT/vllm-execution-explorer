@@ -1,0 +1,14 @@
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":1,"monotonic_ns":523213180325875,"kind":"prompt","request_id":"request-a","token_count":4,"token_ids":[1,2,3,4]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":2,"monotonic_ns":523213180513291,"kind":"accepted_tokens","request_id":"request-a","step_id":"step-1","output_position_start":0,"token_ids":[1000]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":3,"monotonic_ns":523213180533208,"kind":"text","request_id":"request-a","emission_index":0,"text_delta":"●","token_range":[0,1]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":4,"monotonic_ns":523213180549458,"kind":"prompt","request_id":"request-b","token_count":4,"token_ids":[5,6,7,8]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":5,"monotonic_ns":523213180702875,"kind":"accepted_tokens","request_id":"request-a","step_id":"step-2","output_position_start":1,"token_ids":[1004]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":6,"monotonic_ns":523213180713750,"kind":"accepted_tokens","request_id":"request-b","step_id":"step-2","output_position_start":0,"token_ids":[1000]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":7,"monotonic_ns":523213180730833,"kind":"text","request_id":"request-a","emission_index":1,"text_delta":"●","token_range":[1,2]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":8,"monotonic_ns":523213180739625,"kind":"text","request_id":"request-b","emission_index":0,"text_delta":"●","token_range":[0,1]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":9,"monotonic_ns":523213180793625,"kind":"accepted_tokens","request_id":"request-a","step_id":"step-3","output_position_start":2,"token_ids":[1005]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":10,"monotonic_ns":523213180803416,"kind":"accepted_tokens","request_id":"request-b","step_id":"step-3","output_position_start":1,"token_ids":[1004]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":11,"monotonic_ns":523213180814416,"kind":"text","request_id":"request-a","emission_index":2,"text_delta":"●","token_range":[2,3]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":12,"monotonic_ns":523213180820958,"kind":"text","request_id":"request-b","emission_index":1,"text_delta":"●","token_range":[1,2]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":13,"monotonic_ns":523213180848250,"kind":"accepted_tokens","request_id":"request-b","step_id":"step-4","output_position_start":2,"token_ids":[1005]}
+{"schema_version":"1.0.0","run_id":"continuous-batching","content_sequence":14,"monotonic_ns":523213180859375,"kind":"text","request_id":"request-b","emission_index":2,"text_delta":"●","token_range":[2,3]}

@@ -1,0 +1,75 @@
+{
+  "adapter": {
+    "name": "vllm_030",
+    "revision": "0.1.0"
+  },
+  "arrivals": [],
+  "cache_geometry": {
+    "block_size": 16,
+    "initial_free_blocks": 8,
+    "num_gpu_blocks": 8
+  },
+  "clock_domain": "time.monotonic_ns",
+  "completion_status": "completed",
+  "content_retained": true,
+  "engine": {
+    "name": "vllm",
+    "upstream_revision": null,
+    "version": "0.30.0"
+  },
+  "engine_settings": {
+    "async_scheduling": false,
+    "enable_prefix_caching": true,
+    "max_num_scheduled_tokens": 32,
+    "max_num_seqs": 4
+  },
+  "event_completeness": {
+    "dropped_content_count": 0,
+    "dropped_event_count": 0,
+    "dropped_record_count": 0,
+    "gap": null,
+    "status": "complete"
+  },
+  "execution_kind": "fixture",
+  "execution_target": {
+    "client_platform": "fixture",
+    "engine_location": "this-machine",
+    "kind": "local",
+    "remote_bind": "127.0.0.1",
+    "runner_endpoint": "http://127.0.0.1:8765"
+  },
+  "hardware": {
+    "gpu": null
+  },
+  "initial_cache_state": {
+    "kind": "fresh",
+    "reset_verified": true
+  },
+  "lesson": {
+    "evidence": "fixture",
+    "summary": "A changed prefix matches zero tokens, so the full prompt range is scheduled.",
+    "title": "Prefix miss"
+  },
+  "model": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "note": "Candidate model. A fixture recording does not load weights.",
+    "revision": null
+  },
+  "run_id": "prefix-miss",
+  "sampling": {
+    "seed": 0,
+    "temperature": 0
+  },
+  "schema_version": "1.0.0",
+  "tokenizer": {
+    "id": "Qwen/Qwen3-4B-Instruct-2507",
+    "revision": null
+  },
+  "workload_limits": {
+    "max_output_tokens": 128,
+    "max_prompt_characters": 4000,
+    "max_requests": 8,
+    "max_run_seconds": 120,
+    "note": "Provisional until the first hardware profile is measured."
+  }
+}
